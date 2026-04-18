@@ -3,6 +3,7 @@ package saga
 import (
 	"context"
 	"fmt"
+	"math/rand/v2"
 	"time"
 
 	"go.temporal.io/sdk/activity"
@@ -20,12 +21,31 @@ const (
 // dependency injection (HTTP clients, DB handles, event publisher, etc.).
 type Activities struct {
 	Publisher events.Publisher
+	// TimeoutChance is the probability per attempt that a main activity hangs
+	// past StartToCloseTimeout so Temporal must retry it. Zero disables
+	// injection (default for tests).
+	TimeoutChance float64
+}
+
+// maybeInjectRandomTimeout hangs the activity past StartToCloseTimeout with a
+// random chance on every attempt, so Temporal retries it. The workflow uses
+// the default unlimited retry policy, so the activity eventually succeeds.
+func (a *Activities) maybeInjectRandomTimeout(ctx context.Context) error {
+	if a.TimeoutChance <= 0 || rand.Float64() >= a.TimeoutChance {
+		return nil
+	}
+	activity.GetLogger(ctx).Info("Injecting random activity timeout")
+	<-ctx.Done()
+	return ctx.Err()
 }
 
 // ReserveInventory reserves stock for the order and returns an item/reservation ID.
 func (a *Activities) ReserveInventory(ctx context.Context, input OrderInput) (string, error) {
 	activity.GetLogger(ctx).Info("Reserving inventory",
 		"customer", input.CustomerID, "order", input.OrderID)
+	if err := a.maybeInjectRandomTimeout(ctx); err != nil {
+		return "", err
+	}
 	time.Sleep(mainStepDelay)
 	if input.FailAt == "inventory" {
 		return "", temporal.NewNonRetryableApplicationError(
@@ -49,6 +69,9 @@ func (a *Activities) ReleaseInventory(ctx context.Context, itemID string) error 
 func (a *Activities) ChargePayment(ctx context.Context, input OrderInput, reservationID string) (string, error) {
 	activity.GetLogger(ctx).Info("Charging payment",
 		"customer", input.CustomerID, "amount", input.Amount, "reservation", reservationID)
+	if err := a.maybeInjectRandomTimeout(ctx); err != nil {
+		return "", err
+	}
 	time.Sleep(mainStepDelay)
 	if input.FailAt == "payment" {
 		return "", temporal.NewNonRetryableApplicationError(
@@ -69,6 +92,9 @@ func (a *Activities) RefundPayment(ctx context.Context, transactionID string, am
 // ShipOrder dispatches the order and returns a tracking ID.
 func (a *Activities) ShipOrder(ctx context.Context, input OrderInput) (string, error) {
 	activity.GetLogger(ctx).Info("Shipping order", "order", input.OrderID)
+	if err := a.maybeInjectRandomTimeout(ctx); err != nil {
+		return "", err
+	}
 	time.Sleep(mainStepDelay)
 	if input.FailAt == "shipping" {
 		return "", temporal.NewNonRetryableApplicationError(
@@ -90,6 +116,9 @@ func (a *Activities) CancelShipment(ctx context.Context, trackingID string) erro
 // SendConfirmation emails the customer that the order is confirmed.
 func (a *Activities) SendConfirmation(ctx context.Context, input OrderInput) (string, error) {
 	activity.GetLogger(ctx).Info("Sending confirmation", "customer", input.CustomerID)
+	if err := a.maybeInjectRandomTimeout(ctx); err != nil {
+		return "", err
+	}
 	time.Sleep(mainStepDelay)
 	if input.FailAt == "notification" {
 		return "", temporal.NewNonRetryableApplicationError(

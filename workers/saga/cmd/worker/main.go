@@ -48,7 +48,7 @@ func main() {
 	// Register each saga activity under its canonical kebab-case name so the
 	// NATS event interceptor emits progress.step.* events matching the step IDs
 	// used by the workflow and the frontend pipeline.
-	a := &saga.Activities{Publisher: publisher}
+	a := &saga.Activities{Publisher: publisher, TimeoutChance: 0.3}
 	w.RegisterActivityWithOptions(a.ReserveInventory, activity.RegisterOptions{Name: "reserve-inventory"})
 	w.RegisterActivityWithOptions(a.ReleaseInventory, activity.RegisterOptions{Name: "release-inventory"})
 	w.RegisterActivityWithOptions(a.ChargePayment, activity.RegisterOptions{Name: "charge-payment"})

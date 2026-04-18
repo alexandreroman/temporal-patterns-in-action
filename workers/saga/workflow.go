@@ -5,7 +5,6 @@ package saga
 import (
 	"time"
 
-	"go.temporal.io/sdk/temporal"
 	"go.temporal.io/sdk/workflow"
 
 	"github.com/alexandreroman/temporal-patterns-in-action/workers/events"
@@ -17,11 +16,11 @@ import (
 // disconnected context so they execute even if the workflow itself is
 // cancelled.
 func OrderProcessingWorkflow(ctx workflow.Context, input OrderInput) (OrderResult, error) {
+	// Activities use Temporal's default retry policy — unlimited attempts with
+	// exponential backoff — so random activity timeouts are eventually retried
+	// to success.
 	ao := workflow.ActivityOptions{
-		StartToCloseTimeout: 30 * time.Second,
-		RetryPolicy: &temporal.RetryPolicy{
-			MaximumAttempts: 3,
-		},
+		StartToCloseTimeout: 6 * time.Second,
 	}
 	ctx = workflow.WithActivityOptions(ctx, ao)
 	logger := workflow.GetLogger(ctx)
@@ -45,7 +44,7 @@ func OrderProcessingWorkflow(ctx workflow.Context, input OrderInput) (OrderResul
 		events.PublishFromWorkflow(ctx, Pattern, events.TypeCompensationStarted, struct{}{})
 		disconnected, _ := workflow.NewDisconnectedContext(ctx)
 		compCtx := workflow.WithActivityOptions(disconnected, workflow.ActivityOptions{
-			StartToCloseTimeout: 30 * time.Second,
+			StartToCloseTimeout: 6 * time.Second,
 		})
 		for i := len(compensations) - 1; i >= 0; i-- {
 			if err := compensations[i](compCtx); err != nil {

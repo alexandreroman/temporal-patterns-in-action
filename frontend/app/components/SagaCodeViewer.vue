@@ -98,9 +98,9 @@ const SOURCES: Record<Lang, SagaSource> = {
       "send-confirmation": [59, 65],
     },
     compLines: {
-      "release-inventory": [19, 25],
-      "refund-payment": [35, 41],
-      "cancel-shipment": [51, 57],
+      "release-inventory": [20, 24],
+      "refund-payment": [36, 40],
+      "cancel-shipment": [52, 56],
     },
   },
   java: {
@@ -142,9 +142,9 @@ const SOURCES: Record<Lang, SagaSource> = {
       "send-confirmation": [19, 20],
     },
     compLines: {
-      "release-inventory": [6, 7],
-      "refund-payment": [11, 12],
-      "cancel-shipment": [16, 17],
+      "release-inventory": [7, 7],
+      "refund-payment": [12, 12],
+      "cancel-shipment": [17, 17],
     },
   },
   python: {
@@ -201,9 +201,9 @@ const SOURCES: Record<Lang, SagaSource> = {
       "send-confirmation": [33, 36],
     },
     compLines: {
-      "release-inventory": [10, 13],
-      "refund-payment": [19, 22],
-      "cancel-shipment": [28, 31],
+      "release-inventory": [11, 13],
+      "refund-payment": [20, 22],
+      "cancel-shipment": [29, 31],
     },
   },
 };

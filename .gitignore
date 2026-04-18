@@ -15,3 +15,7 @@ Thumbs.db
 
 # Build artifacts (per-module .gitignores cover language specifics)
 tmp/
+
+# Claude Code local runtime state
+.claude/scheduled_tasks.lock
+.claude/worktrees/

@@ -83,7 +83,7 @@ function waitForStreamOpen(): Promise<void> {
     <!-- Control bar -->
     <div class="mt-2 flex flex-wrap items-center justify-between gap-3">
       <h1 class="text-2xl font-semibold tracking-tight text-slate-100">
-        Saga pattern &mdash; Order Processing
+        Saga Pattern &mdash; Order Processing
       </h1>
       <div class="flex items-center gap-2">
         <select

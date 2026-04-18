@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, ref, watch } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import type { SagaStartRequest, SagaStartResponse } from "~~/shared/types";
 
 useSeoMeta({ title: "Saga" });
@@ -15,6 +15,18 @@ const starting = ref(false);
 const finalError = ref<string | null>(null);
 
 const { events, status } = usePatternStream("saga", workflowId);
+
+const TERMINAL_EVENTS = new Set([
+  "progress.workflow.completed",
+  "progress.workflow.failed",
+  "progress.compensation.completed",
+]);
+
+const running = computed(() => {
+  if (starting.value) return true;
+  if (!workflowId.value) return false;
+  return !events.value.some((e) => TERMINAL_EVENTS.has(e.type));
+});
 
 function randomSuffix(): string {
   // 6-char base36 is plenty for a per-run order ID in a demo.
@@ -76,7 +88,8 @@ function waitForStreamOpen(): Promise<void> {
       <div class="flex items-center gap-2">
         <select
           v-model="form.failAt"
-          class="rounded-md border border-slate-700 bg-slate-800 px-2 py-1 text-xs text-slate-200"
+          :disabled="running"
+          class="rounded-md border border-slate-700 bg-slate-800 px-2 py-1 text-xs text-slate-200 disabled:opacity-50"
         >
           <option value="">No failure</option>
           <option value="inventory">Fail at reserve inventory</option>
@@ -86,11 +99,11 @@ function waitForStreamOpen(): Promise<void> {
         </select>
         <button
           type="button"
-          :disabled="starting"
+          :disabled="running"
           class="rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-emerald-500 disabled:opacity-50"
           @click="start"
         >
-          {{ starting ? "Starting…" : "Run saga" }}
+          {{ starting ? "Starting…" : running ? "Running…" : "Run saga" }}
         </button>
       </div>
     </div>

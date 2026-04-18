@@ -14,6 +14,11 @@ import (
 // disconnected context so they execute even if the workflow itself is
 // cancelled.
 func OrderProcessingWorkflow(ctx workflow.Context, input OrderInput) (OrderResult, error) {
+	// txID is the idempotency key every saga activity receives as its first
+	// business argument, so a retried attempt can be recognised as the same
+	// logical operation by the downstream service.
+	txID := input.TransactionID
+
 	// Activities use Temporal's default retry policy — unlimited attempts with
 	// exponential backoff — so random activity timeouts are eventually retried
 	// to success.
@@ -53,14 +58,14 @@ func OrderProcessingWorkflow(ctx workflow.Context, input OrderInput) (OrderResul
 	// Step 1 — reserve inventory
 	progress.CurrentStep = "reserve-inventory"
 	var itemID string
-	if err := workflow.ExecuteActivity(ctx, a.ReserveInventory, input).Get(ctx, &itemID); err != nil {
+	if err := workflow.ExecuteActivity(ctx, a.ReserveInventory, txID, input).Get(ctx, &itemID); err != nil {
 		progress.Failed = "reserve-inventory"
 		result.Status = "failed"
 		runCompensations()
 		return result, err
 	}
 	compensations = append(compensations, func(c workflow.Context) error {
-		return workflow.ExecuteActivity(c, a.ReleaseInventory, itemID).Get(c, nil)
+		return workflow.ExecuteActivity(c, a.ReleaseInventory, txID, itemID).Get(c, nil)
 	})
 	progress.Completed = append(progress.Completed, "reserve-inventory")
 	result.Confirmed = append(result.Confirmed, itemID)
@@ -68,14 +73,14 @@ func OrderProcessingWorkflow(ctx workflow.Context, input OrderInput) (OrderResul
 	// Step 2 — charge payment
 	progress.CurrentStep = "charge-payment"
 	var paymentID string
-	if err := workflow.ExecuteActivity(ctx, a.ChargePayment, input, itemID).Get(ctx, &paymentID); err != nil {
+	if err := workflow.ExecuteActivity(ctx, a.ChargePayment, txID, input, itemID).Get(ctx, &paymentID); err != nil {
 		progress.Failed = "charge-payment"
 		result.Status = "failed"
 		runCompensations()
 		return result, err
 	}
 	compensations = append(compensations, func(c workflow.Context) error {
-		return workflow.ExecuteActivity(c, a.RefundPayment, paymentID, input.Amount).Get(c, nil)
+		return workflow.ExecuteActivity(c, a.RefundPayment, txID, paymentID, input.Amount).Get(c, nil)
 	})
 	progress.Completed = append(progress.Completed, "charge-payment")
 	result.Confirmed = append(result.Confirmed, paymentID)
@@ -83,14 +88,14 @@ func OrderProcessingWorkflow(ctx workflow.Context, input OrderInput) (OrderResul
 	// Step 3 — ship the order
 	progress.CurrentStep = "ship-order"
 	var trackingID string
-	if err := workflow.ExecuteActivity(ctx, a.ShipOrder, input).Get(ctx, &trackingID); err != nil {
+	if err := workflow.ExecuteActivity(ctx, a.ShipOrder, txID, input).Get(ctx, &trackingID); err != nil {
 		progress.Failed = "ship-order"
 		result.Status = "failed"
 		runCompensations()
 		return result, err
 	}
 	compensations = append(compensations, func(c workflow.Context) error {
-		return workflow.ExecuteActivity(c, a.CancelShipment, trackingID).Get(c, nil)
+		return workflow.ExecuteActivity(c, a.CancelShipment, txID, trackingID).Get(c, nil)
 	})
 	progress.Completed = append(progress.Completed, "ship-order")
 	result.Confirmed = append(result.Confirmed, trackingID)
@@ -98,7 +103,7 @@ func OrderProcessingWorkflow(ctx workflow.Context, input OrderInput) (OrderResul
 	// Step 4 — send confirmation
 	progress.CurrentStep = "send-confirmation"
 	var email string
-	if err := workflow.ExecuteActivity(ctx, a.SendConfirmation, input).Get(ctx, &email); err != nil {
+	if err := workflow.ExecuteActivity(ctx, a.SendConfirmation, txID, input).Get(ctx, &email); err != nil {
 		progress.Failed = "send-confirmation"
 		result.Status = "failed"
 		runCompensations()

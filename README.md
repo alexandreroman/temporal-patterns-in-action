@@ -24,7 +24,7 @@ trigger and observe them.
 
 - [Docker](https://www.docker.com/) (or Podman) — to run
   the Temporal dev server locally.
-- [Go](https://go.dev/dl/) 1.24+ — to build the workers.
+- [Go](https://go.dev/dl/) 1.25+ — to build the workers.
 - [Node.js](https://nodejs.org/) 22 LTS+ and
   [pnpm](https://pnpm.io/) — to run the Nuxt frontend.
   Enable pnpm with `corepack enable`.
@@ -70,12 +70,16 @@ temporal workflow start \
   --task-queue patterns-saga \
   --type OrderProcessingWorkflow \
   --workflow-id saga-cli-demo \
-  --input '{"customerId":"alice","orderId":"order-42","amount":1200}'
+  --input '{"customerId":"alice","orderId":"order-42","amount":1200,"transactionId":"tx-order-42"}'
 ```
 
-Set `"failAt"` to `"inventory"`, `"payment"`,
-`"shipping"`, or `"notification"` in the input
-to force a compensation scenario.
+`transactionId` is the saga's idempotency key: the
+same value is reused on every activity retry, so
+downstream services can deduplicate. Set `"failAt"`
+to `"inventory"`, `"payment"`, or `"shipping"`
+in the input to force a compensation scenario.
+(`"notification"` fails without triggering a
+compensation since it is the terminal step.)
 
 Query progress:
 

@@ -18,3 +18,4 @@
 - [Rogue host workers](references/feedback_rogue_host_workers.md) — stale `go run` worker on the host can steal tasks from the container; check `task-queue describe` before blaming Docker caching.
 - [SSE endpoints need an immediate initial push](references/feedback_sse_initial_flush.md) — push one chunk right after `subscribe()` or Node/h3 holds response headers until the 15s heartbeat, blocking `EventSource.onopen`.
 - [Frontend component conventions](references/feedback_frontend_component_conventions.md) — generic shells in `components/`; pattern logic lives in `<Pattern><Component>.vue` wrappers.
+- [Saga activities: txID first](references/feedback_saga_idempotency_key_first.md) — saga activities take `txID` as the first business arg after `ctx`; keeps the idempotency key visible in logs and UI.

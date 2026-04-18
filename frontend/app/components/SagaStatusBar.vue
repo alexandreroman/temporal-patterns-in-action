@@ -20,15 +20,9 @@ const STEP_LABELS: Record<string, string> = {
   "ship-order": "Ship order",
   "cancel-shipment": "Cancel shipment",
   "send-confirmation": "Send confirmation",
-  "retract-email": "Retract email",
 };
 
-const COMP_STEPS = new Set([
-  "release-inventory",
-  "refund-payment",
-  "cancel-shipment",
-  "retract-email",
-]);
+const COMP_STEPS = new Set(["release-inventory", "refund-payment", "cancel-shipment"]);
 
 const derived = computed<Derived>(() => {
   if (props.events.length === 0) {
@@ -47,17 +41,19 @@ const derived = computed<Derived>(() => {
     switch (env.type) {
       case "progress.step.started":
         tone = "running";
-        message =
-          compensating || COMP_STEPS.has(step) ? `Compensating: ${label}` : `Activity: ${label}`;
+        if (COMP_STEPS.has(step)) compensating = true;
+        message = compensating ? `Compensating: ${label}` : `Activity: ${label}`;
         break;
       case "progress.step.completed":
         message =
           compensating || COMP_STEPS.has(step) ? `${label} — reverted` : `${label} — completed`;
         break;
       case "progress.step.failed":
+        // Don't flip `compensating` here: the worker interceptor emits
+        // progress.step.failed on every retry attempt, so a retriable
+        // timeout would be indistinguishable from a terminal failure.
         tone = "error";
         message = `${label} failed`;
-        if (step in STEP_LABELS && !COMP_STEPS.has(step)) compensating = true;
         break;
       case "progress.workflow.completed":
         tone = "success";

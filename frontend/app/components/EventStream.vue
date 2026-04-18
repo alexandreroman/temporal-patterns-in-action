@@ -2,14 +2,10 @@
 import { computed } from "vue";
 import type { EventEnvelope } from "~~/shared/events";
 
-const props = withDefaults(
-  defineProps<{
-    events: EventEnvelope[];
-    labelFor: (env: EventEnvelope) => string;
-    title?: string;
-  }>(),
-  { title: "Event stream" },
-);
+const props = defineProps<{
+  events: EventEnvelope[];
+  labelFor: (env: EventEnvelope) => string;
+}>();
 
 const reversed = computed(() => [...props.events].reverse());
 
@@ -56,7 +52,7 @@ function formatTime(env: EventEnvelope): string {
       <div
         class="border-b-2 border-transparent px-4 py-2 text-xs font-medium text-slate-700 dark:text-slate-300"
       >
-        {{ title }}
+        Event stream
       </div>
     </div>
     <div class="h-80 overflow-y-auto px-3 py-2">

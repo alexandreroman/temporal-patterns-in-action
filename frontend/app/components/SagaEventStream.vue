@@ -39,8 +39,6 @@ function eventLabel(env: EventEnvelope): string {
       return `Shipment cancelled #${data.trackingId}`;
     case "saga.notification.sent":
       return `Confirmation sent to ${data.email}`;
-    case "saga.notification.retracted":
-      return `Email retracted from ${data.email}`;
     default:
       if (env.type.startsWith("saga.")) {
         return shortType(env.type);

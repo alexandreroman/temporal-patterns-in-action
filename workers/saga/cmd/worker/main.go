@@ -56,7 +56,6 @@ func main() {
 	w.RegisterActivityWithOptions(a.ShipOrder, activity.RegisterOptions{Name: "ship-order"})
 	w.RegisterActivityWithOptions(a.CancelShipment, activity.RegisterOptions{Name: "cancel-shipment"})
 	w.RegisterActivityWithOptions(a.SendConfirmation, activity.RegisterOptions{Name: "send-confirmation"})
-	w.RegisterActivityWithOptions(a.RetractEmail, activity.RegisterOptions{Name: "retract-email"})
 
 	log.Printf("saga worker connected to %s — listening on task queue: %s", address, saga.TaskQueue)
 

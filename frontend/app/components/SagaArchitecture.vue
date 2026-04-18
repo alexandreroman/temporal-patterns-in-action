@@ -54,7 +54,6 @@ const STEP_TO_SVC: Record<string, { node: NodeId; edge: EdgeId }> = {
   "ship-order": { node: "svc_shipping", edge: "e_wk_shipping" },
   "cancel-shipment": { node: "svc_shipping", edge: "e_wk_shipping" },
   "send-confirmation": { node: "svc_notif", edge: "e_wk_notif" },
-  "retract-email": { node: "svc_notif", edge: "e_wk_notif" },
 };
 
 function initialNodes(): Nodes {
@@ -84,12 +83,7 @@ const props = defineProps<{
   events: EventEnvelope[];
 }>();
 
-const FORWARD_STEPS = new Set([
-  "reserve-inventory",
-  "charge-payment",
-  "ship-order",
-  "send-confirmation",
-]);
+const COMP_STEPS = new Set(["release-inventory", "refund-payment", "cancel-shipment"]);
 
 const arch = computed<ArchState>(() => {
   const nodes: Nodes = initialNodes();
@@ -109,6 +103,7 @@ const arch = computed<ArchState>(() => {
       case "progress.step.started": {
         const step = String(data.step ?? "");
         const svc = STEP_TO_SVC[step];
+        if (COMP_STEPS.has(step)) compensating = true;
         if (svc) {
           resetServices(nodes, edges);
           nodes.ntmp = "active";
@@ -130,6 +125,9 @@ const arch = computed<ArchState>(() => {
       }
 
       case "progress.step.failed": {
+        // Don't flip `compensating` here: the worker interceptor emits
+        // progress.step.failed on every retry attempt, so a retriable
+        // timeout would be indistinguishable from a terminal failure.
         const step = String(data.step ?? "");
         const svc = STEP_TO_SVC[step];
         if (svc) {
@@ -137,7 +135,6 @@ const arch = computed<ArchState>(() => {
           edges[svc.edge] = "error";
           nodes.nwk = "error";
         }
-        if (FORWARD_STEPS.has(step)) compensating = true;
         break;
       }
 
@@ -218,7 +215,7 @@ const edgeStroke: Record<EdgeState, string> = {
 const edgeAnim: Record<EdgeState, string> = {
   idle: "",
   active: "edge-flow-active",
-  warn: "edge-flow-warn",
+  warn: "edge-flow-active",
   error: "edge-flow-error",
 };
 </script>

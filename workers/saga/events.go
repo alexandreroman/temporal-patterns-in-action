@@ -21,7 +21,6 @@ const (
 	TypeOrderShipped      = "saga.shipping.shipped"
 	TypeShipmentCancelled = "saga.shipping.cancelled"
 	TypeConfirmationSent  = "saga.notification.sent"
-	TypeEmailRetracted    = "saga.notification.retracted"
 )
 
 // publishBusiness emits a business event from within an activity. A nil

@@ -24,21 +24,20 @@ type StepId = (typeof STEP_IDS)[number];
 interface Step {
   id: StepId;
   name: string;
-  comp: string;
+  comp?: string;
 }
 
 const STEPS: readonly Step[] = [
   { id: "reserve-inventory", name: "Reserve inventory", comp: "Release inventory" },
   { id: "charge-payment", name: "Charge payment", comp: "Refund payment" },
   { id: "ship-order", name: "Ship order", comp: "Cancel shipment" },
-  { id: "send-confirmation", name: "Send confirmation", comp: "Retract email" },
+  { id: "send-confirmation", name: "Send confirmation" },
 ];
 
 const COMP_TO_STEP: Record<string, StepId> = {
   "release-inventory": "reserve-inventory",
   "refund-payment": "charge-payment",
   "cancel-shipment": "ship-order",
-  "retract-email": "send-confirmation",
 };
 
 const FORWARD_IDS = new Set<string>(STEP_IDS);
@@ -66,6 +65,7 @@ const states = computed<Record<StepId, StepState>>(() => {
         const compTarget = COMP_TO_STEP[rawStep];
         if (compTarget) {
           map[compTarget] = "compensating";
+          compensating = true;
         } else if (FORWARD_IDS.has(rawStep)) {
           map[rawStep as StepId] = "active";
         }
@@ -81,9 +81,13 @@ const states = computed<Record<StepId, StepState>>(() => {
         break;
       }
       case "progress.step.failed": {
+        // Don't flip `compensating` here: the interceptor emits
+        // progress.step.failed on every retry attempt, so a retriable
+        // timeout would look like a terminal failure. The real signal
+        // that compensation has begun is a compensation step being
+        // started — handled above.
         if (FORWARD_IDS.has(rawStep)) {
           map[rawStep as StepId] = "failed";
-          compensating = true;
         }
         break;
       }
@@ -167,7 +171,7 @@ const chipClass: Record<StepState, string> = {
             </svg>
             <span>{{
               states[step.id] === "compensating" || states[step.id] === "reverted"
-                ? step.comp
+                ? (step.comp ?? step.name)
                 : step.name
             }}</span>
           </div>

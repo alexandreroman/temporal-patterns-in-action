@@ -40,9 +40,9 @@ func (a *Activities) maybeInjectRandomTimeout(ctx context.Context) error {
 }
 
 // ReserveInventory reserves stock for the order and returns an item/reservation ID.
-func (a *Activities) ReserveInventory(ctx context.Context, input OrderInput) (string, error) {
+func (a *Activities) ReserveInventory(ctx context.Context, txID string, input OrderInput) (string, error) {
 	activity.GetLogger(ctx).Info("Reserving inventory",
-		"customer", input.CustomerID, "order", input.OrderID, "transactionId", input.TransactionID)
+		"customer", input.CustomerID, "order", input.OrderID, "transactionId", txID)
 	if err := a.maybeInjectRandomTimeout(ctx); err != nil {
 		return "", err
 	}
@@ -57,8 +57,8 @@ func (a *Activities) ReserveInventory(ctx context.Context, input OrderInput) (st
 }
 
 // ReleaseInventory compensates ReserveInventory.
-func (a *Activities) ReleaseInventory(ctx context.Context, itemID string) error {
-	activity.GetLogger(ctx).Info("Releasing inventory", "id", itemID)
+func (a *Activities) ReleaseInventory(ctx context.Context, txID string, itemID string) error {
+	activity.GetLogger(ctx).Info("Releasing inventory", "id", itemID, "transactionId", txID)
 	time.Sleep(compensationDelay)
 	a.publishBusiness(ctx, TypeInventoryReleased, map[string]any{"itemId": itemID})
 	return nil
@@ -66,9 +66,9 @@ func (a *Activities) ReleaseInventory(ctx context.Context, itemID string) error 
 
 // ChargePayment charges the customer for the order. The reservation ID keeps
 // the call idempotent on the payment provider side.
-func (a *Activities) ChargePayment(ctx context.Context, input OrderInput, reservationID string) (string, error) {
+func (a *Activities) ChargePayment(ctx context.Context, txID string, input OrderInput, reservationID string) (string, error) {
 	activity.GetLogger(ctx).Info("Charging payment",
-		"customer", input.CustomerID, "amount", input.Amount, "reservation", reservationID, "transactionId", input.TransactionID)
+		"customer", input.CustomerID, "amount", input.Amount, "reservation", reservationID, "transactionId", txID)
 	if err := a.maybeInjectRandomTimeout(ctx); err != nil {
 		return "", err
 	}
@@ -82,16 +82,16 @@ func (a *Activities) ChargePayment(ctx context.Context, input OrderInput, reserv
 }
 
 // RefundPayment compensates ChargePayment.
-func (a *Activities) RefundPayment(ctx context.Context, paymentID string, amount int) error {
-	activity.GetLogger(ctx).Info("Refunding payment", "payment", paymentID, "amount", amount)
+func (a *Activities) RefundPayment(ctx context.Context, txID string, paymentID string, amount int) error {
+	activity.GetLogger(ctx).Info("Refunding payment", "payment", paymentID, "amount", amount, "transactionId", txID)
 	time.Sleep(compensationDelay)
 	a.publishBusiness(ctx, TypePaymentRefunded, map[string]any{"amount": amount})
 	return nil
 }
 
 // ShipOrder dispatches the order and returns a tracking ID.
-func (a *Activities) ShipOrder(ctx context.Context, input OrderInput) (string, error) {
-	activity.GetLogger(ctx).Info("Shipping order", "order", input.OrderID, "transactionId", input.TransactionID)
+func (a *Activities) ShipOrder(ctx context.Context, txID string, input OrderInput) (string, error) {
+	activity.GetLogger(ctx).Info("Shipping order", "order", input.OrderID, "transactionId", txID)
 	if err := a.maybeInjectRandomTimeout(ctx); err != nil {
 		return "", err
 	}
@@ -106,16 +106,16 @@ func (a *Activities) ShipOrder(ctx context.Context, input OrderInput) (string, e
 }
 
 // CancelShipment compensates ShipOrder.
-func (a *Activities) CancelShipment(ctx context.Context, trackingID string) error {
-	activity.GetLogger(ctx).Info("Cancelling shipment", "tracking", trackingID)
+func (a *Activities) CancelShipment(ctx context.Context, txID string, trackingID string) error {
+	activity.GetLogger(ctx).Info("Cancelling shipment", "tracking", trackingID, "transactionId", txID)
 	time.Sleep(compensationDelay)
 	a.publishBusiness(ctx, TypeShipmentCancelled, map[string]any{"trackingId": trackingID})
 	return nil
 }
 
 // SendConfirmation emails the customer that the order is confirmed.
-func (a *Activities) SendConfirmation(ctx context.Context, input OrderInput) (string, error) {
-	activity.GetLogger(ctx).Info("Sending confirmation", "customer", input.CustomerID, "transactionId", input.TransactionID)
+func (a *Activities) SendConfirmation(ctx context.Context, txID string, input OrderInput) (string, error) {
+	activity.GetLogger(ctx).Info("Sending confirmation", "customer", input.CustomerID, "transactionId", txID)
 	if err := a.maybeInjectRandomTimeout(ctx); err != nil {
 		return "", err
 	}
@@ -127,12 +127,4 @@ func (a *Activities) SendConfirmation(ctx context.Context, input OrderInput) (st
 	email := fmt.Sprintf("%s@example.com", input.CustomerID)
 	a.publishBusiness(ctx, TypeConfirmationSent, map[string]any{"email": email})
 	return email, nil
-}
-
-// RetractEmail compensates SendConfirmation.
-func (a *Activities) RetractEmail(ctx context.Context, email string) error {
-	activity.GetLogger(ctx).Info("Retracting confirmation email", "email", email)
-	time.Sleep(compensationDelay)
-	a.publishBusiness(ctx, TypeEmailRetracted, map[string]any{"email": email})
-	return nil
 }

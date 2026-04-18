@@ -8,7 +8,6 @@ const props = defineProps<{
   events: EventEnvelope[];
 }>();
 
-type Lang = CodeLang;
 const lang = useCodeLang();
 
 interface SagaSource extends CodeSource {
@@ -16,7 +15,7 @@ interface SagaSource extends CodeSource {
   compLines: Record<string, [number, number]>;
 }
 
-const SOURCES: Record<Lang, SagaSource> = {
+const SOURCES: Record<CodeLang, SagaSource> = {
   go: {
     label: "Go",
     lines: [

@@ -115,19 +115,19 @@ equivalents:
   workflow.started envelope.
 - **Compensation state** — components set
   `compensating = true` on the first
-  `progress.step.failed` whose step is a
-  *forward* activity (i.e. belongs to the
-  pattern's step list rather than its
-  compensation list). Once set, `compensating`
-  stays true for the rest of the stream. Under
-  that flag, subsequent `progress.step.started`
-  events for compensation activities
-  (release-inventory, refund-payment,
-  cancel-shipment, retract-email) render with
-  the amber "warn" tone; the final
+  `progress.step.started` whose step is a
+  *compensation* activity (release-inventory,
+  refund-payment, cancel-shipment). Do **not**
+  flip the flag on `progress.step.failed` for
+  a forward step: the worker interceptor emits
+  that event on every retry attempt, so a
+  transient timeout would be indistinguishable
+  from a terminal failure and would spuriously
+  repaint previously-completed steps as
+  "reverted". The final
   `progress.workflow.failed` synthesised by
   the Nuxt server upgrades the status bar to
-  "Saga compensated".
+  "Saga compensated" when the flag is set.
 
 **Why:** in the saga pattern, a workflow-scope
 compensation bracket is redundant information —
@@ -165,14 +165,20 @@ references.
 ## Publisher fallback
 
 `events.NewPublisher(url)` returns a
-`NopPublisher` when the URL is empty or the
-NATS dial fails. Workers stay runnable without
-NATS for local dev and unit tests.
+`NopPublisher` when `url` is empty; if the dial
+fails it returns an error, and each worker's
+`main` is responsible for catching the error and
+substituting a `NopPublisher` so the worker stays
+runnable without NATS for local dev and unit
+tests.
 
 **Why:** demos must not require the full infra
 to come up. Tests pass with a nil or Nop
 publisher. A failing NATS does not kill the
-worker.
+worker. Keeping the dial-failure fallback in
+`main` (not in `NewPublisher`) lets each worker
+decide its own tolerance — e.g. a future pattern
+could choose to fail fast instead.
 
 ## When to migrate to JetStream
 

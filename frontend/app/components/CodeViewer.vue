@@ -86,7 +86,7 @@ watch(
     </div>
     <div
       ref="scrollerRef"
-      class="shiki-code max-h-72 overflow-auto bg-white dark:bg-slate-900 p-4 font-mono text-[11px] leading-relaxed"
+      class="shiki-code max-h-80 overflow-auto bg-white dark:bg-slate-900 p-4 font-mono text-[11px] leading-relaxed"
     >
       <span
         v-for="(tokens, idx) in currentTokens"

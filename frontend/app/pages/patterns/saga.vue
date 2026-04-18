@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, ref } from "vue";
+import { reactive, ref, watch } from "vue";
 import type { SagaStartRequest, SagaStartResponse } from "~~/shared/types";
 
 useSeoMeta({ title: "Saga" });
@@ -25,8 +25,13 @@ async function start() {
   finalError.value = null;
   starting.value = true;
   const orderId = `order-${randomSuffix()}`;
+  // Subscribe BEFORE starting the workflow: core NATS has no replay,
+  // so the early progress.workflow.started event would be lost if the
+  // SSE stream opened only after the start() response.
+  workflowId.value = `saga-${orderId}`;
   try {
-    const response = await $fetch<SagaStartResponse>("/api/saga/start", {
+    await waitForStreamOpen();
+    await $fetch<SagaStartResponse>("/api/saga/start", {
       method: "POST",
       body: {
         customerId: "alice",
@@ -35,12 +40,27 @@ async function start() {
         failAt: form.failAt,
       },
     });
-    workflowId.value = response.workflowId;
   } catch (error) {
     finalError.value = error instanceof Error ? error.message : String(error);
+    workflowId.value = null;
   } finally {
     starting.value = false;
   }
+}
+
+function waitForStreamOpen(): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (status.value === "open") return resolve();
+    const stop = watch(status, (s) => {
+      if (s === "open") {
+        stop();
+        resolve();
+      } else if (s === "error" || s === "closed") {
+        stop();
+        reject(new Error(`event stream ${s}`));
+      }
+    });
+  });
 }
 </script>
 
@@ -73,19 +93,6 @@ async function start() {
           {{ starting ? "Starting…" : "Run saga" }}
         </button>
       </div>
-    </div>
-
-    <div
-      v-if="workflowId"
-      class="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-400"
-    >
-      <span>
-        Workflow ID:
-        <code class="rounded bg-slate-800 px-1.5 py-0.5 text-slate-200">
-          {{ workflowId }}
-        </code>
-      </span>
-      <span class="text-slate-500">stream: {{ status }}</span>
     </div>
 
     <!-- Architecture diagram -->

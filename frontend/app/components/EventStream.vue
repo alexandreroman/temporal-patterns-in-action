@@ -43,6 +43,7 @@ function formatTime(env: EventEnvelope): string {
   const t = new Date(env.time).getTime();
   if (Number.isNaN(t)) return env.time;
   const elapsed = Math.max(0, (t - startTime.value) / 1000);
+  if (elapsed === 0) return "0";
   return `+${elapsed.toFixed(1)}s`;
 }
 </script>

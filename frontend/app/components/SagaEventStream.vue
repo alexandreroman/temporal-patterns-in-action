@@ -27,7 +27,7 @@ const DOT_CLS: Record<DotColor, string> = {
 };
 
 function shortType(type: string): string {
-  return type.replace(/^(progress|domain)\./, "");
+  return type.replace(/^(progress|saga)\./, "");
 }
 
 function formatTime(iso: string): string {
@@ -59,24 +59,24 @@ function eventLabel(env: EventEnvelope): string {
       return "Compensations started";
     case "progress.compensation.completed":
       return "Compensations completed";
-    case "domain.inventory.reserved":
+    case "saga.inventory.reserved":
       return `Inventory reserved #${data.itemId}`;
-    case "domain.inventory.released":
+    case "saga.inventory.released":
       return `Inventory released #${data.itemId}`;
-    case "domain.payment.charged":
+    case "saga.payment.charged":
       return `Payment charged EUR${data.amount}`;
-    case "domain.payment.refunded":
+    case "saga.payment.refunded":
       return `Payment refunded EUR${data.amount}`;
-    case "domain.shipping.shipped":
+    case "saga.shipping.shipped":
       return `Order shipped #${data.trackingId}`;
-    case "domain.shipping.cancelled":
+    case "saga.shipping.cancelled":
       return `Shipment cancelled #${data.trackingId}`;
-    case "domain.notification.sent":
+    case "saga.notification.sent":
       return `Confirmation sent to ${data.email}`;
-    case "domain.notification.retracted":
+    case "saga.notification.retracted":
       return `Email retracted from ${data.email}`;
     default:
-      if (env.type.startsWith("domain.")) {
+      if (env.type.startsWith("saga.")) {
         return shortType(env.type);
       }
       return env.type;

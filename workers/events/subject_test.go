@@ -11,7 +11,7 @@ func TestSubject(t *testing.T) {
 		want     string
 	}{
 		{"saga progress", "saga", "wf-123", CategoryProgress, "patterns.saga.wf-123.progress"},
-		{"saga domain", "saga", "wf-abc", CategoryDomain, "patterns.saga.wf-abc.domain"},
+		{"saga business", "saga", "wf-abc", CategoryBusiness, "patterns.saga.wf-abc.business"},
 		{"empty workflow", "saga", "", CategoryProgress, "patterns.saga..progress"},
 	}
 	for _, tc := range tests {
@@ -31,9 +31,9 @@ func TestCategoryOf(t *testing.T) {
 		{TypeWorkflowStarted, CategoryProgress},
 		{TypeStepFailed, CategoryProgress},
 		{TypeCompensationCompleted, CategoryProgress},
-		{"domain.car.reserved", CategoryDomain},
+		{"saga.car.reserved", CategoryBusiness},
 		{"", ""},
-		{"nodot", ""},
+		{"nodot", CategoryBusiness},
 	}
 	for _, tc := range tests {
 		t.Run(tc.in, func(t *testing.T) {

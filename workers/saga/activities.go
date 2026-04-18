@@ -32,7 +32,7 @@ func (a *Activities) ReserveInventory(ctx context.Context, input OrderInput) (st
 			"inventory unavailable", "InventoryUnavailable", nil)
 	}
 	itemID := fmt.Sprintf("inv-%s", input.OrderID)
-	a.publishDomain(ctx, DomainInventoryReserved, map[string]any{"itemId": itemID})
+	a.publishBusiness(ctx, TypeInventoryReserved, map[string]any{"itemId": itemID})
 	return itemID, nil
 }
 
@@ -40,7 +40,7 @@ func (a *Activities) ReserveInventory(ctx context.Context, input OrderInput) (st
 func (a *Activities) ReleaseInventory(ctx context.Context, itemID string) error {
 	activity.GetLogger(ctx).Info("Releasing inventory", "id", itemID)
 	time.Sleep(compensationDelay)
-	a.publishDomain(ctx, DomainInventoryReleased, map[string]any{"itemId": itemID})
+	a.publishBusiness(ctx, TypeInventoryReleased, map[string]any{"itemId": itemID})
 	return nil
 }
 
@@ -54,7 +54,7 @@ func (a *Activities) ChargePayment(ctx context.Context, input OrderInput, reserv
 		return "", temporal.NewNonRetryableApplicationError(
 			"payment declined", "PaymentDeclined", nil)
 	}
-	a.publishDomain(ctx, DomainPaymentCharged, map[string]any{"amount": input.Amount})
+	a.publishBusiness(ctx, TypePaymentCharged, map[string]any{"amount": input.Amount})
 	return fmt.Sprintf("txn-%s", reservationID), nil
 }
 
@@ -62,7 +62,7 @@ func (a *Activities) ChargePayment(ctx context.Context, input OrderInput, reserv
 func (a *Activities) RefundPayment(ctx context.Context, transactionID string, amount int) error {
 	activity.GetLogger(ctx).Info("Refunding payment", "txn", transactionID, "amount", amount)
 	time.Sleep(compensationDelay)
-	a.publishDomain(ctx, DomainPaymentRefunded, map[string]any{"amount": amount})
+	a.publishBusiness(ctx, TypePaymentRefunded, map[string]any{"amount": amount})
 	return nil
 }
 
@@ -75,7 +75,7 @@ func (a *Activities) ShipOrder(ctx context.Context, input OrderInput) (string, e
 			"shipping unavailable", "ShippingUnavailable", nil)
 	}
 	trackingID := fmt.Sprintf("trk-%s", input.OrderID)
-	a.publishDomain(ctx, DomainOrderShipped, map[string]any{"trackingId": trackingID})
+	a.publishBusiness(ctx, TypeOrderShipped, map[string]any{"trackingId": trackingID})
 	return trackingID, nil
 }
 
@@ -83,7 +83,7 @@ func (a *Activities) ShipOrder(ctx context.Context, input OrderInput) (string, e
 func (a *Activities) CancelShipment(ctx context.Context, trackingID string) error {
 	activity.GetLogger(ctx).Info("Cancelling shipment", "tracking", trackingID)
 	time.Sleep(compensationDelay)
-	a.publishDomain(ctx, DomainShipmentCancelled, map[string]any{"trackingId": trackingID})
+	a.publishBusiness(ctx, TypeShipmentCancelled, map[string]any{"trackingId": trackingID})
 	return nil
 }
 
@@ -96,7 +96,7 @@ func (a *Activities) SendConfirmation(ctx context.Context, input OrderInput) (st
 			"notification unavailable", "NotificationUnavailable", nil)
 	}
 	email := fmt.Sprintf("%s@example.com", input.CustomerID)
-	a.publishDomain(ctx, DomainConfirmationSent, map[string]any{"email": email})
+	a.publishBusiness(ctx, TypeConfirmationSent, map[string]any{"email": email})
 	return email, nil
 }
 
@@ -104,6 +104,6 @@ func (a *Activities) SendConfirmation(ctx context.Context, input OrderInput) (st
 func (a *Activities) RetractEmail(ctx context.Context, email string) error {
 	activity.GetLogger(ctx).Info("Retracting confirmation email", "email", email)
 	time.Sleep(compensationDelay)
-	a.publishDomain(ctx, DomainEmailRetracted, map[string]any{"email": email})
+	a.publishBusiness(ctx, TypeEmailRetracted, map[string]any{"email": email})
 	return nil
 }

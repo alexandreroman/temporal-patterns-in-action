@@ -8,7 +8,7 @@
 > before updating. **Do NOT take any action** —
 > no tool calls, no file writes — until confirmed.
 
-- [Event architecture (NATS)](references/event-architecture.md) — subject hierarchy, envelope, progress/domain split, determinism rule, kebab-case activity naming gotcha.
+- [Event architecture (NATS)](references/event-architecture.md) — subject hierarchy, envelope, progress/business split, determinism rule, kebab-case activity naming gotcha.
 - [Dynamic NuxtLink via <component :is>](references/feedback_nuxtlink_dynamic_component.md) — use `resolveComponent("NuxtLink")`, not the string `'NuxtLink'`, or the element renders inert.
 - [Coding conventions](references/feedback_coding_conventions.md) — line lengths, markdown style, LTS rule, no compound shell commands, hyphenated `docker-compose` in committed files.
 - [Agent delegation](references/feedback_agent_delegation.md) — code-writer for code; code-reviewer for reviews; temporal skill for workflow work.

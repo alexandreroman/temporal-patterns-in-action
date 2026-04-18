@@ -13,7 +13,7 @@ import (
 	"github.com/alexandreroman/temporal-patterns-in-action/workers/events"
 )
 
-// recordingPublisher captures every domain event published by the activities
+// recordingPublisher captures every business event published by the activities
 // so tests can assert on compensation execution.
 type recordingPublisher struct {
 	mu    sync.Mutex
@@ -110,14 +110,14 @@ func TestOrderProcessingWorkflow_ShippingFails(t *testing.T) {
 	require.Equal(t, "ShippingUnavailable", appErr.Type())
 
 	published := pub.snapshot()
-	require.Contains(t, published, DomainInventoryReserved)
-	require.Contains(t, published, DomainPaymentCharged)
-	require.Contains(t, published, DomainPaymentRefunded)
-	require.Contains(t, published, DomainInventoryReleased)
+	require.Contains(t, published, TypeInventoryReserved)
+	require.Contains(t, published, TypePaymentCharged)
+	require.Contains(t, published, TypePaymentRefunded)
+	require.Contains(t, published, TypeInventoryReleased)
 
 	// Reverse order: refund happens before release.
-	refundIdx := indexOf(published, DomainPaymentRefunded)
-	releaseIdx := indexOf(published, DomainInventoryReleased)
+	refundIdx := indexOf(published, TypePaymentRefunded)
+	releaseIdx := indexOf(published, TypeInventoryReleased)
 	require.Less(t, refundIdx, releaseIdx, "refund must run before inventory release")
 }
 

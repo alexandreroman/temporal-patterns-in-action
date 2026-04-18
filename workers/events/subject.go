@@ -8,11 +8,17 @@ func Subject(pattern, workflowID, category string) string {
 	return "patterns." + pattern + "." + workflowID + "." + category
 }
 
-// CategoryOf returns the first segment of an event type (e.g. "progress" for
-// "progress.workflow.started"). Returns "" when the type has no separator.
+// CategoryOf classifies an event type into a subject category. Types prefixed
+// with "progress." are framework lifecycle events (CategoryProgress); anything
+// else is a pattern-specific business event (CategoryBusiness). An empty
+// string maps to "" so callers can distinguish a missing type from a valid
+// one.
 func CategoryOf(eventType string) string {
-	if i := strings.IndexByte(eventType, '.'); i >= 0 {
-		return eventType[:i]
+	if eventType == "" {
+		return ""
 	}
-	return ""
+	if strings.HasPrefix(eventType, "progress.") {
+		return CategoryProgress
+	}
+	return CategoryBusiness
 }

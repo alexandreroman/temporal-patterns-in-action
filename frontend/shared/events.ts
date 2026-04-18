@@ -14,20 +14,22 @@ export const PROGRESS_TYPES = [
 
 export type ProgressEventType = (typeof PROGRESS_TYPES)[number];
 
-export const SAGA_DOMAIN_TYPES = [
-  "domain.inventory.reserved",
-  "domain.inventory.released",
-  "domain.payment.charged",
-  "domain.payment.refunded",
-  "domain.shipping.shipped",
-  "domain.shipping.cancelled",
-  "domain.notification.sent",
-  "domain.notification.retracted",
+// Business events are prefixed by the pattern name (here: "saga.") to
+// guarantee no collision with types emitted by other patterns.
+export const SAGA_BUSINESS_TYPES = [
+  "saga.inventory.reserved",
+  "saga.inventory.released",
+  "saga.payment.charged",
+  "saga.payment.refunded",
+  "saga.shipping.shipped",
+  "saga.shipping.cancelled",
+  "saga.notification.sent",
+  "saga.notification.retracted",
 ] as const;
 
-export type SagaDomainEventType = (typeof SAGA_DOMAIN_TYPES)[number];
+export type SagaBusinessEventType = (typeof SAGA_BUSINESS_TYPES)[number];
 
-export type EventCategory = "progress" | "domain";
+export type EventCategory = "progress" | "business";
 
 export interface EventEnvelope<T = unknown> {
   specversion: "1.0";
@@ -90,8 +92,7 @@ export interface SagaEmailRetractedData {
 }
 
 export function categoryOf(type: string): EventCategory {
-  const head = type.split(".", 1)[0];
-  return head === "domain" ? "domain" : "progress";
+  return type.startsWith("progress.") ? "progress" : "business";
 }
 
 export function isEventEnvelope(value: unknown): value is EventEnvelope {

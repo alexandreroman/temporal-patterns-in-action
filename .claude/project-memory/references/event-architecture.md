@@ -1,6 +1,6 @@
 ---
 name: Event architecture (NATS)
-description: Cross-module contract and design decisions for workflow/domain events published over NATS from Go workers to the Nuxt frontend.
+description: Cross-module contract and design decisions for workflow progress and business events published over NATS from Go workers to the Nuxt frontend.
 type: project
 ---
 
@@ -16,19 +16,30 @@ needed later.
 
 **Subject:**
 `patterns.<pattern>.<workflowId>.<category>`
-where `<category>` is `progress` or `domain`.
+where `<category>` is `progress` or `business`.
 Wildcards: `patterns.<pattern>.<id>.>` for a
 per-workflow stream, `patterns.<pattern>.*.progress`
-for a pattern-wide progression feed, `patterns.>`
-for cluster-wide observation.
+for a pattern-wide progression feed,
+`patterns.<pattern>.*.business` for a
+pattern-wide business feed, `patterns.>` for
+cluster-wide observation.
 
 **Envelope** (CloudEvents-inspired JSON):
 `{ specversion, id (UUIDv4), source
-("patterns.<pattern>"), type
-("<category>.<subtype>"), workflowId, runId,
+("patterns.<pattern>"), type, workflowId, runId,
 time (RFC3339 UTC ms), data }`. Category is
-derived from the type prefix — never stored as
-a separate field.
+derived from the type — never stored as a
+separate field — via the rule:
+`HasPrefix(type, "progress.")` → `progress`,
+otherwise → `business`. Progress types follow
+`progress.<subtype>` (shared across patterns);
+business types follow `<pattern>.<subtype>`
+(e.g. `saga.inventory.reserved`). The
+asymmetry is intentional: pattern-prefixing
+business types eliminates any possible
+`type`-string collision between patterns, while
+progress types stay pattern-agnostic because
+they are emitted by a shared interceptor.
 
 **Why these shapes:** the subject encodes
 routing metadata for NATS-side filtering
@@ -36,7 +47,7 @@ without payload parsing, and the envelope is
 self-describing so the frontend can render
 events without hard-coded coupling to a pattern.
 
-## Progress vs domain split
+## Progress vs business split
 
 `progress.*` events (`workflow.started`,
 `step.started|completed|failed`,
@@ -46,12 +57,14 @@ automatically by a shared Temporal
 `WorkerInterceptor`. Every new pattern gets
 timeline tracking for free.
 
-`domain.*` events (e.g.
-`domain.inventory.reserved`,
-`domain.payment.charged`) stay explicit in
+Business events (e.g.
+`saga.inventory.reserved`,
+`saga.payment.charged`) stay explicit in
 activity code — they are the pedagogical
 payload of each pattern and the interceptor
-cannot infer them.
+cannot infer them. Each pattern uses its own
+name as the type prefix so business types
+never collide across patterns.
 
 **Why:** ~90 % of the lifecycle boilerplate
 disappears from business code, while the

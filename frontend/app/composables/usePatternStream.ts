@@ -36,7 +36,7 @@ export function usePatternStream(
     source.onmessage = (event) => {
       ingest(event.data);
     };
-    // Named events (progress.*, domain.*, heartbeat) do not fire onmessage —
+    // Named events (progress.*, saga.*, heartbeat) do not fire onmessage —
     // attach a generic listener via addEventListener for each dispatched type.
     const handleNamed = (event: MessageEvent) => ingest(event.data);
     for (const type of KNOWN_EVENT_TYPES) {
@@ -91,13 +91,13 @@ const KNOWN_EVENT_TYPES = [
   "progress.step.failed",
   "progress.compensation.started",
   "progress.compensation.completed",
-  "domain.inventory.reserved",
-  "domain.inventory.released",
-  "domain.payment.charged",
-  "domain.payment.refunded",
-  "domain.shipping.shipped",
-  "domain.shipping.cancelled",
-  "domain.notification.sent",
-  "domain.notification.retracted",
+  "saga.inventory.reserved",
+  "saga.inventory.released",
+  "saga.payment.charged",
+  "saga.payment.refunded",
+  "saga.shipping.shipped",
+  "saga.shipping.cancelled",
+  "saga.notification.sent",
+  "saga.notification.retracted",
   "heartbeat",
 ];

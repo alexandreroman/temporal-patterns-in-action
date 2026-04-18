@@ -11,7 +11,7 @@ trigger and observe them.
   watch it execute end to end.
 - **Polyglot by design** — Go workers host the workflows,
   TypeScript client drives them from a Nuxt server.
-- **Live events** — workers publish progress and domain
+- **Live events** — workers publish progress and business
   events to a NATS subject bus; the Nuxt server relays
   them to the browser over Server-Sent Events.
 - **Observable** — every run is inspectable in the bundled

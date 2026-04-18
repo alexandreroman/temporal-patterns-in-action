@@ -13,7 +13,7 @@ import (
 
 const (
 	mainStepDelay     = 2500 * time.Millisecond
-	compensationDelay = 1000 * time.Millisecond
+	compensationDelay = mainStepDelay
 )
 
 // Activities groups the saga pattern activities. Fields can be used for

@@ -103,7 +103,7 @@ function waitForStreamOpen(): Promise<void> {
     <!-- Pipeline -->
     <div class="mt-8 flex items-center justify-center gap-4">
       <h2 class="shrink-0 text-xs font-medium uppercase tracking-wide text-slate-400">
-        Pipeline:
+        Workflow:
       </h2>
       <SagaPipeline :events="events" />
     </div>

@@ -8,18 +8,11 @@ useHead({
 <template>
   <div class="dark min-h-screen bg-slate-950 text-slate-100">
     <header class="border-b border-slate-800 bg-slate-900/80 backdrop-blur">
-      <div class="mx-auto flex max-w-5xl items-center justify-between px-6 py-4">
-        <NuxtLink to="/" class="text-lg font-semibold tracking-tight text-slate-100">
-          Temporal Patterns in Action
+      <div class="mx-auto flex max-w-5xl items-center px-6 py-4">
+        <NuxtLink to="/" class="flex items-center gap-3">
+          <img :src="'/images/temporal-logo.png'" alt="Temporal" class="h-10 w-auto" />
+          <span class="-translate-x-[8px] translate-y-[1px] text-base leading-none tracking-tight text-[#f2f2f2]">patterns in action</span>
         </NuxtLink>
-        <a
-          href="https://docs.temporal.io"
-          target="_blank"
-          rel="noopener"
-          class="text-sm text-slate-400 hover:text-slate-100"
-        >
-          docs.temporal.io
-        </a>
       </div>
     </header>
 

@@ -1,0 +1,55 @@
+services:
+  temporal:
+    image: temporalio/temporal:latest
+    command: server start-dev --ip 0.0.0.0 --ui-port 8233
+    ports:
+      - "7233:7233" # gRPC — workers & clients
+      - "8233:8233" # Web UI — http://localhost:8233
+    healthcheck:
+      test: ["CMD-SHELL", "temporal operator cluster health"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  nats:
+    image: nats:2-alpine
+    command: ["-js", "-m", "8222"]
+    ports:
+      - "4222:4222" # client protocol — workers & frontend
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8222/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+      TEMPORAL_NAMESPACE: default
+      NATS_URL: nats://nats:4222
+    ports:
+      - "3000:3000"
+    depends_on:
+      temporal:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+    restart: unless-stopped
+
+  worker-saga:
+    build:
+      context: ./workers
+      args:
+        PATTERN: saga
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+      NATS_URL: nats://nats:4222
+    depends_on:
+      temporal:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+    restart: unless-stopped

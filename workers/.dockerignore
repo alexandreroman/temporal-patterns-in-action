@@ -1,0 +1,9 @@
+bin/
+tmp/
+*.test
+*.out
+coverage.*
+.DS_Store
+Dockerfile
+.dockerignore
+README.md

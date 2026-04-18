@@ -32,9 +32,12 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 503, statusMessage: "event bus unavailable" });
   }
 
-  const heartbeat = setInterval(() => {
-    void stream.push({ data: "", event: "heartbeat" });
-  }, HEARTBEAT_INTERVAL_MS);
+  // Push an immediate heartbeat so the response headers are flushed right
+  // away. Without it, Node/h3 holds headers until the first chunk, which
+  // delays EventSource.onopen on the client until the 15s interval fires.
+  const pushHeartbeat = () => void stream.push({ data: "", event: "heartbeat" });
+  pushHeartbeat();
+  const heartbeat = setInterval(pushHeartbeat, HEARTBEAT_INTERVAL_MS);
 
   stream.onClosed(() => {
     clearInterval(heartbeat);

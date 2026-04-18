@@ -2,6 +2,7 @@
 import { computed, ref, watch } from "vue";
 import { createHighlighter, type ThemedToken } from "shiki";
 import type { EventEnvelope } from "~~/shared/events";
+import type { CodeLang } from "~/composables/useCodeLang";
 
 /**
  * Code viewer that highlights the relevant lines
@@ -12,8 +13,8 @@ const props = defineProps<{
   events: EventEnvelope[];
 }>();
 
-type Lang = "go" | "java" | "python";
-const lang = ref<Lang>("go");
+type Lang = CodeLang;
+const lang = useCodeLang();
 
 interface CodeSource {
   label: string;

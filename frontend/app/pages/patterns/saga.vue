@@ -121,10 +121,10 @@ function waitForStreamOpen(): Promise<void> {
 
     <!-- Code + event stream -->
     <div class="mt-12 flex flex-col gap-3 lg:flex-row">
-      <div class="min-w-0 flex-1">
+      <div class="min-w-0 lg:w-[560px] lg:shrink-0">
         <SagaCodeViewer :events="events" />
       </div>
-      <div class="lg:w-[280px] lg:shrink-0">
+      <div class="min-w-0 flex-1">
         <SagaEventStream :events="events" />
       </div>
     </div>

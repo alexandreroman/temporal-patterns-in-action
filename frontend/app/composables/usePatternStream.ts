@@ -35,12 +35,6 @@ export function usePatternStream(
     source.onmessage = (event) => {
       ingest(event.data);
     };
-    // Named events (progress.*, saga.*, heartbeat) do not fire onmessage —
-    // attach a generic listener via addEventListener for each dispatched type.
-    const handleNamed = (event: MessageEvent) => ingest(event.data);
-    for (const type of KNOWN_EVENT_TYPES) {
-      source.addEventListener(type, handleNamed as EventListener);
-    }
   }
 
   function ingest(raw: string) {
@@ -80,23 +74,3 @@ export function usePatternStream(
 
   return { events, status };
 }
-
-const KNOWN_EVENT_TYPES = [
-  "progress.workflow.started",
-  "progress.workflow.completed",
-  "progress.workflow.failed",
-  "progress.step.started",
-  "progress.step.completed",
-  "progress.step.failed",
-  "progress.compensation.started",
-  "progress.compensation.completed",
-  "saga.inventory.reserved",
-  "saga.inventory.released",
-  "saga.payment.charged",
-  "saga.payment.refunded",
-  "saga.shipping.shipped",
-  "saga.shipping.cancelled",
-  "saga.notification.sent",
-  "saga.notification.retracted",
-  "heartbeat",
-];

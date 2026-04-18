@@ -23,7 +23,6 @@ export default defineEventHandler(async (event) => {
     unsubscribe = await subscribe(`patterns.${pattern}.${id}.>`, (envelope) => {
       void stream.push({
         id: envelope.id,
-        event: envelope.type,
         data: JSON.stringify(envelope),
       });
     });

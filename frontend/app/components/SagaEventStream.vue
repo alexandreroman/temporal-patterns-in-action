@@ -1,49 +1,12 @@
 <script setup lang="ts">
-import { computed } from "vue";
 import type { EventEnvelope } from "~~/shared/events";
 
-const props = defineProps<{
+defineProps<{
   events: EventEnvelope[];
 }>();
 
-const reversed = computed(() => [...props.events].reverse());
-
-const startTime = computed(() => {
-  const started = props.events.find((e) => e.type === "progress.workflow.started");
-  if (!started) return null;
-  const t = new Date(started.time).getTime();
-  return Number.isNaN(t) ? null : t;
-});
-
-type DotColor = "blue" | "green" | "red" | "amber";
-
-function dotColor(type: string): DotColor {
-  if (type.includes("started")) return "blue";
-  if (type.includes("completed")) return "green";
-  if (type.includes("failed")) return "red";
-  if (type.includes("compensation") || type.includes("cancelled") || type.includes("refunded"))
-    return "amber";
-  return "blue";
-}
-
-const DOT_CLS: Record<DotColor, string> = {
-  blue: "bg-blue-500",
-  green: "bg-emerald-500",
-  red: "bg-rose-500",
-  amber: "bg-amber-500",
-};
-
 function shortType(type: string): string {
   return type.replace(/^(progress|saga)\./, "");
-}
-
-function formatTime(env: EventEnvelope): string {
-  if (env.type === "progress.workflow.started") return "0.0";
-  if (startTime.value === null) return "";
-  const t = new Date(env.time).getTime();
-  if (Number.isNaN(t)) return env.time;
-  const elapsed = Math.max(0, (t - startTime.value) / 1000);
-  return `+${elapsed.toFixed(1)}s`;
 }
 
 function eventLabel(env: EventEnvelope): string {
@@ -94,33 +57,5 @@ function eventLabel(env: EventEnvelope): string {
 </script>
 
 <template>
-  <div
-    class="flex flex-col overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700"
-  >
-    <div class="border-b border-slate-200 dark:border-slate-700">
-      <div
-        class="border-b-2 border-transparent px-4 py-2 text-xs font-medium text-slate-700 dark:text-slate-300"
-      >
-        Event stream
-      </div>
-    </div>
-    <div class="max-h-72 flex-1 overflow-y-auto px-3 py-2">
-      <p v-if="events.length === 0" class="py-4 text-center text-xs text-slate-400">
-        No events yet.
-      </p>
-      <div
-        v-for="env in reversed"
-        :key="env.id"
-        class="flex items-baseline gap-2 border-b border-slate-100 py-1.5 text-[11px] last:border-0 dark:border-slate-800"
-      >
-        <span class="mt-1 size-1.5 shrink-0 rounded-full" :class="DOT_CLS[dotColor(env.type)]" />
-        <span class="w-12 shrink-0 text-right font-mono text-[10px] text-slate-400">
-          {{ formatTime(env) }}
-        </span>
-        <span class="text-slate-600 dark:text-slate-400">
-          {{ eventLabel(env) }}
-        </span>
-      </div>
-    </div>
-  </div>
+  <EventStream :events="events" :label-for="eventLabel" />
 </template>

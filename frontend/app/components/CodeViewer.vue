@@ -1,0 +1,123 @@
+<script setup lang="ts">
+import { computed, ref, watch } from "vue";
+import { createHighlighter, type ThemedToken } from "shiki";
+import type { CodeLang } from "~/composables/useCodeLang";
+import type { CodeSource } from "~/types/code-viewer";
+
+const props = defineProps<{
+  sources: Record<string, CodeSource>;
+  highlight: [number, number] | null;
+}>();
+
+const lang = useCodeLang();
+
+const highlighter = await createHighlighter({
+  themes: ["github-light", "github-dark"],
+  langs: ["go", "java", "python"],
+});
+
+const TOKENIZED = computed<Record<string, ThemedToken[][]>>(() => {
+  const out: Record<string, ThemedToken[][]> = {};
+  for (const [key, src] of Object.entries(props.sources)) {
+    out[key] = highlighter.codeToTokens(src.lines.join("\n"), {
+      lang: key as CodeLang,
+      themes: { light: "github-light", dark: "github-dark" },
+      defaultColor: false,
+    }).tokens;
+  }
+  return out;
+});
+
+const currentTokens = computed(() => TOKENIZED.value[lang.value] ?? []);
+
+const scrollerRef = ref<HTMLElement | null>(null);
+const lineRefs = ref<(HTMLElement | null)[]>([]);
+
+// Why: scrollIntoView() would scroll the page too; manually moving the scroller keeps the jump local.
+watch(
+  [lang, () => props.highlight],
+  ([, highlight]) => {
+    const scroller = scrollerRef.value;
+    if (!scroller) return;
+
+    if (highlight === null) {
+      scroller.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
+    const [start, end] = highlight;
+    const startEl = lineRefs.value[start];
+    const endEl = lineRefs.value[end] ?? startEl;
+    if (!startEl || !endEl) return;
+
+    const scrollerRect = scroller.getBoundingClientRect();
+    const offset = startEl.getBoundingClientRect().top - scrollerRect.top + scroller.scrollTop;
+    const rangeHeight = endEl.getBoundingClientRect().bottom - startEl.getBoundingClientRect().top;
+
+    const visibleTop = scroller.scrollTop;
+    const visibleBottom = visibleTop + scroller.clientHeight;
+    if (offset >= visibleTop && offset + rangeHeight <= visibleBottom) return;
+
+    const desired = offset - (scroller.clientHeight - rangeHeight) / 2;
+    const max = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
+    const clamped = Math.max(0, Math.min(desired, max));
+    scroller.scrollTo({ top: clamped, behavior: "smooth" });
+  },
+  { flush: "post" },
+);
+</script>
+
+<template>
+  <div class="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
+    <div class="flex border-b border-slate-200 dark:border-slate-700">
+      <button
+        v-for="(src, key) in sources"
+        :key="key"
+        class="px-4 py-2 text-xs font-mono transition-colors border-b-2"
+        :class="
+          key === lang
+            ? 'border-blue-500 text-slate-900 dark:text-slate-100'
+            : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
+        "
+        @click="lang = key as CodeLang"
+      >
+        {{ src.label }}
+      </button>
+    </div>
+    <div
+      ref="scrollerRef"
+      class="shiki-code max-h-72 overflow-auto bg-white dark:bg-slate-900 p-4 font-mono text-[11px] leading-relaxed"
+    >
+      <span
+        v-for="(tokens, idx) in currentTokens"
+        :key="idx"
+        :ref="(el) => (lineRefs[idx] = el as HTMLElement | null)"
+        class="block whitespace-pre rounded px-2 py-px transition-colors duration-300"
+        :class="
+          highlight && idx >= highlight[0] && idx <= highlight[1]
+            ? 'bg-blue-50 dark:bg-blue-950'
+            : ''
+        "
+      >
+        <template v-if="tokens.length">
+          <span v-for="(token, tIdx) in tokens" :key="tIdx" :style="token.htmlStyle">{{
+            token.content
+          }}</span>
+        </template>
+        <template v-else>&nbsp;</template>
+      </span>
+    </div>
+  </div>
+</template>
+
+<style>
+/* Dual-theme Shiki emits `--shiki-light` / `--shiki-dark` CSS vars on every
+   token. `defaultColor: false` means no inline color is set, so we pick one
+   explicitly based on the ancestor `.dark` class (matches main.css). */
+.shiki-code span {
+  color: var(--shiki-light);
+}
+.dark .shiki-code span {
+  color: var(--shiki-dark);
+}
+</style>

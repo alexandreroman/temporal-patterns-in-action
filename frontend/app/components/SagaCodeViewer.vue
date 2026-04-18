@@ -1,13 +1,8 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
-import { createHighlighter, type ThemedToken } from "shiki";
+import { computed } from "vue";
 import type { EventEnvelope } from "~~/shared/events";
 import type { CodeLang } from "~/composables/useCodeLang";
-
-/**
- * Code viewer that highlights the relevant lines
- * of the saga workflow based on the live event stream.
- */
+import type { CodeSource } from "~/types/code-viewer";
 
 const props = defineProps<{
   events: EventEnvelope[];
@@ -16,14 +11,12 @@ const props = defineProps<{
 type Lang = CodeLang;
 const lang = useCodeLang();
 
-interface CodeSource {
-  label: string;
-  lines: string[];
+interface SagaSource extends CodeSource {
   stepLines: Record<string, [number, number]>;
   compLines: Record<string, [number, number]>;
 }
 
-const SOURCES: Record<Lang, CodeSource> = {
+const SOURCES: Record<Lang, SagaSource> = {
   go: {
     label: "Go",
     lines: [
@@ -214,32 +207,6 @@ const SOURCES: Record<Lang, CodeSource> = {
   },
 };
 
-// Tokenize every language once at setup time. The source snippets are static, so
-// re-running Shiki on each render would be wasted work — the highlighter is the
-// heaviest part of the component.
-const highlighter = await createHighlighter({
-  themes: ["github-light", "github-dark"],
-  langs: ["go", "java", "python"],
-});
-
-const TOKENIZED: Record<Lang, ThemedToken[][]> = {
-  go: highlighter.codeToTokens(SOURCES.go.lines.join("\n"), {
-    lang: "go",
-    themes: { light: "github-light", dark: "github-dark" },
-    defaultColor: false,
-  }).tokens,
-  java: highlighter.codeToTokens(SOURCES.java.lines.join("\n"), {
-    lang: "java",
-    themes: { light: "github-light", dark: "github-dark" },
-    defaultColor: false,
-  }).tokens,
-  python: highlighter.codeToTokens(SOURCES.python.lines.join("\n"), {
-    lang: "python",
-    themes: { light: "github-light", dark: "github-dark" },
-    defaultColor: false,
-  }).tokens,
-};
-
 const currentHighlight = computed<[number, number] | null>(() => {
   const src = SOURCES[lang.value];
   for (let i = props.events.length - 1; i >= 0; i--) {
@@ -249,7 +216,6 @@ const currentHighlight = computed<[number, number] | null>(() => {
     const step = String(data.step ?? "");
 
     if (env.type === "progress.step.started" || env.type === "progress.step.failed") {
-      // Check compensation activities first
       const comp = src.compLines[step];
       if (comp) return comp;
       const line = src.stepLines[step];
@@ -260,97 +226,8 @@ const currentHighlight = computed<[number, number] | null>(() => {
   }
   return null;
 });
-
-const currentTokens = computed(() => TOKENIZED[lang.value]);
-
-const scrollerRef = ref<HTMLElement | null>(null);
-const lineRefs = ref<(HTMLElement | null)[]>([]);
-
-// Why: scrollIntoView() would scroll the page too; manually moving the scroller keeps the jump local.
-watch(
-  [lang, currentHighlight],
-  ([, highlight]) => {
-    const scroller = scrollerRef.value;
-    if (!scroller) return;
-
-    if (highlight === null) {
-      scroller.scrollTo({ top: 0, behavior: "smooth" });
-      return;
-    }
-
-    const [start, end] = highlight;
-    const startEl = lineRefs.value[start];
-    const endEl = lineRefs.value[end] ?? startEl;
-    if (!startEl || !endEl) return;
-
-    const scrollerRect = scroller.getBoundingClientRect();
-    const offset = startEl.getBoundingClientRect().top - scrollerRect.top + scroller.scrollTop;
-    const rangeHeight = endEl.getBoundingClientRect().bottom - startEl.getBoundingClientRect().top;
-
-    const visibleTop = scroller.scrollTop;
-    const visibleBottom = visibleTop + scroller.clientHeight;
-    if (offset >= visibleTop && offset + rangeHeight <= visibleBottom) return;
-
-    const desired = offset - (scroller.clientHeight - rangeHeight) / 2;
-    const max = Math.max(0, scroller.scrollHeight - scroller.clientHeight);
-    const clamped = Math.max(0, Math.min(desired, max));
-    scroller.scrollTo({ top: clamped, behavior: "smooth" });
-  },
-  { flush: "post" },
-);
 </script>
 
 <template>
-  <div class="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
-    <div class="flex border-b border-slate-200 dark:border-slate-700">
-      <button
-        v-for="(src, key) in SOURCES"
-        :key="key"
-        class="px-4 py-2 text-xs font-mono transition-colors border-b-2"
-        :class="
-          key === lang
-            ? 'border-blue-500 text-slate-900 dark:text-slate-100'
-            : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
-        "
-        @click="lang = key as Lang"
-      >
-        {{ src.label }}
-      </button>
-    </div>
-    <div
-      ref="scrollerRef"
-      class="shiki-code max-h-72 overflow-auto bg-white dark:bg-slate-900 p-4 font-mono text-[11px] leading-relaxed"
-    >
-      <span
-        v-for="(tokens, idx) in currentTokens"
-        :key="idx"
-        :ref="(el) => (lineRefs[idx] = el as HTMLElement | null)"
-        class="block whitespace-pre rounded px-2 py-px transition-colors duration-300"
-        :class="
-          currentHighlight && idx >= currentHighlight[0] && idx <= currentHighlight[1]
-            ? 'bg-blue-50 dark:bg-blue-950'
-            : ''
-        "
-      >
-        <template v-if="tokens.length">
-          <span v-for="(token, tIdx) in tokens" :key="tIdx" :style="token.htmlStyle">{{
-            token.content
-          }}</span>
-        </template>
-        <template v-else>&nbsp;</template>
-      </span>
-    </div>
-  </div>
+  <CodeViewer :sources="SOURCES" :highlight="currentHighlight" />
 </template>
-
-<style>
-/* Dual-theme Shiki emits `--shiki-light` / `--shiki-dark` CSS vars on every
-   token. `defaultColor: false` means no inline color is set, so we pick one
-   explicitly based on the ancestor `.dark` class (matches main.css). */
-.shiki-code span {
-  color: var(--shiki-light);
-}
-.dark .shiki-code span {
-  color: var(--shiki-dark);
-}
-</style>

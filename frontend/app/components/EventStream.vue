@@ -59,7 +59,7 @@ function formatTime(env: EventEnvelope): string {
         {{ title }}
       </div>
     </div>
-    <div class="max-h-72 flex-1 overflow-y-auto px-3 py-2">
+    <div class="h-80 overflow-y-auto px-3 py-2">
       <p v-if="events.length === 0" class="py-4 text-center text-xs text-slate-400">
         No events yet.
       </p>

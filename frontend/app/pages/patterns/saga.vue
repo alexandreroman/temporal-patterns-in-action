@@ -43,10 +43,6 @@ async function start() {
   }
 }
 
-function reset() {
-  workflowId.value = null;
-  finalError.value = null;
-}
 </script>
 
 <template>
@@ -76,13 +72,6 @@ function reset() {
           @click="start"
         >
           {{ starting ? "Starting…" : "Run saga" }}
-        </button>
-        <button
-          type="button"
-          class="rounded-md border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-medium text-slate-200 hover:bg-slate-700"
-          @click="reset"
-        >
-          Reset
         </button>
       </div>
     </div>

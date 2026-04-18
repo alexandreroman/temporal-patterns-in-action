@@ -41,7 +41,10 @@ single `go.mod` at the `workers/` root.
 **How to apply:** Use this as a checklist when
 the user asks to scaffold a new pattern.
 Cross-check the event-architecture memory for
-kebab-case activity registration and
-`PublishEvent` wiring. The `workers/Dockerfile`
-is already parametrised via `ARG PATTERN` and
-needs no change to support a new pattern.
+kebab-case activity registration. Progress
+events come for free from the shared
+activity-side interceptor — workflow code must
+not publish anything itself. The
+`workers/Dockerfile` is already parametrised
+via `ARG PATTERN` and needs no change to
+support a new pattern.

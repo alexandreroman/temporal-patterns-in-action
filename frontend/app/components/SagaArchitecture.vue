@@ -84,31 +84,28 @@ const props = defineProps<{
   events: EventEnvelope[];
 }>();
 
+const FORWARD_STEPS = new Set([
+  "reserve-inventory",
+  "charge-payment",
+  "ship-order",
+  "send-confirmation",
+]);
+
 const arch = computed<ArchState>(() => {
   const nodes: Nodes = initialNodes();
   const edges: Edges = initialEdges();
 
   let compensating = false;
   // Running stays true as long as we've seen at least one event and no
-  // terminal event (completed/failed). NATS subscription races the workflow
-  // start, so `progress.workflow.started` is usually lost — we cannot rely
-  // on it as the only signal to turn animations on.
+  // terminal event has closed the run. The worker no longer emits a
+  // workflow.started signal — the Nuxt SSE endpoint synthesises only
+  // the terminal events — so the first observed event anchors the run.
   let running = props.events.length > 0;
 
   for (const env of props.events) {
     const data = env.data as Record<string, unknown>;
 
     switch (env.type) {
-      case "progress.workflow.started":
-        resetAll(nodes, edges);
-        running = true;
-        nodes.nui = "active";
-        edges.e_ui_tmp = "active";
-        nodes.ntmp = "active";
-        edges.e_tmp_wk = "active";
-        nodes.nwk = "active";
-        break;
-
       case "progress.step.started": {
         const step = String(data.step ?? "");
         const svc = STEP_TO_SVC[step];
@@ -140,18 +137,9 @@ const arch = computed<ArchState>(() => {
           edges[svc.edge] = "error";
           nodes.nwk = "error";
         }
+        if (FORWARD_STEPS.has(step)) compensating = true;
         break;
       }
-
-      case "progress.compensation.started":
-        compensating = true;
-        nodes.ntmp = "warn";
-        nodes.nwk = "warn";
-        break;
-
-      case "progress.compensation.completed":
-        compensating = false;
-        break;
 
       case "progress.workflow.completed":
         resetAll(nodes, edges);
@@ -170,6 +158,16 @@ const arch = computed<ArchState>(() => {
         edges.e_tmp_wk = "error";
         break;
     }
+  }
+
+  // Keep the UI→Temporal→Worker strip lit while the run is in flight, since
+  // no workflow.started event arrives to set it up explicitly.
+  if (running) {
+    if (nodes.nui === "idle") nodes.nui = "active";
+    if (nodes.ntmp === "idle") nodes.ntmp = "active";
+    if (nodes.nwk === "idle") nodes.nwk = "active";
+    if (edges.e_ui_tmp === "idle") edges.e_ui_tmp = "active";
+    if (edges.e_tmp_wk === "idle") edges.e_tmp_wk = "active";
   }
 
   return { nodes, edges, running };

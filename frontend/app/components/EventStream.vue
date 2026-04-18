@@ -14,9 +14,9 @@ const props = withDefaults(
 const reversed = computed(() => [...props.events].reverse());
 
 const startTime = computed(() => {
-  const started = props.events.find((e) => e.type === "progress.workflow.started");
-  if (!started) return null;
-  const t = new Date(started.time).getTime();
+  const first = props.events[0];
+  if (!first) return null;
+  const t = new Date(first.time).getTime();
   return Number.isNaN(t) ? null : t;
 });
 
@@ -39,7 +39,6 @@ const DOT_CLS: Record<DotColor, string> = {
 };
 
 function formatTime(env: EventEnvelope): string {
-  if (env.type === "progress.workflow.started") return "0.0";
   if (startTime.value === null) return "";
   const t = new Date(env.time).getTime();
   if (Number.isNaN(t)) return env.time;

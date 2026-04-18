@@ -37,11 +37,8 @@ func (p *recordingPublisher) snapshot() []string {
 	return out
 }
 
-// registerTestActivities wires the saga activities plus the shared PublishEvent
-// local activity, which the workflow calls around the compensation bracket.
 func registerTestActivities(env *testsuite.TestWorkflowEnvironment, pub events.Publisher) {
 	env.RegisterActivity(&Activities{Publisher: pub})
-	env.RegisterActivity(&events.Activity{Publisher: events.NopPublisher{}})
 }
 
 func TestOrderProcessingWorkflow_HappyPath(t *testing.T) {

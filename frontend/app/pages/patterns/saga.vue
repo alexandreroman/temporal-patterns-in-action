@@ -16,11 +16,7 @@ const finalError = ref<string | null>(null);
 
 const { events, status } = usePatternStream("saga", workflowId);
 
-const TERMINAL_EVENTS = new Set([
-  "progress.workflow.completed",
-  "progress.workflow.failed",
-  "progress.compensation.completed",
-]);
+const TERMINAL_EVENTS = new Set(["progress.workflow.completed", "progress.workflow.failed"]);
 
 const running = computed(() => {
   if (starting.value) return true;
@@ -37,9 +33,10 @@ async function start() {
   finalError.value = null;
   starting.value = true;
   const orderId = `order-${randomSuffix()}`;
-  // Subscribe BEFORE starting the workflow: core NATS has no replay,
-  // so the early progress.workflow.started event would be lost if the
-  // SSE stream opened only after the start() response.
+  // Subscribe BEFORE starting the workflow: core NATS has no replay, and
+  // the first progress.step.started (reserve-inventory) fires almost
+  // immediately after start — we would miss it if the SSE stream opened
+  // only after the start() response came back.
   workflowId.value = `saga-${orderId}`;
   try {
     await waitForStreamOpen();

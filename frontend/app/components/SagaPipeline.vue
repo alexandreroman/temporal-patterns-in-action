@@ -83,15 +83,10 @@ const states = computed<Record<StepId, StepState>>(() => {
       case "progress.step.failed": {
         if (FORWARD_IDS.has(rawStep)) {
           map[rawStep as StepId] = "failed";
+          compensating = true;
         }
         break;
       }
-      case "progress.compensation.started":
-        compensating = true;
-        break;
-      case "progress.compensation.completed":
-        compensating = false;
-        break;
     }
   }
 

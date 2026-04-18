@@ -45,10 +45,6 @@ const derived = computed<Derived>(() => {
     const label = STEP_LABELS[step] ?? step;
 
     switch (env.type) {
-      case "progress.workflow.started":
-        tone = "running";
-        message = "Starting workflow…";
-        break;
       case "progress.step.started":
         tone = "running";
         message =
@@ -61,16 +57,7 @@ const derived = computed<Derived>(() => {
       case "progress.step.failed":
         tone = "error";
         message = `${label} failed`;
-        break;
-      case "progress.compensation.started":
-        compensating = true;
-        tone = "running";
-        message = "Compensating…";
-        break;
-      case "progress.compensation.completed":
-        compensating = false;
-        tone = "error";
-        message = "Saga compensated";
+        if (step in STEP_LABELS && !COMP_STEPS.has(step)) compensating = true;
         break;
       case "progress.workflow.completed":
         tone = "success";
@@ -78,7 +65,7 @@ const derived = computed<Derived>(() => {
         break;
       case "progress.workflow.failed":
         tone = "error";
-        if (!message.startsWith("Saga")) message = "Workflow failed";
+        message = compensating ? "Saga compensated" : "Workflow failed";
         break;
     }
   }

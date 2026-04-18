@@ -15,8 +15,6 @@ function eventLabel(env: EventEnvelope): string {
   const error = data.error ? String(data.error) : "";
 
   switch (env.type) {
-    case "progress.workflow.started":
-      return "Workflow started";
     case "progress.workflow.completed":
       return "Workflow completed";
     case "progress.workflow.failed":
@@ -27,10 +25,6 @@ function eventLabel(env: EventEnvelope): string {
       return `${step} completed`;
     case "progress.step.failed":
       return `${step} failed: ${error}`;
-    case "progress.compensation.started":
-      return "Compensations started";
-    case "progress.compensation.completed":
-      return "Compensations completed";
     case "saga.inventory.reserved":
       return `Inventory reserved #${data.itemId}`;
     case "saga.inventory.released":

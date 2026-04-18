@@ -58,8 +58,6 @@ func main() {
 	w.RegisterActivityWithOptions(a.SendConfirmation, activity.RegisterOptions{Name: "send-confirmation"})
 	w.RegisterActivityWithOptions(a.RetractEmail, activity.RegisterOptions{Name: "retract-email"})
 
-	w.RegisterActivity(&events.Activity{Publisher: publisher})
-
 	log.Printf("saga worker connected to %s — listening on task queue: %s", address, saga.TaskQueue)
 
 	if err := w.Run(worker.InterruptCh()); err != nil {

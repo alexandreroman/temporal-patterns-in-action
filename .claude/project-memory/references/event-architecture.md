@@ -47,48 +47,93 @@ without payload parsing, and the envelope is
 self-describing so the frontend can render
 events without hard-coded coupling to a pattern.
 
-## Progress vs business split
+## No workflow-side publishing
 
-`progress.*` events (`workflow.started`,
-`step.started|completed|failed`,
-`compensation.started|completed`,
-`workflow.completed|failed`) are emitted
-automatically by a shared Temporal
-`WorkerInterceptor`. Every new pattern gets
-timeline tracking for free.
-
-Business events (e.g.
-`saga.inventory.reserved`,
-`saga.payment.charged`) stay explicit in
-activity code — they are the pedagogical
-payload of each pattern and the interceptor
-cannot infer them. Each pattern uses its own
-name as the type prefix so business types
-never collide across patterns.
-
-**Why:** ~90 % of the lifecycle boilerplate
-disappears from business code, while the
-pattern-specific semantics remain visible where
-they are authored. Adding a new pattern
-requires zero extra wiring to get a timeline.
-
-## Determinism rule for workflow-side publishing
-
-The **workflow-inbound** interceptor publishes
-via
-`workflow.ExecuteLocalActivity(ctx,
-"PublishEvent", env)`.
-
-The **activity-inbound** interceptor publishes
+Workers never publish events from workflow
+scope. The shared `events.NewInterceptor`
+registers only an **activity-inbound**
+interceptor that publishes
+`progress.step.started|completed|failed`
 directly to NATS (activity context allows I/O).
+Business events stay explicit in activity code
+(e.g. `saga.inventory.reserved`).
 
-**Why:** workflow code must stay deterministic,
-so no direct NATS calls or `time.Now()` /
-`uuid.NewString()` from workflow scope. Fresh
-UUID + RFC3339 timestamp are assigned inside
-the `PublishEvent` activity. Every worker
-registers `&events.Activity{Publisher}` to
-expose `PublishEvent`.
+**Why:** a workflow-scope publish would require
+a local activity (the SDK forbids direct I/O
+and non-deterministic primitives inside
+workflows). That local activity would show up
+as a `LocalActivityMarker` in every workflow's
+Temporal timeline, cluttering the pedagogical
+view. Keeping publishing out of workflow scope
+keeps the timeline focused on the pattern's
+real activities. No `events.Activity`,
+`PublishEvent`, `PublishFromWorkflow`, or
+`NewWorkflowEnvelope` exists in the `events`
+package — removing any of those is a regression.
+
+## Terminal workflow events are synthesised
+## by the Nuxt SSE endpoint
+
+`progress.workflow.completed` and
+`progress.workflow.failed` are **not** emitted
+by the worker. The SSE endpoint at
+`frontend/server/api/patterns/[pattern]/[id]/events.get.ts`
+opens a background `handle.result()` watcher on
+the Temporal workflow; when the workflow
+terminates, the endpoint pushes one synthetic
+envelope into the SSE stream (not onto NATS).
+
+Because the SSE stream opens *before* the
+workflow is started (so no early events are
+missed), the watcher first polls `describe()`
+with 250 ms backoff up to 30 s to tolerate
+`WorkflowNotFoundError`. Once the workflow
+exists, it either emits the terminal event
+immediately (if describe already reports a
+terminal status) or awaits `result()`. Non-
+`COMPLETED` terminal statuses (CANCELLED,
+TERMINATED, TIMED_OUT, FAILED) are surfaced as
+`progress.workflow.failed` with
+`data.error = "workflow <status>"`.
+
+**Why:** this keeps the Temporal timeline
+clean while still giving the frontend an
+authoritative terminal signal derived from
+Temporal itself — no worker plumbing, no race
+on startup, no sync needed between the start
+endpoint and the SSE endpoint.
+
+## No workflow.started; no compensation bracket
+
+`progress.workflow.started` and
+`progress.compensation.started|completed` have
+been dropped entirely. The frontend derives
+equivalents:
+
+- **Time anchor** — `EventStream.vue` uses
+  `events[0].time` as t=0, not a dedicated
+  workflow.started envelope.
+- **Compensation state** — components set
+  `compensating = true` on the first
+  `progress.step.failed` whose step is a
+  *forward* activity (i.e. belongs to the
+  pattern's step list rather than its
+  compensation list). Once set, `compensating`
+  stays true for the rest of the stream. Under
+  that flag, subsequent `progress.step.started`
+  events for compensation activities
+  (release-inventory, refund-payment,
+  cancel-shipment, retract-email) render with
+  the amber "warn" tone; the final
+  `progress.workflow.failed` synthesised by
+  the Nuxt server upgrades the status bar to
+  "Saga compensated".
+
+**Why:** in the saga pattern, a workflow-scope
+compensation bracket is redundant information —
+the compensation activities themselves arrive
+as ordinary `progress.step.*` events and their
+names are already distinct.
 
 ## Step-naming convention (gotcha)
 

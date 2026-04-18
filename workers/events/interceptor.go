@@ -6,15 +6,12 @@ import (
 
 	"go.temporal.io/sdk/activity"
 	"go.temporal.io/sdk/interceptor"
-	"go.temporal.io/sdk/temporal"
-	"go.temporal.io/sdk/workflow"
 )
 
 // NewInterceptor returns a WorkerInterceptor that publishes framework-level
-// progression events for every workflow and activity hosted by the worker.
-//
-// Workflow-side events go through the PublishEvent local activity to preserve
-// determinism; activity-side events publish directly to NATS.
+// progression events around every activity execution. Events are published
+// directly to NATS from activity context; workflow code stays free of any
+// event-emission side effects.
 func NewInterceptor(publisher Publisher, pattern string) interceptor.WorkerInterceptor {
 	return &workerInterceptor{publisher: publisher, pattern: pattern}
 }
@@ -33,68 +30,8 @@ func (w *workerInterceptor) InterceptActivity(
 	return i
 }
 
-func (w *workerInterceptor) InterceptWorkflow(
-	_ workflow.Context, next interceptor.WorkflowInboundInterceptor,
-) interceptor.WorkflowInboundInterceptor {
-	i := &workflowInbound{root: w}
-	i.Next = next
-	return i
-}
-
-// workflowInbound publishes workflow.started / completed / failed events.
-type workflowInbound struct {
-	interceptor.WorkflowInboundInterceptorBase
-	root *workerInterceptor
-}
-
-func (w *workflowInbound) ExecuteWorkflow(
-	ctx workflow.Context, in *interceptor.ExecuteWorkflowInput,
-) (any, error) {
-	start := workflow.Now(ctx)
-
-	PublishFromWorkflow(ctx, w.root.pattern, TypeWorkflowStarted, struct{}{})
-
-	result, err := w.Next.ExecuteWorkflow(ctx, in)
-
-	end := workflow.Now(ctx)
-	durationMs := end.Sub(start).Milliseconds()
-	if err != nil {
-		PublishFromWorkflow(ctx, w.root.pattern,
-			TypeWorkflowFailed, map[string]any{"error": err.Error()})
-	} else {
-		PublishFromWorkflow(ctx, w.root.pattern,
-			TypeWorkflowCompleted, map[string]any{"durationMs": durationMs})
-	}
-	return result, err
-}
-
-// PublishFromWorkflow fires a PublishEvent local activity and waits for its
-// completion on a short timeout. Failures are logged but never surfaced —
-// observability must never break the workflow. Pattern code can call this
-// directly to emit additional framework-level progression events (e.g. the
-// compensation bracket in the saga pattern).
-func PublishFromWorkflow(ctx workflow.Context, pattern, typ string, data any) {
-	info := workflow.GetInfo(ctx)
-	env := NewWorkflowEnvelope(
-		pattern, info.WorkflowExecution.ID, info.WorkflowExecution.RunID,
-		typ, workflow.Now(ctx), data,
-	)
-	lao := workflow.LocalActivityOptions{
-		StartToCloseTimeout: 5 * time.Second,
-		RetryPolicy: &temporal.RetryPolicy{
-			MaximumAttempts: 2,
-		},
-	}
-	lctx := workflow.WithLocalActivityOptions(ctx, lao)
-	if err := workflow.ExecuteLocalActivity(lctx, PublishEventActivityName, env).
-		Get(lctx, nil); err != nil {
-		workflow.GetLogger(ctx).Warn("publish event failed",
-			"type", typ, "error", err)
-	}
-}
-
 // activityInbound publishes step.started / completed / failed around every
-// activity execution except PublishEvent itself.
+// activity execution.
 type activityInbound struct {
 	interceptor.ActivityInboundInterceptorBase
 	root *workerInterceptor
@@ -104,10 +41,6 @@ func (a *activityInbound) ExecuteActivity(
 	ctx context.Context, in *interceptor.ExecuteActivityInput,
 ) (any, error) {
 	info := activity.GetInfo(ctx)
-	if info.ActivityType.Name == PublishEventActivityName {
-		return a.Next.ExecuteActivity(ctx, in)
-	}
-
 	step := info.ActivityType.Name
 	attempt := int(info.Attempt)
 	start := time.Now()

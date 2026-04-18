@@ -7,7 +7,7 @@ import (
 )
 
 func TestNewEnvelopePopulatesContract(t *testing.T) {
-	env := NewEnvelope("saga", "wf-1", "run-1", TypeWorkflowStarted, struct{}{})
+	env := NewEnvelope("saga", "wf-1", "run-1", TypeStepStarted, struct{}{})
 
 	if env.SpecVersion != "1.0" {
 		t.Errorf("specversion = %q, want %q", env.SpecVersion, "1.0")
@@ -18,8 +18,8 @@ func TestNewEnvelopePopulatesContract(t *testing.T) {
 	if env.Source != "patterns.saga" {
 		t.Errorf("Source = %q, want %q", env.Source, "patterns.saga")
 	}
-	if env.Type != TypeWorkflowStarted {
-		t.Errorf("Type = %q, want %q", env.Type, TypeWorkflowStarted)
+	if env.Type != TypeStepStarted {
+		t.Errorf("Type = %q, want %q", env.Type, TypeStepStarted)
 	}
 	if env.WorkflowID != "wf-1" || env.RunID != "run-1" {
 		t.Errorf("ids wrong: %q / %q", env.WorkflowID, env.RunID)
@@ -54,25 +54,5 @@ func TestEnvelopeJSONShape(t *testing.T) {
 	}
 	if _, ok := got["category"]; ok {
 		t.Errorf("unexpected field %q in JSON: %s", "category", raw)
-	}
-}
-
-func TestWorkflowEnvelopeNormalize(t *testing.T) {
-	now := time.Date(2026, 4, 18, 12, 0, 0, 0, time.UTC)
-	env := NewWorkflowEnvelope("saga", "wf-1", "run-1", TypeWorkflowStarted, now, struct{}{})
-
-	if env.ID != "" {
-		t.Error("workflow envelope must leave ID empty for activity-side generation")
-	}
-	if env.Time == "" {
-		t.Error("workflow envelope Time must be set from the deterministic clock")
-	}
-
-	env.normalize()
-	if env.ID == "" {
-		t.Error("normalize must fill ID")
-	}
-	if env.SpecVersion != "1.0" {
-		t.Errorf("normalize must fill SpecVersion, got %q", env.SpecVersion)
 	}
 }

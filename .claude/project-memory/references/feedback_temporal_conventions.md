@@ -34,6 +34,9 @@ standard-library call. When proposing a rename
 of a `TaskQueue` constant or a workflow type
 name, surface the need for a matching change
 in `frontend/server/` and flag the impact on
-running workflows. Cross-reference the event
-architecture memory for the workflow-side
-`PublishEvent` pattern.
+running workflows. Workflow code MUST stay
+free of event-emission side effects — progress
+events are published from activity-side
+interceptors, and terminal events are
+synthesised by the Nuxt SSE endpoint (see the
+event-architecture memory).

@@ -28,9 +28,9 @@ func TestCategoryOf(t *testing.T) {
 		in   string
 		want string
 	}{
-		{TypeWorkflowStarted, CategoryProgress},
+		{TypeStepStarted, CategoryProgress},
 		{TypeStepFailed, CategoryProgress},
-		{TypeCompensationCompleted, CategoryProgress},
+		{TypeStepCompleted, CategoryProgress},
 		{"saga.car.reserved", CategoryBusiness},
 		{"", ""},
 		{"nodot", CategoryBusiness},

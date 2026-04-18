@@ -6,8 +6,6 @@ import (
 	"time"
 
 	"go.temporal.io/sdk/workflow"
-
-	"github.com/alexandreroman/temporal-patterns-in-action/workers/events"
 )
 
 // OrderProcessingWorkflow reserves inventory, charges the customer, ships the
@@ -41,7 +39,6 @@ func OrderProcessingWorkflow(ctx workflow.Context, input OrderInput) (OrderResul
 	var compensations []func(workflow.Context) error
 
 	runCompensations := func() {
-		events.PublishFromWorkflow(ctx, Pattern, events.TypeCompensationStarted, struct{}{})
 		disconnected, _ := workflow.NewDisconnectedContext(ctx)
 		compCtx := workflow.WithActivityOptions(disconnected, workflow.ActivityOptions{
 			StartToCloseTimeout: 6 * time.Second,
@@ -51,7 +48,6 @@ func OrderProcessingWorkflow(ctx workflow.Context, input OrderInput) (OrderResul
 				logger.Error("compensation failed", "error", err)
 			}
 		}
-		events.PublishFromWorkflow(ctx, Pattern, events.TypeCompensationCompleted, struct{}{})
 	}
 
 	// Step 1 — reserve inventory

@@ -96,15 +96,21 @@ function waitForStreamOpen(): Promise<void> {
     </div>
 
     <!-- Architecture diagram -->
-    <div class="mt-4">
+    <h2 class="mt-8 text-center text-xs font-medium uppercase tracking-wide text-slate-400">
+      Components
+    </h2>
+    <div class="mt-3">
       <SagaArchitecture :events="events" />
     </div>
 
     <!-- Pipeline -->
-    <SagaPipeline :events="events" class="mt-4" />
+    <h2 class="mt-8 text-center text-xs font-medium uppercase tracking-wide text-slate-400">
+      Pipeline
+    </h2>
+    <SagaPipeline :events="events" class="mt-3" />
 
     <!-- Code + event stream -->
-    <div class="mt-4 flex flex-col gap-3 lg:flex-row">
+    <div class="mt-12 flex flex-col gap-3 lg:flex-row">
       <div class="min-w-0 flex-1">
         <SagaCodeViewer :events="events" />
       </div>

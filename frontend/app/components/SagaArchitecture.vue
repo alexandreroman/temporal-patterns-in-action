@@ -163,7 +163,11 @@ const arch = computed<ArchState>(() => {
       case "progress.workflow.failed":
         resetServices(nodes, edges);
         running = false;
+        nodes.nui = "error";
         nodes.ntmp = "error";
+        nodes.nwk = "error";
+        edges.e_ui_tmp = "error";
+        edges.e_tmp_wk = "error";
         break;
     }
   }

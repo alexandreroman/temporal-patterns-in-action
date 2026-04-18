@@ -38,11 +38,12 @@ function shortType(type: string): string {
 }
 
 function formatTime(env: EventEnvelope): string {
-  if (env.type === "progress.workflow.started") return "0";
+  if (env.type === "progress.workflow.started") return "0.0";
   if (startTime.value === null) return "";
   const t = new Date(env.time).getTime();
   if (Number.isNaN(t)) return env.time;
-  return `+${Math.round((t - startTime.value) / 1000)}s`;
+  const elapsed = Math.max(0, (t - startTime.value) / 1000);
+  return `+${elapsed.toFixed(1)}s`;
 }
 
 function eventLabel(env: EventEnvelope): string {
@@ -111,7 +112,7 @@ function eventLabel(env: EventEnvelope): string {
         class="flex items-baseline gap-2 border-b border-slate-100 py-1.5 text-[11px] last:border-0 dark:border-slate-800"
       >
         <span class="mt-1 size-1.5 shrink-0 rounded-full" :class="DOT_CLS[dotColor(env.type)]" />
-        <span class="w-8 shrink-0 text-right font-mono text-[10px] text-slate-400">
+        <span class="w-12 shrink-0 text-right font-mono text-[10px] text-slate-400">
           {{ formatTime(env) }}
         </span>
         <span class="text-slate-600 dark:text-slate-400">

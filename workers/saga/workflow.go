@@ -71,18 +71,18 @@ func OrderProcessingWorkflow(ctx workflow.Context, input OrderInput) (OrderResul
 
 	// Step 2 — charge payment
 	progress.CurrentStep = "charge-payment"
-	var txnID string
-	if err := workflow.ExecuteActivity(ctx, a.ChargePayment, input, itemID).Get(ctx, &txnID); err != nil {
+	var paymentID string
+	if err := workflow.ExecuteActivity(ctx, a.ChargePayment, input, itemID).Get(ctx, &paymentID); err != nil {
 		progress.Failed = "charge-payment"
 		result.Status = "failed"
 		runCompensations()
 		return result, err
 	}
 	compensations = append(compensations, func(c workflow.Context) error {
-		return workflow.ExecuteActivity(c, a.RefundPayment, txnID, input.Amount).Get(c, nil)
+		return workflow.ExecuteActivity(c, a.RefundPayment, paymentID, input.Amount).Get(c, nil)
 	})
 	progress.Completed = append(progress.Completed, "charge-payment")
-	result.Confirmed = append(result.Confirmed, txnID)
+	result.Confirmed = append(result.Confirmed, paymentID)
 
 	// Step 3 — ship the order
 	progress.CurrentStep = "ship-order"

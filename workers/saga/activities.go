@@ -78,12 +78,12 @@ func (a *Activities) ChargePayment(ctx context.Context, input OrderInput, reserv
 			"payment declined", "PaymentDeclined", nil)
 	}
 	a.publishBusiness(ctx, TypePaymentCharged, map[string]any{"amount": input.Amount})
-	return fmt.Sprintf("txn-%s", reservationID), nil
+	return fmt.Sprintf("pay-%s", reservationID), nil
 }
 
 // RefundPayment compensates ChargePayment.
-func (a *Activities) RefundPayment(ctx context.Context, transactionID string, amount int) error {
-	activity.GetLogger(ctx).Info("Refunding payment", "txn", transactionID, "amount", amount)
+func (a *Activities) RefundPayment(ctx context.Context, paymentID string, amount int) error {
+	activity.GetLogger(ctx).Info("Refunding payment", "payment", paymentID, "amount", amount)
 	time.Sleep(compensationDelay)
 	a.publishBusiness(ctx, TypePaymentRefunded, map[string]any{"amount": amount})
 	return nil

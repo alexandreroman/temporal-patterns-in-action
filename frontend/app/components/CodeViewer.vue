@@ -30,6 +30,8 @@ const TOKENIZED = computed<Record<string, ThemedToken[][]>>(() => {
 
 const currentTokens = computed(() => TOKENIZED.value[lang.value] ?? []);
 
+const gutterWidth = computed(() => `${String(currentTokens.value.length).length}ch`);
+
 const scrollerRef = ref<HTMLElement | null>(null);
 const lineRefs = ref<(HTMLElement | null)[]>([]);
 
@@ -92,19 +94,27 @@ watch(
         v-for="(tokens, idx) in currentTokens"
         :key="idx"
         :ref="(el) => (lineRefs[idx] = el as HTMLElement | null)"
-        class="block whitespace-pre rounded px-2 py-px transition-colors duration-300"
+        class="flex whitespace-pre rounded px-2 py-px transition-colors duration-300"
         :class="
           highlight && idx >= highlight[0] && idx <= highlight[1]
             ? 'bg-blue-50 dark:bg-blue-950'
             : ''
         "
       >
-        <template v-if="tokens.length">
-          <span v-for="(token, tIdx) in tokens" :key="tIdx" :style="token.htmlStyle">{{
-            token.content
-          }}</span>
-        </template>
-        <template v-else>&nbsp;</template>
+        <span
+          class="shrink-0 select-none pr-4 text-right tabular-nums text-slate-400 dark:text-slate-600"
+          :style="{ width: gutterWidth }"
+          aria-hidden="true"
+          >{{ idx + 1 }}</span
+        >
+        <span class="shiki-line flex-1">
+          <template v-if="tokens.length">
+            <span v-for="(token, tIdx) in tokens" :key="tIdx" :style="token.htmlStyle">{{
+              token.content
+            }}</span>
+          </template>
+          <template v-else>&nbsp;</template>
+        </span>
       </span>
     </div>
   </div>
@@ -114,10 +124,10 @@ watch(
 /* Dual-theme Shiki emits `--shiki-light` / `--shiki-dark` CSS vars on every
    token. `defaultColor: false` means no inline color is set, so we pick one
    explicitly based on the ancestor `.dark` class (matches main.css). */
-.shiki-code span {
+.shiki-code .shiki-line span {
   color: var(--shiki-light);
 }
-.dark .shiki-code span {
+.dark .shiki-code .shiki-line span {
   color: var(--shiki-dark);
 }
 </style>

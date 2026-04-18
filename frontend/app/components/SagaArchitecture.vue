@@ -425,7 +425,11 @@ const edgeAnim: Record<EdgeState, string> = {
       class="transition-all duration-300"
       :class="[edgeStroke[arch.edges.e_ui_tmp], arch.running ? edgeAnim[arch.edges.e_ui_tmp] : '']"
       :stroke-width="arch.edges.e_ui_tmp !== 'idle' ? 3 : 2"
-      :stroke-dasharray="arch.running && arch.edges.e_ui_tmp !== 'idle' && arch.edges.e_ui_tmp !== 'error' ? '6 4' : 'none'"
+      :stroke-dasharray="
+        arch.running && arch.edges.e_ui_tmp !== 'idle' && arch.edges.e_ui_tmp !== 'error'
+          ? '6 4'
+          : 'none'
+      "
     />
     <line
       x1="320"
@@ -436,7 +440,11 @@ const edgeAnim: Record<EdgeState, string> = {
       class="transition-all duration-300"
       :class="[edgeStroke[arch.edges.e_tmp_wk], arch.running ? edgeAnim[arch.edges.e_tmp_wk] : '']"
       :stroke-width="arch.edges.e_tmp_wk !== 'idle' ? 3 : 2"
-      :stroke-dasharray="arch.running && arch.edges.e_tmp_wk !== 'idle' && arch.edges.e_tmp_wk !== 'error' ? '6 4' : 'none'"
+      :stroke-dasharray="
+        arch.running && arch.edges.e_tmp_wk !== 'idle' && arch.edges.e_tmp_wk !== 'error'
+          ? '6 4'
+          : 'none'
+      "
     />
     <line
       x1="470"
@@ -445,9 +453,18 @@ const edgeAnim: Record<EdgeState, string> = {
       y2="38"
       fill="none"
       class="transition-all duration-300"
-      :class="[edgeStroke[arch.edges.e_wk_inventory], arch.running ? edgeAnim[arch.edges.e_wk_inventory] : '']"
+      :class="[
+        edgeStroke[arch.edges.e_wk_inventory],
+        arch.running ? edgeAnim[arch.edges.e_wk_inventory] : '',
+      ]"
       :stroke-width="arch.edges.e_wk_inventory !== 'idle' ? 3 : 2"
-      :stroke-dasharray="arch.running && arch.edges.e_wk_inventory !== 'idle' && arch.edges.e_wk_inventory !== 'error' ? '6 4' : 'none'"
+      :stroke-dasharray="
+        arch.running &&
+        arch.edges.e_wk_inventory !== 'idle' &&
+        arch.edges.e_wk_inventory !== 'error'
+          ? '6 4'
+          : 'none'
+      "
     />
     <line
       x1="470"
@@ -456,9 +473,16 @@ const edgeAnim: Record<EdgeState, string> = {
       y2="88"
       fill="none"
       class="transition-all duration-300"
-      :class="[edgeStroke[arch.edges.e_wk_payment], arch.running ? edgeAnim[arch.edges.e_wk_payment] : '']"
+      :class="[
+        edgeStroke[arch.edges.e_wk_payment],
+        arch.running ? edgeAnim[arch.edges.e_wk_payment] : '',
+      ]"
       :stroke-width="arch.edges.e_wk_payment !== 'idle' ? 3 : 2"
-      :stroke-dasharray="arch.running && arch.edges.e_wk_payment !== 'idle' && arch.edges.e_wk_payment !== 'error' ? '6 4' : 'none'"
+      :stroke-dasharray="
+        arch.running && arch.edges.e_wk_payment !== 'idle' && arch.edges.e_wk_payment !== 'error'
+          ? '6 4'
+          : 'none'
+      "
     />
     <line
       x1="470"
@@ -467,9 +491,16 @@ const edgeAnim: Record<EdgeState, string> = {
       y2="144"
       fill="none"
       class="transition-all duration-300"
-      :class="[edgeStroke[arch.edges.e_wk_shipping], arch.running ? edgeAnim[arch.edges.e_wk_shipping] : '']"
+      :class="[
+        edgeStroke[arch.edges.e_wk_shipping],
+        arch.running ? edgeAnim[arch.edges.e_wk_shipping] : '',
+      ]"
       :stroke-width="arch.edges.e_wk_shipping !== 'idle' ? 3 : 2"
-      :stroke-dasharray="arch.running && arch.edges.e_wk_shipping !== 'idle' && arch.edges.e_wk_shipping !== 'error' ? '6 4' : 'none'"
+      :stroke-dasharray="
+        arch.running && arch.edges.e_wk_shipping !== 'idle' && arch.edges.e_wk_shipping !== 'error'
+          ? '6 4'
+          : 'none'
+      "
     />
     <line
       x1="470"
@@ -478,9 +509,16 @@ const edgeAnim: Record<EdgeState, string> = {
       y2="200"
       fill="none"
       class="transition-all duration-300"
-      :class="[edgeStroke[arch.edges.e_wk_notif], arch.running ? edgeAnim[arch.edges.e_wk_notif] : '']"
+      :class="[
+        edgeStroke[arch.edges.e_wk_notif],
+        arch.running ? edgeAnim[arch.edges.e_wk_notif] : '',
+      ]"
       :stroke-width="arch.edges.e_wk_notif !== 'idle' ? 3 : 2"
-      :stroke-dasharray="arch.running && arch.edges.e_wk_notif !== 'idle' && arch.edges.e_wk_notif !== 'error' ? '6 4' : 'none'"
+      :stroke-dasharray="
+        arch.running && arch.edges.e_wk_notif !== 'idle' && arch.edges.e_wk_notif !== 'error'
+          ? '6 4'
+          : 'none'
+      "
     />
   </svg>
 </template>

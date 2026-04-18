@@ -150,9 +150,11 @@ const chipClass: Record<StepState, string> = {
         >
           <div class="flex items-center justify-center gap-1 text-[12px] font-medium">
             <svg
-              v-if="states[step.id] === 'failed'
-                || states[step.id] === 'compensating'
-                || states[step.id] === 'reverted'"
+              v-if="
+                states[step.id] === 'failed' ||
+                states[step.id] === 'compensating' ||
+                states[step.id] === 'reverted'
+              "
               aria-hidden="true"
               viewBox="0 0 24 24"
               fill="none"
@@ -164,7 +166,9 @@ const chipClass: Record<StepState, string> = {
             >
               <path d="M12 9v4" />
               <path d="M12 17h.01" />
-              <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" />
+              <path
+                d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z"
+              />
             </svg>
             <span>{{
               states[step.id] === "compensating" || states[step.id] === "reverted"

@@ -23,6 +23,7 @@
     "@nats-io/transport-node": "~3.3.0",
     "@temporalio/client": "~1.13.0",
     "nuxt": "~4.1.0",
+    "shiki": "~4.0.2",
     "vue": "~3.5.0",
     "vue-router": "~4.5.0"
   },

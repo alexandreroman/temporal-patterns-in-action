@@ -1,6 +1,7 @@
 <script setup lang="ts">
 useHead({
-  titleTemplate: (title) => (title ? `${title} — Temporal Patterns` : "Temporal Patterns in Action"),
+  titleTemplate: (title) =>
+    title ? `${title} — Temporal Patterns` : "Temporal Patterns in Action",
 });
 </script>
 

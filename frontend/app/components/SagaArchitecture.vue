@@ -5,7 +5,7 @@ import type { EventEnvelope } from "~~/shared/events";
 /**
  * Architecture diagram for the Saga pattern.
  *
- * Nodes: Demo UI -> Temporal -> Worker -> (Inventory | Payment |
+ * Nodes: UI -> Temporal -> Worker -> (Inventory | Payment |
  *                                          Shipping | Notification)
  * Edges light up as events arrive from the SSE stream.
  */
@@ -227,7 +227,7 @@ const edgeAnim: Record<EdgeState, string> = {
 
 <template>
   <svg viewBox="0 0 680 240" class="w-full" role="img" aria-label="Saga architecture diagram">
-    <!-- Demo UI -->
+    <!-- UI -->
     <g>
       <rect
         x="40"
@@ -246,7 +246,7 @@ const edgeAnim: Record<EdgeState, string> = {
         dominant-baseline="central"
         class="fill-slate-800 dark:fill-slate-100 text-[13px] font-medium"
       >
-        Demo UI
+        UI
       </text>
       <text
         x="90"

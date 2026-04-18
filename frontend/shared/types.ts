@@ -8,11 +8,3 @@ export interface SagaStartRequest {
 export interface SagaStartResponse {
   workflowId: string;
 }
-
-export interface SagaProgress {
-  workflowId: string;
-  status: "running" | "completed" | "failed";
-  currentStep: string;
-  completed: string[];
-  failed?: string;
-}

@@ -15,10 +15,9 @@ type OrderInput struct {
 
 // OrderResult is the output of the saga workflow.
 type OrderResult struct {
-	OrderID     string   `json:"orderId"`
-	Status      string   `json:"status"`
-	Confirmed   []string `json:"confirmed"`
-	Compensated []string `json:"compensated"`
+	OrderID   string   `json:"orderId"`
+	Status    string   `json:"status"`
+	Confirmed []string `json:"confirmed"`
 }
 
 // Progress is returned by the getProgress query handler.

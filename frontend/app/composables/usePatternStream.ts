@@ -1,5 +1,5 @@
 import type { MaybeRefOrGetter } from "vue";
-import { computed, ref, toValue, watch, onBeforeUnmount } from "vue";
+import { ref, toValue, watch, onBeforeUnmount } from "vue";
 import { isEventEnvelope, type EventEnvelope } from "~~/shared/events";
 
 export type StreamStatus = "idle" | "connecting" | "open" | "closed" | "error";
@@ -10,7 +10,6 @@ export function usePatternStream(
 ) {
   const events = ref<EventEnvelope[]>([]);
   const status = ref<StreamStatus>("idle");
-  const last = computed(() => events.value[events.value.length - 1]);
 
   let source: EventSource | null = null;
   const seen = new Set<string>();
@@ -79,7 +78,7 @@ export function usePatternStream(
     status.value = "closed";
   });
 
-  return { events, status, last };
+  return { events, status };
 }
 
 const KNOWN_EVENT_TYPES = [

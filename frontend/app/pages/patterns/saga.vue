@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { reactive, ref } from "vue";
-import type { SagaStartResponse } from "~~/shared/types";
+import type { SagaStartRequest, SagaStartResponse } from "~~/shared/types";
 
 useSeoMeta({ title: "Saga" });
 
-type FailAt = "" | "inventory" | "payment" | "shipping" | "notification";
+type FailAt = NonNullable<SagaStartRequest["failAt"]>;
 
 const form = reactive({
   failAt: "shipping" as FailAt,
@@ -42,7 +42,6 @@ async function start() {
     starting.value = false;
   }
 }
-
 </script>
 
 <template>

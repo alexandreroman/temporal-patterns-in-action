@@ -14,6 +14,7 @@ import (
 // subject are derived from env.Type and env.WorkflowID.
 type Publisher interface {
 	Publish(ctx context.Context, pattern string, env Envelope) error
+	Close() error
 }
 
 // NopPublisher is a no-op Publisher used when NATS is unavailable or in tests.
@@ -22,10 +23,22 @@ type NopPublisher struct{}
 // Publish discards the event.
 func (NopPublisher) Publish(context.Context, string, Envelope) error { return nil }
 
+// Close is a no-op.
+func (NopPublisher) Close() error { return nil }
+
 // NATSPublisher publishes events as JSON NATS messages. We issue a short
 // FlushTimeout after each publish so SSE-style consumers see events promptly.
 type NATSPublisher struct {
 	Conn *nats.Conn
+}
+
+// Close closes the underlying NATS connection. Nil-safe.
+func (p *NATSPublisher) Close() error {
+	if p == nil || p.Conn == nil {
+		return nil
+	}
+	p.Conn.Close()
+	return nil
 }
 
 // Publish marshals the envelope and publishes it to the derived subject.

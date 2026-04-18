@@ -51,7 +51,7 @@ const derived = computed<Derived>(() => {
         message = "Starting workflow…";
         break;
       case "progress.step.started":
-        tone = compensating || COMP_STEPS.has(step) ? "running" : "running";
+        tone = "running";
         message =
           compensating || COMP_STEPS.has(step) ? `Compensating: ${label}` : `Activity: ${label}`;
         break;
@@ -78,7 +78,7 @@ const derived = computed<Derived>(() => {
         message = "Saga completed";
         break;
       case "progress.workflow.failed":
-        tone = tone === "error" ? tone : "error";
+        tone = "error";
         if (!message.startsWith("Saga")) message = "Workflow failed";
         break;
     }

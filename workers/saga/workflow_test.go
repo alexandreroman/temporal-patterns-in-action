@@ -27,6 +27,8 @@ func (p *recordingPublisher) Publish(_ context.Context, _ string, env events.Env
 	return nil
 }
 
+func (*recordingPublisher) Close() error { return nil }
+
 func (p *recordingPublisher) snapshot() []string {
 	p.mu.Lock()
 	defer p.mu.Unlock()
@@ -36,8 +38,7 @@ func (p *recordingPublisher) snapshot() []string {
 }
 
 // registerTestActivities wires the saga activities plus the shared PublishEvent
-// local activity so the framework interceptor has a no-op target for
-// progression events.
+// local activity, which the workflow calls around the compensation bracket.
 func registerTestActivities(env *testsuite.TestWorkflowEnvironment, pub events.Publisher) {
 	env.RegisterActivity(&Activities{Publisher: pub})
 	env.RegisterActivity(&events.Activity{Publisher: events.NopPublisher{}})

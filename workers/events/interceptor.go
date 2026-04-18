@@ -50,32 +50,31 @@ type workflowInbound struct {
 func (w *workflowInbound) ExecuteWorkflow(
 	ctx workflow.Context, in *interceptor.ExecuteWorkflowInput,
 ) (any, error) {
-	info := workflow.GetInfo(ctx)
 	start := workflow.Now(ctx)
 
-	publishFromWorkflow(ctx, w.root.pattern, info,
-		TypeWorkflowStarted, struct{}{})
+	PublishFromWorkflow(ctx, w.root.pattern, TypeWorkflowStarted, struct{}{})
 
 	result, err := w.Next.ExecuteWorkflow(ctx, in)
 
 	end := workflow.Now(ctx)
 	durationMs := end.Sub(start).Milliseconds()
 	if err != nil {
-		publishFromWorkflow(ctx, w.root.pattern, info,
+		PublishFromWorkflow(ctx, w.root.pattern,
 			TypeWorkflowFailed, map[string]any{"error": err.Error()})
 	} else {
-		publishFromWorkflow(ctx, w.root.pattern, info,
+		PublishFromWorkflow(ctx, w.root.pattern,
 			TypeWorkflowCompleted, map[string]any{"durationMs": durationMs})
 	}
 	return result, err
 }
 
-// publishFromWorkflow fires a PublishEvent local activity and waits for its
+// PublishFromWorkflow fires a PublishEvent local activity and waits for its
 // completion on a short timeout. Failures are logged but never surfaced —
-// observability must never break the workflow.
-func publishFromWorkflow(
-	ctx workflow.Context, pattern string, info *workflow.Info, typ string, data any,
-) {
+// observability must never break the workflow. Pattern code can call this
+// directly to emit additional framework-level progression events (e.g. the
+// compensation bracket in the saga pattern).
+func PublishFromWorkflow(ctx workflow.Context, pattern, typ string, data any) {
+	info := workflow.GetInfo(ctx)
 	env := NewWorkflowEnvelope(
 		pattern, info.WorkflowExecution.ID, info.WorkflowExecution.RunID,
 		typ, workflow.Now(ctx), data,
@@ -92,13 +91,6 @@ func publishFromWorkflow(
 		workflow.GetLogger(ctx).Warn("publish event failed",
 			"type", typ, "error", err)
 	}
-}
-
-// PublishFromWorkflow exposes the workflow-side helper to pattern code that
-// wants to emit additional framework-level progression events (e.g. the
-// compensation bracket in the saga pattern).
-func PublishFromWorkflow(ctx workflow.Context, pattern, typ string, data any) {
-	publishFromWorkflow(ctx, pattern, workflow.GetInfo(ctx), typ, data)
 }
 
 // activityInbound publishes step.started / completed / failed around every

@@ -30,7 +30,7 @@ func main() {
 		log.Printf("nats unavailable at %s (%v) — running without event publishing", natsURL, err)
 		publisher = events.NopPublisher{}
 	}
-	defer closePublisher(publisher)
+	defer publisher.Close()
 
 	c, err := client.Dial(client.Options{HostPort: address})
 	if err != nil {
@@ -64,11 +64,5 @@ func main() {
 
 	if err := w.Run(worker.InterruptCh()); err != nil {
 		log.Fatalf("worker stopped with error: %v", err)
-	}
-}
-
-func closePublisher(p events.Publisher) {
-	if np, ok := p.(*events.NATSPublisher); ok && np.Conn != nil {
-		np.Conn.Close()
 	}
 }

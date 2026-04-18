@@ -76,7 +76,6 @@ func OrderProcessingWorkflow(ctx workflow.Context, input OrderInput) (OrderResul
 	if err := workflow.ExecuteActivity(ctx, a.ChargePayment, input, itemID).Get(ctx, &txnID); err != nil {
 		progress.Failed = "charge-payment"
 		result.Status = "failed"
-		result.Compensated = append(result.Compensated, itemID)
 		runCompensations()
 		return result, err
 	}
@@ -92,7 +91,6 @@ func OrderProcessingWorkflow(ctx workflow.Context, input OrderInput) (OrderResul
 	if err := workflow.ExecuteActivity(ctx, a.ShipOrder, input).Get(ctx, &trackingID); err != nil {
 		progress.Failed = "ship-order"
 		result.Status = "failed"
-		result.Compensated = append(result.Compensated, txnID, itemID)
 		runCompensations()
 		return result, err
 	}
@@ -108,7 +106,6 @@ func OrderProcessingWorkflow(ctx workflow.Context, input OrderInput) (OrderResul
 	if err := workflow.ExecuteActivity(ctx, a.SendConfirmation, input).Get(ctx, &email); err != nil {
 		progress.Failed = "send-confirmation"
 		result.Status = "failed"
-		result.Compensated = append(result.Compensated, trackingID, txnID, itemID)
 		runCompensations()
 		return result, err
 	}

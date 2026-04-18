@@ -24,10 +24,10 @@ const (
 	TypeEmailRetracted    = "saga.notification.retracted"
 )
 
-// publishBusiness emits a business event from within an activity. Nil-safe so
-// tests that don't wire a publisher still pass.
+// publishBusiness emits a business event from within an activity. A nil
+// Publisher is tolerated so the activities stay runnable without NATS.
 func (a *Activities) publishBusiness(ctx context.Context, typ string, data any) {
-	if a == nil || a.Publisher == nil {
+	if a.Publisher == nil {
 		return
 	}
 	info := activity.GetInfo(ctx)

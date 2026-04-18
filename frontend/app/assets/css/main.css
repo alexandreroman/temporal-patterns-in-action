@@ -16,7 +16,7 @@
 }
 
 .edge-flow-warn {
-  animation: edge-flow 0.9s linear infinite reverse;
+  animation: edge-flow 0.9s linear infinite;
 }
 
 .edge-flow-error {

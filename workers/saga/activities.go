@@ -42,7 +42,7 @@ func (a *Activities) maybeInjectRandomTimeout(ctx context.Context) error {
 // ReserveInventory reserves stock for the order and returns an item/reservation ID.
 func (a *Activities) ReserveInventory(ctx context.Context, input OrderInput) (string, error) {
 	activity.GetLogger(ctx).Info("Reserving inventory",
-		"customer", input.CustomerID, "order", input.OrderID)
+		"customer", input.CustomerID, "order", input.OrderID, "transactionId", input.TransactionID)
 	if err := a.maybeInjectRandomTimeout(ctx); err != nil {
 		return "", err
 	}
@@ -68,7 +68,7 @@ func (a *Activities) ReleaseInventory(ctx context.Context, itemID string) error 
 // the call idempotent on the payment provider side.
 func (a *Activities) ChargePayment(ctx context.Context, input OrderInput, reservationID string) (string, error) {
 	activity.GetLogger(ctx).Info("Charging payment",
-		"customer", input.CustomerID, "amount", input.Amount, "reservation", reservationID)
+		"customer", input.CustomerID, "amount", input.Amount, "reservation", reservationID, "transactionId", input.TransactionID)
 	if err := a.maybeInjectRandomTimeout(ctx); err != nil {
 		return "", err
 	}
@@ -91,7 +91,7 @@ func (a *Activities) RefundPayment(ctx context.Context, transactionID string, am
 
 // ShipOrder dispatches the order and returns a tracking ID.
 func (a *Activities) ShipOrder(ctx context.Context, input OrderInput) (string, error) {
-	activity.GetLogger(ctx).Info("Shipping order", "order", input.OrderID)
+	activity.GetLogger(ctx).Info("Shipping order", "order", input.OrderID, "transactionId", input.TransactionID)
 	if err := a.maybeInjectRandomTimeout(ctx); err != nil {
 		return "", err
 	}
@@ -115,7 +115,7 @@ func (a *Activities) CancelShipment(ctx context.Context, trackingID string) erro
 
 // SendConfirmation emails the customer that the order is confirmed.
 func (a *Activities) SendConfirmation(ctx context.Context, input OrderInput) (string, error) {
-	activity.GetLogger(ctx).Info("Sending confirmation", "customer", input.CustomerID)
+	activity.GetLogger(ctx).Info("Sending confirmation", "customer", input.CustomerID, "transactionId", input.TransactionID)
 	if err := a.maybeInjectRandomTimeout(ctx); err != nil {
 		return "", err
 	}

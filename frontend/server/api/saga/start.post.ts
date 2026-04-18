@@ -18,6 +18,7 @@ export default defineEventHandler(async (event): Promise<SagaStartResponse> => {
         customerId: body.customerId,
         orderId: body.orderId,
         amount: body.amount,
+        transactionId: `tx-${body.orderId}`,
         failAt: body.failAt ?? "",
       },
     ],

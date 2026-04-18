@@ -5,9 +5,10 @@ const TaskQueue = "patterns-saga"
 
 // OrderInput is the input to the saga workflow.
 type OrderInput struct {
-	CustomerID string `json:"customerId"`
-	OrderID    string `json:"orderId"`
-	Amount     int    `json:"amount"`
+	CustomerID     string `json:"customerId"`
+	OrderID        string `json:"orderId"`
+	Amount         int    `json:"amount"`
+	TransactionID  string `json:"transactionId"`
 	// FailAt simulates a failure at a given step for demo purposes.
 	// Accepted values: "", "inventory", "payment", "shipping", "notification".
 	FailAt string `json:"failAt,omitempty"`

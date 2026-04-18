@@ -19,12 +19,5 @@ useHead({
     <main class="mx-auto max-w-5xl px-6 py-10">
       <NuxtPage />
     </main>
-
-    <footer class="mx-auto max-w-5xl px-6 py-10 text-sm text-slate-500">
-      Built with Nuxt + Temporal.
-      <NuxtLink to="http://localhost:8233" external class="underline hover:text-slate-300">
-        Open Temporal UI
-      </NuxtLink>
-    </footer>
   </div>
 </template>

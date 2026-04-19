@@ -180,18 +180,11 @@ worker. Keeping the dial-failure fallback in
 decide its own tolerance — e.g. a future pattern
 could choose to fail fast instead.
 
-## When to migrate to JetStream
+## JetStream migration
 
-Consider JetStream when:
-
-- A new pattern requires event replay for late
-  subscribers.
-- Multiple consumers must each see the full
-  stream (durable consumers).
-- Events must survive a NATS restart.
-
-Migration plan: declare a stream per pattern
-(`stream=patterns-<name>,
-subjects=patterns.<name>.>`) and switch the
-publisher to `js.Publish`. No subject or
-envelope changes required.
+The current subject hierarchy is JetStream-ready:
+if replay, durable consumers, or restart survival
+become needed, declare a stream per pattern
+(`subjects=patterns.<name>.>`) and switch the
+publisher to `js.Publish` — no subject or envelope
+changes required.

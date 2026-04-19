@@ -25,7 +25,3 @@ as the first parameter after `ctx`, log it as
 `"transactionId", txID`, and match the call site in `workflow.go`.
 Do not rename to `transactionID` or drop the log field — the frontend
 Temporal timeline and NATS envelopes rely on the consistent naming.
-The Go SDK registers activities by function value
-(`RegisterActivityWithOptions(method, Name: "kebab-case")`); signature
-changes are compile-time checked and do not affect the kebab-case
-registered names (`reserve-inventory`, etc.).

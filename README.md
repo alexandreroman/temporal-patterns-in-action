@@ -41,6 +41,12 @@ make infra-up
 Temporal Web UI is available at
 <http://localhost:8233>.
 
+Alternatively, from the repository root, run `make dev`
+to launch the frontend and all workers in one terminal
+with hot-reload (requires [`air`](https://github.com/air-verse/air)).
+The per-component walkthrough below remains useful when
+debugging a single module in isolation.
+
 In a second terminal, run the Go worker:
 
 ```bash

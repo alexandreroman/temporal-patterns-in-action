@@ -18,10 +18,15 @@ run-saga: ## Run the saga worker
 dev: ## Show per-pattern dev targets (hot-reload)
 	@echo "Pick a pattern to hot-reload:"
 	@for p in $(PATTERNS); do echo "  make dev-$$p"; done
+	@echo "  make dev-all   (run every pattern in parallel)"
 
 .PHONY: dev-saga
 dev-saga: ## Run the saga worker with hot-reload (requires Air)
 	cd saga && air
+
+.PHONY: dev-all
+dev-all: ## Run every pattern worker in parallel with hot-reload (requires Air)
+	@$(MAKE) -j $(addprefix dev-,$(PATTERNS))
 
 .PHONY: build
 build: ## Build all pattern binaries into bin/

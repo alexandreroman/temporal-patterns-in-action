@@ -24,6 +24,18 @@ frontend: ## Run the frontend dev server
 worker-saga: ## Run the saga pattern worker
 	$(MAKE) -C workers run-saga
 
+.PHONY: dev-frontend
+dev-frontend: ## Run the frontend dev server (hot-reload)
+	$(MAKE) -C frontend dev
+
+.PHONY: dev-workers
+dev-workers: ## Run every pattern worker with hot-reload (requires Air)
+	$(MAKE) -C workers dev-all
+
+.PHONY: dev
+dev: ## Run the frontend and all workers in parallel with hot-reload
+	@$(MAKE) -j dev-frontend dev-workers
+
 .PHONY: check
 check: ## Run all checks across modules
 	$(MAKE) -C frontend check

@@ -43,6 +43,8 @@ function eventLabel(env: EventEnvelope): string {
       return `${step} failed: ${error}`;
     case "batch.item.started":
       return `Item #${index} started — ${service} (attempt ${attempt ?? 1})`;
+    case "batch.item.stage_completed":
+      return `Item #${index} stage done — ${service}`;
     case "batch.item.completed":
       return `Item #${index} done`;
     case "batch.item.attempt_failed":

@@ -3,10 +3,14 @@ import { computed } from "vue";
 import type { EventEnvelope } from "~~/shared/events";
 
 /**
- * Sliding-window view: up to `parallelism` chips showing currently-active
- * items. An item is "active" between its latest `batch.item.started` and its
- * next `batch.item.completed` / `attempt_failed` / workflow terminal event.
- * A chip flips to `retry` when a subsequent `started` arrives with attempt>1.
+ * Sliding-window view: up to `parallelism` chips showing the items currently
+ * occupying a worker activity slot. An item is "active" between its latest
+ * `batch.item.started` and the NEXT `batch.item.stage_completed` /
+ * `attempt_failed` / `completed` (or a workflow terminal event). Because a
+ * stage_completed event releases the slot before the next stage re-acquires
+ * one, the chips truly reflect the 4 items currently in a worker activity
+ * slot. A chip flips to `retry` when a subsequent `started` arrives with
+ * attempt>1.
  */
 
 type SlotState = "active" | "retry";
@@ -51,6 +55,7 @@ const activeItems = computed<ActiveItem[]>(() => {
         });
         break;
       }
+      case "batch.item.stage_completed":
       case "batch.item.attempt_failed":
       case "batch.item.completed":
         byIndex.delete(idxRaw);

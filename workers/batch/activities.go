@@ -75,6 +75,12 @@ func (a *Activities) runStage(ctx context.Context, in StageInput, emitCompleted 
 		return fmt.Errorf("%s service timeout", in.Service)
 	}
 
+	events.PublishBusinessAs(ctx, a.Publisher, Pattern, in.RootWorkflowID, runID, TypeItemStageCompleted, map[string]any{
+		"index":   in.Index,
+		"service": in.Service,
+		"attempt": attempt,
+	})
+
 	if emitCompleted {
 		events.PublishBusinessAs(ctx, a.Publisher, Pattern, in.RootWorkflowID, runID, TypeItemCompleted, map[string]any{
 			"index": in.Index,

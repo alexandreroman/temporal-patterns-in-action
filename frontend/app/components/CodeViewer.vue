@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, onBeforeUnmount, ref, watch } from "vue";
 import { createHighlighter, type ThemedToken } from "shiki";
 import type { CodeLang } from "~/composables/useCodeLang";
 import type { CodeSource } from "~/types/code-viewer";
@@ -13,7 +13,7 @@ const lang = useCodeLang();
 
 const highlighter = await createHighlighter({
   themes: ["github-light", "github-dark"],
-  langs: ["go", "java", "python"],
+  langs: ["go", "java", "python", "typescript"],
 });
 
 const TOKENIZED = computed<Record<string, ThemedToken[][]>>(() => {
@@ -34,6 +34,23 @@ const gutterWidth = computed(() => `${String(currentTokens.value.length).length}
 
 const scrollerRef = ref<HTMLElement | null>(null);
 const lineRefs = ref<(HTMLElement | null)[]>([]);
+
+const fullscreen = ref(false);
+
+const onKeydown = (e: KeyboardEvent) => {
+  if (e.key === "Escape") fullscreen.value = false;
+};
+
+watch(fullscreen, (on) => {
+  document.body.style.overflow = on ? "hidden" : "";
+  if (on) window.addEventListener("keydown", onKeydown);
+  else window.removeEventListener("keydown", onKeydown);
+});
+
+onBeforeUnmount(() => {
+  document.body.style.overflow = "";
+  window.removeEventListener("keydown", onKeydown);
+});
 
 // Why: scrollIntoView() would scroll the page too; manually moving the scroller keeps the jump local.
 watch(
@@ -70,8 +87,11 @@ watch(
 </script>
 
 <template>
-  <div class="overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700">
-    <div class="flex border-b border-slate-200 dark:border-slate-700">
+  <div
+    class="overflow-hidden border border-slate-200 dark:border-slate-700"
+    :class="fullscreen ? 'fixed inset-0 z-50 flex flex-col' : 'rounded-xl'"
+  >
+    <div class="flex border-b border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
       <button
         v-for="(src, key) in sources"
         :key="key"
@@ -85,10 +105,41 @@ watch(
       >
         {{ src.label }}
       </button>
+      <button
+        class="ml-auto px-3 py-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+        :aria-label="fullscreen ? 'Exit fullscreen' : 'Enter fullscreen'"
+        :title="fullscreen ? 'Exit fullscreen' : 'Enter fullscreen'"
+        @click="fullscreen = !fullscreen"
+      >
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="h-[14px] w-[14px]"
+        >
+          <template v-if="fullscreen">
+            <path d="M4 14h6v6" />
+            <path d="M20 10h-6V4" />
+            <path d="M14 10l7-7" />
+            <path d="M3 21l7-7" />
+          </template>
+          <template v-else>
+            <path d="M15 3h6v6" />
+            <path d="M9 21H3v-6" />
+            <path d="M21 3l-7 7" />
+            <path d="M3 21l7-7" />
+          </template>
+        </svg>
+      </button>
     </div>
     <div
       ref="scrollerRef"
-      class="shiki-code max-h-80 overflow-auto bg-white dark:bg-slate-900 p-4 font-mono text-[11px] leading-relaxed"
+      class="shiki-code overflow-auto bg-white dark:bg-slate-900 p-4 font-mono text-[11px] leading-relaxed"
+      :class="fullscreen ? 'flex-1 min-h-0' : 'max-h-80'"
     >
       <span
         v-for="(tokens, idx) in currentTokens"

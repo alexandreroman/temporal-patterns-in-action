@@ -3,15 +3,20 @@ import { computed } from "vue";
 import type { EventEnvelope } from "~~/shared/events";
 
 /**
- * Three-card summary derived from the event stream.
+ * Four-card summary derived from the event stream.
  *   - processed: unique indices whose final state is `completed`.
  *   - failed:    unique indices whose final state is `attempt_failed`
  *                (i.e. retried to exhaustion without completing).
+ *   - queued:    items still Running in Temporal — i.e. not yet completed or
+ *                failed. Throughput is gated by the worker's
+ *                MaxConcurrentActivityExecutionSize, so this count reflects
+ *                workflows waiting for a worker activity slot.
  */
 
 interface Metrics {
   processed: number;
   failed: number;
+  queued: number;
 }
 
 const props = withDefaults(
@@ -45,7 +50,9 @@ const metrics = computed<Metrics>(() => {
     else if (type === "batch.item.attempt_failed") failed++;
   }
 
-  return { processed, failed };
+  const queued = Math.max(0, props.total - processed - failed);
+
+  return { processed, failed, queued };
 });
 
 interface Card {
@@ -55,13 +62,14 @@ interface Card {
 
 const CARDS: readonly Card[] = [
   { label: "Total", value: () => props.total },
+  { label: "Queued", value: () => metrics.value.queued },
   { label: "Processed", value: () => metrics.value.processed },
   { label: "Failed", value: () => metrics.value.failed },
 ];
 </script>
 
 <template>
-  <div class="grid grid-cols-3 gap-2.5">
+  <div class="grid grid-cols-4 gap-2.5">
     <div
       v-for="card in CARDS"
       :key="card.label"

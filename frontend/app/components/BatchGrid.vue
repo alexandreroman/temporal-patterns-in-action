@@ -5,11 +5,14 @@ import type { EventEnvelope } from "~~/shared/events";
 /**
  * Grid of `total` cells, one per item. Each cell's state is folded from the
  * event stream: the most recent `batch.item.*` event for that index decides
- * the cell colour. Retry policy guarantees every item eventually completes,
- * so a terminal `failed` state is not surfaced in the demo.
+ * the cell colour. A `queued` cell means the child workflow is already Running
+ * in Temporal but is waiting for a worker activity slot, since throttling is
+ * enforced via `worker.Options.MaxConcurrentActivityExecutionSize` rather than
+ * by staggering workflow dispatch. Retry policy guarantees every item
+ * eventually completes, so a terminal `failed` state is not surfaced.
  */
 
-type CellState = "pending" | "running" | "retrying" | "done";
+type CellState = "queued" | "running" | "retrying" | "done";
 
 const props = withDefaults(
   defineProps<{
@@ -20,7 +23,7 @@ const props = withDefaults(
 );
 
 const cells = computed<CellState[]>(() => {
-  const out: CellState[] = Array.from({ length: props.total }, () => "pending");
+  const out: CellState[] = Array.from({ length: props.total }, () => "queued");
 
   for (const env of props.events) {
     const data = env.data as Record<string, unknown>;
@@ -49,7 +52,7 @@ const progressPct = computed(() =>
 );
 
 const CELL_CLASS: Record<CellState, string> = {
-  pending: "bg-slate-100 border-slate-200 dark:bg-slate-800 dark:border-slate-700",
+  queued: "bg-slate-100 border-slate-200 dark:bg-slate-800 dark:border-slate-700",
   running: "bg-blue-100 border-blue-300 dark:bg-blue-900 dark:border-blue-600",
   retrying: "bg-amber-100 border-amber-300 dark:bg-amber-900 dark:border-amber-600",
   done: "bg-emerald-100 border-emerald-300 dark:bg-emerald-900 dark:border-emerald-600",
@@ -61,7 +64,7 @@ interface LegendEntry {
 }
 
 const LEGEND: readonly LegendEntry[] = [
-  { state: "pending", label: "Pending" },
+  { state: "queued", label: "Queued" },
   { state: "running", label: "Running" },
   { state: "retrying", label: "Retry" },
   { state: "done", label: "Done" },

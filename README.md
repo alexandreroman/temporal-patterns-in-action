@@ -125,7 +125,7 @@ graph LR
 | --------------------- | ------------- | ---------------------------- |
 | Saga                  | available     | `workers/saga`               |
 | Signals & Queries     | coming soon   | —                            |
-| Long-running workflow | coming soon   | —                            |
+| Long-running batch    | available     | `workers/batch`              |
 
 ## License
 

@@ -3,7 +3,7 @@ import { WorkflowNotFoundError } from "@temporalio/client";
 import { subscribe } from "~~/server/utils/nats";
 import type { EventEnvelope } from "~~/shared/events";
 
-const KNOWN_PATTERNS = new Set(["saga"]);
+const KNOWN_PATTERNS = new Set(["saga", "batch"]);
 const HEARTBEAT_INTERVAL_MS = 15_000;
 const DESCRIBE_POLL_INTERVAL_MS = 250;
 const DESCRIBE_POLL_DEADLINE_MS = 30_000;

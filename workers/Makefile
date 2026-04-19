@@ -1,7 +1,7 @@
 .DEFAULT_GOAL := help
 
 # Known patterns — each has a dedicated binary under <pattern>/cmd/worker.
-PATTERNS := saga
+PATTERNS := saga batch
 
 ##@ Development
 
@@ -14,6 +14,10 @@ run: ## Show per-pattern run targets
 run-saga: ## Run the saga worker
 	go run ./saga/cmd/worker
 
+.PHONY: run-batch
+run-batch: ## Run the batch worker
+	go run ./batch/cmd/worker
+
 .PHONY: dev
 dev: ## Show per-pattern dev targets (hot-reload)
 	@echo "Pick a pattern to hot-reload:"
@@ -23,6 +27,10 @@ dev: ## Show per-pattern dev targets (hot-reload)
 .PHONY: dev-saga
 dev-saga: ## Run the saga worker with hot-reload (requires Air)
 	cd saga && air
+
+.PHONY: dev-batch
+dev-batch: ## Run the batch worker with hot-reload (requires Air)
+	cd batch && air
 
 .PHONY: dev-all
 dev-all: ## Run every pattern worker in parallel with hot-reload (requires Air)
@@ -40,6 +48,11 @@ build: ## Build all pattern binaries into bin/
 build-saga: ## Build the saga binary into bin/saga
 	@mkdir -p bin
 	go build -o bin/saga ./saga/cmd/worker
+
+.PHONY: build-batch
+build-batch: ## Build the batch binary into bin/batch
+	@mkdir -p bin
+	go build -o bin/batch ./batch/cmd/worker
 
 ##@ Quality
 

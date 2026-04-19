@@ -15,3 +15,6 @@ export function getTemporalClient(): Promise<Client> {
 
 export const SAGA_TASK_QUEUE = "patterns-saga";
 export const SAGA_WORKFLOW_TYPE = "OrderProcessingWorkflow";
+
+export const BATCH_TASK_QUEUE = "patterns-batch";
+export const BATCH_WORKFLOW_TYPE = "BatchProcessingWorkflow";

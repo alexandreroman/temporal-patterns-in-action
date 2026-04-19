@@ -12,15 +12,16 @@ const patterns = [
     status: "available" as const,
   },
   {
+    slug: "batch",
+    title: "Long-Running Batch",
+    description:
+      "Parallel sliding window over a large image batch — retries, heartbeats, and a bounded backlog.",
+    status: "available" as const,
+  },
+  {
     slug: "signals",
     title: "Signals & Queries",
     description: "Interact with a running workflow — approve, cancel, inspect progress.",
-    status: "coming-soon" as const,
-  },
-  {
-    slug: "long-running",
-    title: "Long-running workflow",
-    description: "Entity workflow with continue-as-new to keep history bounded.",
     status: "coming-soon" as const,
   },
 ];

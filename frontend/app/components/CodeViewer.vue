@@ -30,7 +30,7 @@ const TOKENIZED = computed<Record<string, ThemedToken[][]>>(() => {
 
 const currentTokens = computed(() => TOKENIZED.value[lang.value] ?? []);
 
-const gutterWidth = computed(() => `${String(currentTokens.value.length).length}ch`);
+const gutterWidth = computed(() => `calc(${String(currentTokens.value.length).length}ch + 1rem)`);
 
 const scrollerRef = ref<HTMLElement | null>(null);
 const lineRefs = ref<(HTMLElement | null)[]>([]);

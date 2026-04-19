@@ -63,8 +63,8 @@ interface Card {
 const CARDS: readonly Card[] = [
   { label: "Total", value: () => props.total },
   { label: "Queued", value: () => metrics.value.queued },
-  { label: "Processed", value: () => metrics.value.processed },
   { label: "Failed", value: () => metrics.value.failed },
+  { label: "Processed", value: () => metrics.value.processed },
 ];
 </script>
 

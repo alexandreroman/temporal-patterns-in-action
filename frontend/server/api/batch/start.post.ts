@@ -1,7 +1,6 @@
 import type { BatchStartRequest, BatchStartResponse } from "~~/shared/types";
 
 const TOTAL = 48;
-const PARALLELISM = 4;
 
 export default defineEventHandler(async (event): Promise<BatchStartResponse> => {
   const body = await readBody<BatchStartRequest>(event);
@@ -17,7 +16,6 @@ export default defineEventHandler(async (event): Promise<BatchStartResponse> => 
       {
         batchId: body.batchId,
         total: TOTAL,
-        parallelism: PARALLELISM,
         failureRate,
       },
     ],

@@ -1,8 +1,9 @@
 // Package batch implements the long-running batch pattern: dispatch N child
-// workflows with a sliding window of at most `Parallelism` in flight at any
-// time, then report a summary. Each child workflow fans out to the 4 pipeline
-// stages. Retries are bounded (MaximumAttempts=3) so a transient stage timeout
-// is retried to success.
+// workflows in one shot, then report a summary. Each child workflow fans out
+// to the 4 pipeline stages. The effective sliding window is enforced by the
+// worker's MaxConcurrentActivityExecutionSize rather than an in-workflow
+// semaphore. Retries are bounded (MaximumAttempts=3) so a transient stage
+// timeout is retried to success.
 package batch
 
 import (
@@ -36,9 +37,10 @@ func stageActivityOptions() workflow.ActivityOptions {
 	}
 }
 
-// BatchProcessingWorkflow dispatches Total child workflows with at most
-// Parallelism in flight at once, then reports a summary. Individual item
-// failures are counted and reported — they never fail the workflow itself.
+// BatchProcessingWorkflow dispatches Total child workflows in one shot, then
+// reports a summary. The effective sliding window is enforced by the worker's
+// MaxConcurrentActivityExecutionSize rather than in-workflow logic. Individual
+// item failures are counted and reported — they never fail the workflow itself.
 func BatchProcessingWorkflow(ctx workflow.Context, input BatchInput) (BatchResult, error) {
 	logger := workflow.GetLogger(ctx)
 	rootID := workflow.GetInfo(ctx).WorkflowExecution.ID
@@ -58,16 +60,12 @@ func BatchProcessingWorkflow(ctx workflow.Context, input BatchInput) (BatchResul
 		return result, err
 	}
 
-	sem := workflow.NewSemaphore(ctx, int64(input.Parallelism))
 	futures := make([]workflow.Future, 0, input.Total)
 
-	// Dispatch loop — acquire a slot before starting each child workflow so at
-	// most `Parallelism` are in flight. A workflow.Go goroutine releases the
-	// slot as soon as the child future resolves.
+	// Dispatch loop — start every child immediately. The worker's
+	// MaxConcurrentActivityExecutionSize caps how many stage activities run in
+	// parallel, which throttles the effective sliding window.
 	for i := 0; i < input.Total; i++ {
-		if err := sem.Acquire(ctx, 1); err != nil {
-			return result, err
-		}
 		childCtx := workflow.WithChildOptions(ctx, workflow.ChildWorkflowOptions{
 			WorkflowID: fmt.Sprintf("%s-item-%03d", rootID, i),
 		})
@@ -80,11 +78,6 @@ func BatchProcessingWorkflow(ctx workflow.Context, input BatchInput) (BatchResul
 		progress.InFlight++
 		future := workflow.ExecuteChildWorkflow(childCtx, ProcessImageWorkflow, in)
 		futures = append(futures, future)
-
-		workflow.Go(ctx, func(gctx workflow.Context) {
-			defer sem.Release(1)
-			_ = future.Get(gctx, nil)
-		})
 	}
 
 	// Drain: wait for every child and update counters. Counters live on the

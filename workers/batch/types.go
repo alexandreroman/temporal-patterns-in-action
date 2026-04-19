@@ -5,9 +5,8 @@ const TaskQueue = "patterns-batch"
 
 // BatchInput is the input to the batch workflow.
 type BatchInput struct {
-	BatchID     string `json:"batchId"`
-	Total       int    `json:"total"`
-	Parallelism int    `json:"parallelism"`
+	BatchID string `json:"batchId"`
+	Total   int    `json:"total"`
 	// FailureRate is the probability of a first-attempt retryable failure per
 	// stage (0..1). Retries are bounded so a hit eventually succeeds.
 	FailureRate float64 `json:"failureRate"`

@@ -54,7 +54,6 @@ func TestBatchProcessingWorkflow_HappyPath(t *testing.T) {
 	env.ExecuteWorkflow(BatchProcessingWorkflow, BatchInput{
 		BatchID:     "batch-happy",
 		Total:       8,
-		Parallelism: 2,
 		FailureRate: 0,
 	})
 
@@ -87,7 +86,6 @@ func TestBatchProcessingWorkflow_RetriesSucceed(t *testing.T) {
 	env.ExecuteWorkflow(BatchProcessingWorkflow, BatchInput{
 		BatchID:     "batch-retry",
 		Total:       4,
-		Parallelism: 2,
 		FailureRate: 0,
 	})
 

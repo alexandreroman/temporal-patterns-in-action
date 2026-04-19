@@ -111,13 +111,12 @@ function waitForStreamOpen(): Promise<void> {
       <BatchArchitecture :events="events" />
     </div>
 
-    <!-- Metrics -->
-    <div class="mt-8">
+    <!-- Metrics + slots: label column on the left, data on the right -->
+    <div class="mt-8 grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-4">
+      <span class="text-xs text-slate-500 dark:text-slate-400">Metrics:</span>
       <BatchMetrics :events="events" :total="TOTAL" />
-    </div>
 
-    <!-- Slots -->
-    <div class="mt-4">
+      <span class="text-xs text-slate-500 dark:text-slate-400">Slots:</span>
       <BatchSlots :events="events" :parallelism="PARALLELISM" />
     </div>
 

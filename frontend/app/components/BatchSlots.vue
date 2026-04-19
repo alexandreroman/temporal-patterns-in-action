@@ -119,12 +119,11 @@ const slots = computed<(ActiveItem | null)[]>(() => {
 </script>
 
 <template>
-  <div class="flex flex-wrap items-center justify-center gap-2">
-    <span class="shrink-0 text-xs text-slate-500 dark:text-slate-400">Slots:</span>
+  <div class="flex items-center gap-2">
     <div
       v-for="(item, idx) in slots"
       :key="idx"
-      class="w-[180px] rounded-md border px-2.5 py-1 text-center font-mono text-[11px] transition-colors duration-300"
+      class="flex-1 rounded-md border px-2.5 py-1 text-center font-mono text-[11px] transition-colors duration-300"
       :class="chipClass(item)"
     >
       {{ item ? chipText(item) : "idle" }}

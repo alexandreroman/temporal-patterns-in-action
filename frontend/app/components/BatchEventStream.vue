@@ -5,6 +5,8 @@ defineProps<{
   events: EventEnvelope[];
 }>();
 
+type DotColor = "blue" | "green" | "red" | "amber";
+
 function shortType(type: string): string {
   return type.replace(/^(progress|batch)\./, "");
 }
@@ -42,7 +44,7 @@ function eventLabel(env: EventEnvelope): string {
     case "batch.item.started":
       return `Item #${index} started — ${service} (attempt ${attempt ?? 1})`;
     case "batch.item.completed":
-      return `Item #${index} done — ${service}`;
+      return `Item #${index} done`;
     case "batch.item.attempt_failed":
       return `Item #${index} failed — ${service}: ${error}`;
     case "batch.summary.reported": {
@@ -58,8 +60,17 @@ function eventLabel(env: EventEnvelope): string {
       return env.type;
   }
 }
+
+function dotColor(env: EventEnvelope): DotColor {
+  const t = env.type;
+  if (t.includes("attempt_failed")) return "amber";
+  if (t.includes("started")) return "blue";
+  if (t.includes("completed") || t.includes("reported")) return "green";
+  if (t.includes("failed")) return "red";
+  return "blue";
+}
 </script>
 
 <template>
-  <EventStream :events="events" :label-for="eventLabel" />
+  <EventStream :events="events" :label-for="eventLabel" :dot-color="dotColor" />
 </template>

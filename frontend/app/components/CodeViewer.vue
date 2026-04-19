@@ -138,8 +138,8 @@ watch(
     </div>
     <div
       ref="scrollerRef"
-      class="shiki-code overflow-auto bg-white dark:bg-slate-900 p-4 font-mono text-[11px] leading-relaxed"
-      :class="fullscreen ? 'flex-1 min-h-0' : 'max-h-80'"
+      class="shiki-code overflow-auto bg-white dark:bg-slate-900 p-4 font-mono leading-relaxed"
+      :class="fullscreen ? 'flex-1 min-h-0 text-[15px]' : 'max-h-80 text-[11px]'"
     >
       <span
         v-for="(tokens, idx) in currentTokens"

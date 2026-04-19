@@ -5,11 +5,11 @@ const TaskQueue = "patterns-batch"
 
 // BatchInput is the input to the batch workflow.
 type BatchInput struct {
-	BatchID     string  `json:"batchId"`
-	Total       int     `json:"total"`
-	Parallelism int     `json:"parallelism"`
+	BatchID     string `json:"batchId"`
+	Total       int    `json:"total"`
+	Parallelism int    `json:"parallelism"`
 	// FailureRate is the probability of a first-attempt retryable failure per
-	// item (0..1). Retries are bounded so a hit eventually succeeds.
+	// stage (0..1). Retries are bounded so a hit eventually succeeds.
 	FailureRate float64 `json:"failureRate"`
 }
 
@@ -21,11 +21,25 @@ type BatchResult struct {
 	Failed    int    `json:"failed"`
 }
 
-// ImageItem is a single unit of work dispatched by the workflow.
-type ImageItem struct {
+// ImageInput is the input to ProcessImageWorkflow — the per-image child
+// workflow that fans out across the 4 pipeline stages.
+type ImageInput struct {
 	BatchID string `json:"batchId"`
-	Index   int    `json:"index"`
-	Service string `json:"service"` // one of: resize, thumbnail, cdn, metadata
+	// RootWorkflowID is the parent workflow ID; stage activities route their
+	// business events to the parent's NATS subject via this value so the UI
+	// sees every item event on a single per-batch stream.
+	RootWorkflowID string  `json:"rootWorkflowId"`
+	Index          int     `json:"index"`
+	FailureRate    float64 `json:"failureRate"`
+}
+
+// StageInput is the input to each pipeline stage activity.
+type StageInput struct {
+	BatchID        string  `json:"batchId"`
+	RootWorkflowID string  `json:"rootWorkflowId"`
+	Index          int     `json:"index"`
+	Service        string  `json:"service"`
+	FailureRate    float64 `json:"failureRate"`
 }
 
 // Progress is returned by the getProgress query handler.

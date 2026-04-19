@@ -12,25 +12,27 @@ import (
 	"github.com/alexandreroman/temporal-patterns-in-action/workers/events"
 )
 
-// flakyActivities wraps Activities so the first attempt of every item fails
-// deterministically — independent of FailureRate's random draw. Used by the
-// retry test to assert that bounded retries carry a transient failure to
-// success.
+// flakyActivities wraps Activities so the first attempt of every thumbnail
+// stage fails deterministically — independent of FailureRate's random draw.
+// Used by the retry test to assert that bounded retries carry a transient
+// stage failure to success. Picking a middle stage (not the first or last)
+// exercises the retry path without hiding in boundary behaviour.
 type flakyActivities struct {
 	Activities
 }
 
-func (a *flakyActivities) ProcessImage(ctx context.Context, item ImageItem) error {
+func (a *flakyActivities) CreateThumbnail(ctx context.Context, in StageInput) error {
 	if int(activity.GetInfo(ctx).Attempt) == 1 {
-		events.PublishBusiness(ctx, a.Publisher, Pattern, TypeItemAttemptFailed, map[string]any{
-			"index":   item.Index,
-			"service": item.Service,
+		runID := activity.GetInfo(ctx).WorkflowExecution.RunID
+		events.PublishBusinessAs(ctx, a.Publisher, Pattern, in.RootWorkflowID, runID, TypeItemAttemptFailed, map[string]any{
+			"index":   in.Index,
+			"service": in.Service,
 			"attempt": 1,
 			"error":   "forced first-attempt failure",
 		})
 		return &retryable{msg: "forced first-attempt failure"}
 	}
-	return a.Activities.ProcessImage(ctx, item)
+	return a.Activities.CreateThumbnail(ctx, in)
 }
 
 type retryable struct{ msg string }
@@ -42,7 +44,11 @@ func TestBatchProcessingWorkflow_HappyPath(t *testing.T) {
 	env := suite.NewTestWorkflowEnvironment()
 
 	a := &Activities{Publisher: events.NopPublisher{}}
-	env.RegisterActivityWithOptions(a.ProcessImage, activity.RegisterOptions{Name: "process-image"})
+	env.RegisterWorkflow(ProcessImageWorkflow)
+	env.RegisterActivityWithOptions(a.ResizeImage, activity.RegisterOptions{Name: "resize-image"})
+	env.RegisterActivityWithOptions(a.CreateThumbnail, activity.RegisterOptions{Name: "create-thumbnail"})
+	env.RegisterActivityWithOptions(a.UploadToCDN, activity.RegisterOptions{Name: "upload-cdn"})
+	env.RegisterActivityWithOptions(a.WriteMetadata, activity.RegisterOptions{Name: "write-metadata"})
 	env.RegisterActivityWithOptions(a.ReportBatchSummary, activity.RegisterOptions{Name: "report-batch-summary"})
 
 	env.ExecuteWorkflow(BatchProcessingWorkflow, BatchInput{
@@ -71,7 +77,11 @@ func TestBatchProcessingWorkflow_RetriesSucceed(t *testing.T) {
 	env.SetTestTimeout(30 * time.Second)
 
 	a := &flakyActivities{Activities: Activities{Publisher: events.NopPublisher{}}}
-	env.RegisterActivityWithOptions(a.ProcessImage, activity.RegisterOptions{Name: "process-image"})
+	env.RegisterWorkflow(ProcessImageWorkflow)
+	env.RegisterActivityWithOptions(a.Activities.ResizeImage, activity.RegisterOptions{Name: "resize-image"})
+	env.RegisterActivityWithOptions(a.CreateThumbnail, activity.RegisterOptions{Name: "create-thumbnail"})
+	env.RegisterActivityWithOptions(a.Activities.UploadToCDN, activity.RegisterOptions{Name: "upload-cdn"})
+	env.RegisterActivityWithOptions(a.Activities.WriteMetadata, activity.RegisterOptions{Name: "write-metadata"})
 	env.RegisterActivityWithOptions(a.Activities.ReportBatchSummary, activity.RegisterOptions{Name: "report-batch-summary"})
 
 	env.ExecuteWorkflow(BatchProcessingWorkflow, BatchInput{
@@ -87,6 +97,6 @@ func TestBatchProcessingWorkflow_RetriesSucceed(t *testing.T) {
 	var result BatchResult
 	require.NoError(t, env.GetWorkflowResult(&result))
 	require.Equal(t, 4, result.Total)
-	require.Equal(t, 4, result.Processed, "bounded retries must carry first-attempt failures to success")
+	require.Equal(t, 4, result.Processed, "bounded retries must carry first-attempt stage failures to success")
 	require.Equal(t, 0, result.Failed)
 }

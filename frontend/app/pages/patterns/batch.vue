@@ -82,7 +82,7 @@ async function start() {
         <button
           type="button"
           :disabled="running"
-          class="rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-emerald-500 disabled:opacity-50"
+          class="cursor-pointer rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
           @click="start"
         >
           {{ starting ? "Starting…" : running ? "Running…" : "Run batch" }}

@@ -95,7 +95,7 @@ watch(
       <button
         v-for="(src, key) in sources"
         :key="key"
-        class="px-4 py-2 text-xs font-mono transition-colors border-b-2"
+        class="cursor-pointer px-4 py-2 text-xs font-mono transition-colors border-b-2"
         :class="
           key === lang
             ? 'border-blue-500 text-slate-900 dark:text-slate-100'
@@ -106,7 +106,7 @@ watch(
         {{ src.label }}
       </button>
       <button
-        class="ml-auto px-3 py-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
+        class="ml-auto cursor-pointer px-3 py-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors"
         :aria-label="fullscreen ? 'Exit fullscreen' : 'Enter fullscreen'"
         :title="fullscreen ? 'Exit fullscreen' : 'Enter fullscreen'"
         @click="fullscreen = !fullscreen"

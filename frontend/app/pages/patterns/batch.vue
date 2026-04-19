@@ -113,10 +113,10 @@ function waitForStreamOpen(): Promise<void> {
 
     <!-- Metrics + slots: label column on the left, data on the right -->
     <div class="mt-8 grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-4">
-      <span class="text-xs text-slate-500 dark:text-slate-400">Metrics:</span>
+      <h2 class="text-xs font-medium uppercase tracking-wide text-slate-400">Metrics:</h2>
       <BatchMetrics :events="events" :total="TOTAL" />
 
-      <span class="text-xs text-slate-500 dark:text-slate-400">Slots:</span>
+      <h2 class="text-xs font-medium uppercase tracking-wide text-slate-400">Slots:</h2>
       <BatchSlots :events="events" :parallelism="PARALLELISM" />
     </div>
 

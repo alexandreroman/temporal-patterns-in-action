@@ -10,13 +10,8 @@ run: ## Show per-pattern run targets
 	@echo "Pick a pattern to run:"
 	@for p in $(PATTERNS); do echo "  make run-$$p"; done
 
-.PHONY: run-saga
-run-saga: ## Run the saga worker
-	go run ./saga/cmd/worker
-
-.PHONY: run-batch
-run-batch: ## Run the batch worker
-	go run ./batch/cmd/worker
+run-%: ## Run a pattern worker (e.g. make run-saga)
+	go run ./$*/cmd/worker
 
 .PHONY: dev
 dev: ## Show per-pattern dev targets (hot-reload)
@@ -24,13 +19,8 @@ dev: ## Show per-pattern dev targets (hot-reload)
 	@for p in $(PATTERNS); do echo "  make dev-$$p"; done
 	@echo "  make dev-all   (run every pattern in parallel)"
 
-.PHONY: dev-saga
-dev-saga: ## Run the saga worker with hot-reload (requires Air)
-	cd saga && air
-
-.PHONY: dev-batch
-dev-batch: ## Run the batch worker with hot-reload (requires Air)
-	cd batch && air
+dev-%: ## Run a pattern worker with hot-reload (requires Air)
+	cd $* && air
 
 .PHONY: dev-all
 dev-all: ## Run every pattern worker in parallel with hot-reload (requires Air)
@@ -44,15 +34,9 @@ build: ## Build all pattern binaries into bin/
 		go build -o bin/$$p ./$$p/cmd/worker || exit 1; \
 	done
 
-.PHONY: build-saga
-build-saga: ## Build the saga binary into bin/saga
+build-%: ## Build a single pattern binary (e.g. make build-saga)
 	@mkdir -p bin
-	go build -o bin/saga ./saga/cmd/worker
-
-.PHONY: build-batch
-build-batch: ## Build the batch binary into bin/batch
-	@mkdir -p bin
-	go build -o bin/batch ./batch/cmd/worker
+	go build -o bin/$* ./$*/cmd/worker
 
 ##@ Quality
 

@@ -11,7 +11,10 @@ useHead({
       <div class="mx-auto flex max-w-5xl items-center px-6 py-4">
         <NuxtLink to="/" class="flex items-center gap-3">
           <img :src="'/images/temporal-logo.png'" alt="Temporal" class="h-10 w-auto" />
-          <span class="-translate-x-[8px] translate-y-[1px] text-base leading-none tracking-tight text-[#f2f2f2]">patterns in action</span>
+          <span
+            class="-translate-x-[8px] translate-y-[1px] text-base leading-none tracking-tight text-[#f2f2f2]"
+            >patterns in action</span
+          >
         </NuxtLink>
       </div>
     </header>

@@ -5,9 +5,7 @@ defineProps<{
   events: EventEnvelope[];
 }>();
 
-function shortType(type: string): string {
-  return type.replace(/^(progress|saga)\./, "");
-}
+type DotColor = "blue" | "green" | "red" | "amber";
 
 function eventLabel(env: EventEnvelope): string {
   const data = env.data as Record<string, unknown>;
@@ -39,15 +37,21 @@ function eventLabel(env: EventEnvelope): string {
       return `Shipment cancelled #${data.trackingId}`;
     case "saga.notification.sent":
       return `Confirmation sent to ${data.email}`;
-    default:
-      if (env.type.startsWith("saga.")) {
-        return shortType(env.type);
-      }
-      return env.type;
   }
+  return env.type;
+}
+
+function dotColor(env: EventEnvelope): DotColor {
+  const t = env.type;
+  if (t.includes("started")) return "blue";
+  if (t.includes("completed")) return "green";
+  if (t.includes("failed")) return "red";
+  if (t.includes("compensation") || t.includes("cancelled") || t.includes("refunded"))
+    return "amber";
+  return "blue";
 }
 </script>
 
 <template>
-  <EventStream :events="events" :label-for="eventLabel" />
+  <EventStream :events="events" :label-for="eventLabel" :dot-color="dotColor" />
 </template>

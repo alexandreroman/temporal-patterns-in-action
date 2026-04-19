@@ -2,10 +2,16 @@
 import { computed } from "vue";
 import type { EventEnvelope } from "~~/shared/events";
 
-const props = defineProps<{
-  events: EventEnvelope[];
-  labelFor: (env: EventEnvelope) => string;
-}>();
+type DotColor = "blue" | "green" | "red" | "amber";
+
+const props = withDefaults(
+  defineProps<{
+    events: EventEnvelope[];
+    labelFor: (env: EventEnvelope) => string;
+    dotColor?: (env: EventEnvelope) => DotColor;
+  }>(),
+  { dotColor: () => (): DotColor => "blue" },
+);
 
 const reversed = computed(() => [...props.events].reverse());
 
@@ -15,17 +21,6 @@ const startTime = computed(() => {
   const t = new Date(first.time).getTime();
   return Number.isNaN(t) ? null : t;
 });
-
-type DotColor = "blue" | "green" | "red" | "amber";
-
-function dotColor(type: string): DotColor {
-  if (type.includes("started")) return "blue";
-  if (type.includes("completed")) return "green";
-  if (type.includes("failed")) return "red";
-  if (type.includes("compensation") || type.includes("cancelled") || type.includes("refunded"))
-    return "amber";
-  return "blue";
-}
 
 const DOT_CLS: Record<DotColor, string> = {
   blue: "bg-blue-500",
@@ -65,7 +60,7 @@ function formatTime(env: EventEnvelope): string {
           :key="env.id"
           class="event-row flex items-baseline gap-2 border-b border-slate-100 py-1.5 text-[11px] last:border-0 dark:border-slate-800"
         >
-          <span class="mt-1 size-1.5 shrink-0 rounded-full" :class="DOT_CLS[dotColor(env.type)]" />
+          <span class="mt-1 size-1.5 shrink-0 rounded-full" :class="DOT_CLS[props.dotColor(env)]" />
           <span class="w-12 shrink-0 text-right font-mono text-[10px] text-slate-400">
             {{ formatTime(env) }}
           </span>

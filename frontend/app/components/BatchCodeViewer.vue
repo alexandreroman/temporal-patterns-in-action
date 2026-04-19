@@ -10,7 +10,7 @@ const props = defineProps<{
 
 const lang = useCodeLang();
 
-type StepKey = "dispatch" | "slot" | "drain" | "summary" | "retry";
+type StepKey = "dispatch" | "slot" | "drain" | "summary";
 
 interface BatchSource extends CodeSource {
   stepLines: Partial<Record<StepKey, [number, number]>>;
@@ -59,7 +59,6 @@ const SOURCES: Record<CodeLang, BatchSource> = {
     stepLines: {
       dispatch: [7, 14],
       slot: [16, 20],
-      retry: [12, 14],
       drain: [22, 29],
       summary: [31, 32],
     },
@@ -98,7 +97,6 @@ const SOURCES: Record<CodeLang, BatchSource> = {
     stepLines: {
       dispatch: [5, 9],
       slot: [11, 15],
-      retry: [7, 9],
       drain: [18, 22],
       summary: [24, 25],
     },
@@ -139,7 +137,6 @@ const SOURCES: Record<CodeLang, BatchSource> = {
     stepLines: {
       dispatch: [8, 18],
       slot: [10, 10],
-      retry: [11, 16],
       drain: [20, 23],
       summary: [25, 28],
     },
@@ -178,13 +175,7 @@ const currentHighlight = computed<[number, number] | null>(() => {
   if (latest.type === "batch.summary.reported") {
     return src.stepLines.summary ?? null;
   }
-  if (latest.type === "batch.item.attempt_failed") {
-    return src.stepLines.retry ?? src.stepLines.dispatch ?? null;
-  }
-  if (latest.type === "batch.item.started" && latest.attempt > 1) {
-    return src.stepLines.retry ?? src.stepLines.dispatch ?? null;
-  }
-  // batch.item.started (attempt 1) or batch.item.completed → dispatch phase.
+  // batch.item.started / completed / attempt_failed → dispatch phase.
   return src.stepLines.dispatch ?? null;
 });
 </script>

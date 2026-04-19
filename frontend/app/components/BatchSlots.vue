@@ -6,11 +6,10 @@ import type { EventEnvelope } from "~~/shared/events";
  * Sliding-window view: up to `parallelism` chips showing currently-active
  * items. An item is "active" between its latest `batch.item.started` and its
  * next `batch.item.completed` / `attempt_failed` / workflow terminal event.
- * A chip in the `failed` substate means the activity attempt errored but a
- * retry is pending — the next `started` with attempt>1 flips it to `retry`.
+ * A chip flips to `retry` when a subsequent `started` arrives with attempt>1.
  */
 
-type SlotState = "active" | "retry" | "failed";
+type SlotState = "active" | "retry";
 
 interface ActiveItem {
   index: number;
@@ -52,15 +51,7 @@ const activeItems = computed<ActiveItem[]>(() => {
         });
         break;
       }
-      case "batch.item.attempt_failed": {
-        const existing = byIndex.get(idxRaw);
-        byIndex.set(idxRaw, {
-          index: idxRaw,
-          service: existing?.service ?? service,
-          state: "failed",
-        });
-        break;
-      }
+      case "batch.item.attempt_failed":
       case "batch.item.completed":
         byIndex.delete(idxRaw);
         break;
@@ -85,7 +76,6 @@ function serviceLabel(service: string): string {
 
 function chipText(item: ActiveItem): string {
   if (item.state === "retry") return `#${item.index} retry`;
-  if (item.state === "failed") return `#${item.index} ${serviceLabel(item.service)} fail`;
   return `#${item.index} ${serviceLabel(item.service)}`;
 }
 
@@ -95,9 +85,6 @@ const CHIP_ACTIVE =
 const CHIP_RETRY =
   "border-amber-300 bg-amber-50 text-amber-700 " +
   "dark:border-amber-600 dark:bg-amber-950 dark:text-amber-200";
-const CHIP_FAILED =
-  "border-rose-300 bg-rose-50 text-rose-700 " +
-  "dark:border-rose-600 dark:bg-rose-950 dark:text-rose-200";
 const CHIP_IDLE =
   "border-slate-200 bg-slate-50 text-slate-400 " +
   "dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-500";
@@ -105,7 +92,6 @@ const CHIP_IDLE =
 function chipClass(item: ActiveItem | null): string {
   if (!item) return CHIP_IDLE;
   if (item.state === "retry") return CHIP_RETRY;
-  if (item.state === "failed") return CHIP_FAILED;
   return CHIP_ACTIVE;
 }
 

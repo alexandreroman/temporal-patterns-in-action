@@ -3,17 +3,15 @@ import { computed } from "vue";
 import type { EventEnvelope } from "~~/shared/events";
 
 /**
- * Four-card summary derived from the event stream.
+ * Three-card summary derived from the event stream.
  *   - processed: unique indices whose final state is `completed`.
  *   - failed:    unique indices whose final state is `attempt_failed`
  *                (i.e. retried to exhaustion without completing).
- *   - throughput: processed / elapsed, where elapsed is first→last event time.
  */
 
 interface Metrics {
   processed: number;
   failed: number;
-  throughput: string;
 }
 
 const props = withDefaults(
@@ -47,20 +45,7 @@ const metrics = computed<Metrics>(() => {
     else if (type === "batch.item.attempt_failed") failed++;
   }
 
-  const first = props.events[0];
-  const last = props.events[props.events.length - 1];
-  let elapsed = 0;
-  if (first && last && first !== last) {
-    const t0 = new Date(first.time).getTime();
-    const t1 = new Date(last.time).getTime();
-    if (!Number.isNaN(t0) && !Number.isNaN(t1) && t1 > t0) {
-      elapsed = (t1 - t0) / 1000;
-    }
-  }
-
-  const throughput = elapsed > 0 ? (processed / elapsed).toFixed(1) : "0.0";
-
-  return { processed, failed, throughput };
+  return { processed, failed };
 });
 
 interface Card {
@@ -72,12 +57,11 @@ const CARDS: readonly Card[] = [
   { label: "Total", value: () => props.total },
   { label: "Processed", value: () => metrics.value.processed },
   { label: "Failed", value: () => metrics.value.failed },
-  { label: "Throughput (/s)", value: () => metrics.value.throughput },
 ];
 </script>
 
 <template>
-  <div class="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+  <div class="grid grid-cols-3 gap-2.5">
     <div
       v-for="card in CARDS"
       :key="card.label"

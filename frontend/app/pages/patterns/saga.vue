@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from "vue";
+import { computed, reactive, ref } from "vue";
 import type { SagaStartRequest, SagaStartResponse } from "~~/shared/types";
 
 useSeoMeta({ title: "Saga" });
@@ -14,7 +14,7 @@ const workflowId = ref<string | null>(null);
 const starting = ref(false);
 const finalError = ref<string | null>(null);
 
-const { events, status } = usePatternStream("saga", workflowId);
+const { events, waitForOpen } = usePatternStream("saga", workflowId);
 
 const TERMINAL_EVENTS = new Set(["progress.workflow.completed", "progress.workflow.failed"]);
 
@@ -39,7 +39,7 @@ async function start() {
   // only after the start() response came back.
   workflowId.value = `saga-${orderId}`;
   try {
-    await waitForStreamOpen();
+    await waitForOpen();
     await $fetch<SagaStartResponse>("/api/saga/start", {
       method: "POST",
       body: {
@@ -55,21 +55,6 @@ async function start() {
   } finally {
     starting.value = false;
   }
-}
-
-function waitForStreamOpen(): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (status.value === "open") return resolve();
-    const stop = watch(status, (s) => {
-      if (s === "open") {
-        stop();
-        resolve();
-      } else if (s === "error" || s === "closed") {
-        stop();
-        reject(new Error(`event stream ${s}`));
-      }
-    });
-  });
 }
 </script>
 

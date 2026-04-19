@@ -11,8 +11,6 @@ export interface SagaStartResponse {
 
 export interface BatchStartRequest {
   batchId: string;
-  total: number;
-  parallelism: number;
   // "clean" → 0 failure rate; "failures" → small non-zero rate so retries are visible.
   scenario: "clean" | "failures";
 }

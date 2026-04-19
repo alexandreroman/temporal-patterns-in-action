@@ -72,5 +72,20 @@ export function usePatternStream(
     status.value = "closed";
   });
 
-  return { events, status };
+  function waitForOpen(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      if (status.value === "open") return resolve();
+      const stop = watch(status, (s) => {
+        if (s === "open") {
+          stop();
+          resolve();
+        } else if (s === "error" || s === "closed") {
+          stop();
+          reject(new Error(`event stream ${s}`));
+        }
+      });
+    });
+  }
+
+  return { events, status, waitForOpen };
 }

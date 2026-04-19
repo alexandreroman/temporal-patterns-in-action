@@ -5,11 +5,11 @@ import type { EventEnvelope } from "~~/shared/events";
 /**
  * Grid of `total` cells, one per item. Each cell's state is folded from the
  * event stream: the most recent `batch.item.*` event for that index decides
- * the cell colour. `attempt_failed` is a transient state — the next retry
- * start flips it back to `retrying`, and the subsequent `completed` to `done`.
+ * the cell colour. Retry policy guarantees every item eventually completes,
+ * so a terminal `failed` state is not surfaced in the demo.
  */
 
-type CellState = "pending" | "running" | "retrying" | "done" | "failed";
+type CellState = "pending" | "running" | "retrying" | "done";
 
 const props = withDefaults(
   defineProps<{
@@ -36,9 +36,6 @@ const cells = computed<CellState[]>(() => {
       case "batch.item.completed":
         out[idxRaw] = "done";
         break;
-      case "batch.item.attempt_failed":
-        out[idxRaw] = "failed";
-        break;
     }
   }
 
@@ -56,7 +53,6 @@ const CELL_CLASS: Record<CellState, string> = {
   running: "bg-blue-100 border-blue-300 dark:bg-blue-900 dark:border-blue-600",
   retrying: "bg-amber-100 border-amber-300 dark:bg-amber-900 dark:border-amber-600",
   done: "bg-emerald-100 border-emerald-300 dark:bg-emerald-900 dark:border-emerald-600",
-  failed: "bg-rose-100 border-rose-300 dark:bg-rose-900 dark:border-rose-600",
 };
 
 interface LegendEntry {
@@ -69,7 +65,6 @@ const LEGEND: readonly LegendEntry[] = [
   { state: "running", label: "Running" },
   { state: "retrying", label: "Retry" },
   { state: "done", label: "Done" },
-  { state: "failed", label: "Failed" },
 ];
 </script>
 

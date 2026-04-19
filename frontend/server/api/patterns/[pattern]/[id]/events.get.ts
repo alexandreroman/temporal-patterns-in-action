@@ -3,7 +3,6 @@ import { WorkflowNotFoundError } from "@temporalio/client";
 import { subscribe } from "~~/server/utils/nats";
 import type { EventEnvelope } from "~~/shared/events";
 
-const KNOWN_PATTERNS = new Set(["saga", "batch"]);
 const HEARTBEAT_INTERVAL_MS = 15_000;
 const DESCRIBE_POLL_INTERVAL_MS = 250;
 const DESCRIBE_POLL_DEADLINE_MS = 30_000;
@@ -12,11 +11,8 @@ export default defineEventHandler(async (event) => {
   const pattern = getRouterParam(event, "pattern");
   const id = getRouterParam(event, "id");
 
-  if (!pattern || !KNOWN_PATTERNS.has(pattern)) {
-    throw createError({ statusCode: 404, statusMessage: "unknown pattern" });
-  }
-  if (!id) {
-    throw createError({ statusCode: 400, statusMessage: "workflow id is required" });
+  if (!pattern || !id) {
+    throw createError({ statusCode: 400, statusMessage: "pattern and workflow id are required" });
   }
 
   const stream = createEventStream(event);
@@ -83,7 +79,7 @@ async function watchTerminalState(
       } catch (err) {
         if (isClosed()) return;
         await pushSynthetic(push, pattern, workflowId, runId, "progress.workflow.failed", {
-          error: extractErrorMessage(err),
+          error: String((err as Error)?.message ?? err),
         });
       }
       return;
@@ -139,17 +135,6 @@ async function pushSynthetic(
     data,
   };
   await push({ id: envelope.id, data: JSON.stringify(envelope) });
-}
-
-function extractErrorMessage(err: unknown): string {
-  if (err && typeof err === "object") {
-    const cause = (err as { cause?: unknown }).cause;
-    if (cause && typeof cause === "object" && typeof (cause as Error).message === "string") {
-      return (cause as Error).message;
-    }
-    if (typeof (err as Error).message === "string") return (err as Error).message;
-  }
-  return String(err);
 }
 
 function sleep(ms: number): Promise<void> {

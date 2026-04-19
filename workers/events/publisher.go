@@ -32,20 +32,14 @@ type NATSPublisher struct {
 	Conn *nats.Conn
 }
 
-// Close closes the underlying NATS connection. Nil-safe.
+// Close closes the underlying NATS connection.
 func (p *NATSPublisher) Close() error {
-	if p == nil || p.Conn == nil {
-		return nil
-	}
 	p.Conn.Close()
 	return nil
 }
 
 // Publish marshals the envelope and publishes it to the derived subject.
 func (p *NATSPublisher) Publish(_ context.Context, pattern string, env Envelope) error {
-	if p == nil || p.Conn == nil {
-		return nil
-	}
 	data, err := json.Marshal(env)
 	if err != nil {
 		return fmt.Errorf("marshal envelope: %w", err)

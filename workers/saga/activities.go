@@ -52,7 +52,7 @@ func (a *Activities) ReserveInventory(ctx context.Context, txID string, input Or
 			"inventory unavailable", "InventoryUnavailable", nil)
 	}
 	itemID := fmt.Sprintf("inv-%s", input.OrderID)
-	a.publishBusiness(ctx, TypeInventoryReserved, map[string]any{"itemId": itemID})
+	events.PublishBusiness(ctx, a.Publisher, Pattern, TypeInventoryReserved, map[string]any{"itemId": itemID})
 	return itemID, nil
 }
 
@@ -60,7 +60,7 @@ func (a *Activities) ReserveInventory(ctx context.Context, txID string, input Or
 func (a *Activities) ReleaseInventory(ctx context.Context, txID string, itemID string) error {
 	activity.GetLogger(ctx).Info("Releasing inventory", "id", itemID, "transactionId", txID)
 	time.Sleep(compensationDelay)
-	a.publishBusiness(ctx, TypeInventoryReleased, map[string]any{"itemId": itemID})
+	events.PublishBusiness(ctx, a.Publisher, Pattern, TypeInventoryReleased, map[string]any{"itemId": itemID})
 	return nil
 }
 
@@ -77,7 +77,7 @@ func (a *Activities) ChargePayment(ctx context.Context, txID string, input Order
 		return "", temporal.NewNonRetryableApplicationError(
 			"payment declined", "PaymentDeclined", nil)
 	}
-	a.publishBusiness(ctx, TypePaymentCharged, map[string]any{"amount": input.Amount})
+	events.PublishBusiness(ctx, a.Publisher, Pattern, TypePaymentCharged, map[string]any{"amount": input.Amount})
 	return fmt.Sprintf("pay-%s", reservationID), nil
 }
 
@@ -85,7 +85,7 @@ func (a *Activities) ChargePayment(ctx context.Context, txID string, input Order
 func (a *Activities) RefundPayment(ctx context.Context, txID string, paymentID string, amount int) error {
 	activity.GetLogger(ctx).Info("Refunding payment", "payment", paymentID, "amount", amount, "transactionId", txID)
 	time.Sleep(compensationDelay)
-	a.publishBusiness(ctx, TypePaymentRefunded, map[string]any{"amount": amount})
+	events.PublishBusiness(ctx, a.Publisher, Pattern, TypePaymentRefunded, map[string]any{"amount": amount})
 	return nil
 }
 
@@ -101,7 +101,7 @@ func (a *Activities) ShipOrder(ctx context.Context, txID string, input OrderInpu
 			"shipping unavailable", "ShippingUnavailable", nil)
 	}
 	trackingID := fmt.Sprintf("trk-%s", input.OrderID)
-	a.publishBusiness(ctx, TypeOrderShipped, map[string]any{"trackingId": trackingID})
+	events.PublishBusiness(ctx, a.Publisher, Pattern, TypeOrderShipped, map[string]any{"trackingId": trackingID})
 	return trackingID, nil
 }
 
@@ -109,7 +109,7 @@ func (a *Activities) ShipOrder(ctx context.Context, txID string, input OrderInpu
 func (a *Activities) CancelShipment(ctx context.Context, txID string, trackingID string) error {
 	activity.GetLogger(ctx).Info("Cancelling shipment", "tracking", trackingID, "transactionId", txID)
 	time.Sleep(compensationDelay)
-	a.publishBusiness(ctx, TypeShipmentCancelled, map[string]any{"trackingId": trackingID})
+	events.PublishBusiness(ctx, a.Publisher, Pattern, TypeShipmentCancelled, map[string]any{"trackingId": trackingID})
 	return nil
 }
 
@@ -125,6 +125,6 @@ func (a *Activities) SendConfirmation(ctx context.Context, txID string, input Or
 			"notification unavailable", "NotificationUnavailable", nil)
 	}
 	email := fmt.Sprintf("%s@example.com", input.CustomerID)
-	a.publishBusiness(ctx, TypeConfirmationSent, map[string]any{"email": email})
+	events.PublishBusiness(ctx, a.Publisher, Pattern, TypeConfirmationSent, map[string]any{"email": email})
 	return email, nil
 }

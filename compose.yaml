@@ -53,3 +53,18 @@ services:
       nats:
         condition: service_healthy
     restart: unless-stopped
+
+  worker-batch:
+    build:
+      context: ./workers
+      args:
+        PATTERN: batch
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+      NATS_URL: nats://nats:4222
+    depends_on:
+      temporal:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+    restart: unless-stopped

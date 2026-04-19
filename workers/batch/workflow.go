@@ -21,14 +21,8 @@ var services = []string{"resize", "thumbnail", "cdn", "metadata"}
 func BatchProcessingWorkflow(ctx workflow.Context, input BatchInput) (BatchResult, error) {
 	logger := workflow.GetLogger(ctx)
 
-	parallelism := input.Parallelism
-	if parallelism < 1 {
-		parallelism = 1
-	}
-
 	ao := workflow.ActivityOptions{
 		StartToCloseTimeout: 10 * time.Second,
-		HeartbeatTimeout:    5 * time.Second,
 		RetryPolicy: &temporal.RetryPolicy{
 			InitialInterval:    500 * time.Millisecond,
 			BackoffCoefficient: 1.5,
@@ -47,11 +41,11 @@ func BatchProcessingWorkflow(ctx workflow.Context, input BatchInput) (BatchResul
 	}
 
 	var a *Activities
-	sem := workflow.NewSemaphore(ctx, int64(parallelism))
+	sem := workflow.NewSemaphore(ctx, int64(input.Parallelism))
 	futures := make([]workflow.Future, 0, input.Total)
 
 	// Dispatch loop — acquire a slot before starting each activity so at most
-	// `parallelism` are in flight. A workflow.Go goroutine releases the slot
+	// `Parallelism` are in flight. A workflow.Go goroutine releases the slot
 	// as soon as the activity future resolves.
 	for i := 0; i < input.Total; i++ {
 		if err := sem.Acquire(ctx, 1); err != nil {

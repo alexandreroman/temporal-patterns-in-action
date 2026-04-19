@@ -20,13 +20,9 @@ infra-logs: ## Follow Temporal server logs
 frontend: ## Run the frontend dev server
 	$(MAKE) -C frontend dev
 
-.PHONY: worker-saga
-worker-saga: ## Run the saga pattern worker
-	$(MAKE) -C workers run-saga
-
-.PHONY: dev-frontend
-dev-frontend: ## Run the frontend dev server (hot-reload)
-	$(MAKE) -C frontend dev
+.PHONY: worker-%
+worker-%: ## Run a pattern worker (e.g. make worker-saga)
+	$(MAKE) -C workers run-$*
 
 .PHONY: dev-workers
 dev-workers: ## Run every pattern worker with hot-reload (requires Air)
@@ -34,7 +30,7 @@ dev-workers: ## Run every pattern worker with hot-reload (requires Air)
 
 .PHONY: dev
 dev: ## Run the frontend and all workers in parallel with hot-reload
-	@$(MAKE) -j dev-frontend dev-workers
+	@$(MAKE) -j frontend dev-workers
 
 .PHONY: check
 check: ## Run all checks across modules

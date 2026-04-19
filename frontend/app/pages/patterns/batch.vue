@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from "vue";
+import { computed, reactive, ref } from "vue";
 import type { BatchStartRequest, BatchStartResponse } from "~~/shared/types";
 
 useSeoMeta({ title: "Long-Running Batch" });
 
-// Demo-side constants: the server defaults match these so we do not have to
-// echo them in the start payload. Declared here only so the UI components can
-// render the right `total` / `parallelism` without re-inferring from events.
+// Demo-side constants: kept in sync with the server so the UI renders the
+// right `total` / `parallelism` without re-inferring from events.
 const TOTAL = 48;
 const PARALLELISM = 4;
 
@@ -20,7 +19,7 @@ const workflowId = ref<string | null>(null);
 const starting = ref(false);
 const finalError = ref<string | null>(null);
 
-const { events, status } = usePatternStream("batch", workflowId);
+const { events, waitForOpen } = usePatternStream("batch", workflowId);
 
 const TERMINAL_EVENTS = new Set(["progress.workflow.completed", "progress.workflow.failed"]);
 
@@ -45,7 +44,7 @@ async function start() {
   // response came back.
   workflowId.value = `batch-${batchId}`;
   try {
-    await waitForStreamOpen();
+    await waitForOpen();
     await $fetch<BatchStartResponse>("/api/batch/start", {
       method: "POST",
       body: {
@@ -59,21 +58,6 @@ async function start() {
   } finally {
     starting.value = false;
   }
-}
-
-function waitForStreamOpen(): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if (status.value === "open") return resolve();
-    const stop = watch(status, (s) => {
-      if (s === "open") {
-        stop();
-        resolve();
-      } else if (s === "error" || s === "closed") {
-        stop();
-        reject(new Error(`event stream ${s}`));
-      }
-    });
-  });
 }
 </script>
 

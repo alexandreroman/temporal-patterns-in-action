@@ -11,7 +11,7 @@ useSeoMeta({ title: "Payload Encryption" });
 type Scenario = EncryptionStartRequest["scenario"];
 
 const form = reactive({
-  scenario: "encrypted" as Scenario,
+  scenario: "clear" as Scenario,
 });
 
 const workflowId = ref<string | null>(null);
@@ -111,7 +111,7 @@ async function start() {
 
     <!-- Architecture diagram -->
     <div class="mt-8">
-      <EncryptionArchitecture :events="events" />
+      <EncryptionArchitecture :events="events" :scenario="form.scenario" />
     </div>
 
     <!-- Payload flow: client → Temporal → worker -->

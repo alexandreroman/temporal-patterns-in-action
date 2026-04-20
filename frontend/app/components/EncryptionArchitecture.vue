@@ -24,7 +24,12 @@ const STEP_TO_SVC: Record<string, { node: NodeKey; edge: EdgeKey }> = {
 
 const props = defineProps<{
   events: EventEnvelope[];
+  scenario: "clear" | "encrypted";
 }>();
+
+const codecLabel = computed(() =>
+  props.scenario === "encrypted" ? "AES-256-GCM" : undefined,
+);
 
 function initialNodes(): Nodes {
   return {
@@ -148,7 +153,8 @@ const arch = computed<ArchState>(() => {
   <ArchitectureDiagram
     :arch="arch"
     :service-labels="['Validator', 'Payment', 'Shipping', 'Email']"
-    worker-label="Codec-wrapped"
+    :worker-label="scenario === 'encrypted' ? 'Codec-wrapped' : 'No codec'"
+    :codec="codecLabel"
     label="Encryption architecture diagram"
   />
 </template>

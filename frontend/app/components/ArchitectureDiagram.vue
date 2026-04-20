@@ -12,6 +12,10 @@ defineProps<{
   serviceLabels: [string, string, string, string];
   workerLabel: string;
   label: string;
+  // Optional codec badge rendered just above the worker. Used by the
+  // encryption pattern to surface the PayloadCodec that intercepts payloads
+  // between Temporal and the worker.
+  codec?: string;
 }>();
 
 const nodeFill: Record<NodeState, string> = {
@@ -143,6 +147,46 @@ const edgeAnim: Record<EdgeState, string> = {
       >
         {{ workerLabel }}
       </text>
+    </g>
+
+    <!-- Codec badge (encryption pattern) -->
+    <g v-if="codec">
+      <text
+        x="420"
+        y="48"
+        text-anchor="middle"
+        dominant-baseline="central"
+        class="fill-emerald-500 dark:fill-emerald-400 text-[10px] font-semibold"
+      >
+        PayloadCodec
+      </text>
+      <rect
+        x="370"
+        y="58"
+        width="100"
+        height="22"
+        rx="11"
+        class="fill-emerald-50 stroke-emerald-400 dark:fill-emerald-950 dark:stroke-emerald-500"
+        stroke-width="1"
+      />
+      <text
+        x="420"
+        y="70"
+        text-anchor="middle"
+        dominant-baseline="central"
+        class="fill-emerald-700 dark:fill-emerald-200 text-[11px] font-medium"
+      >
+        {{ codec }}
+      </text>
+      <line
+        x1="420"
+        y1="80"
+        x2="420"
+        y2="95"
+        class="stroke-emerald-400 dark:stroke-emerald-500"
+        stroke-width="2"
+        stroke-dasharray="3 3"
+      />
     </g>
 
     <!-- Service 1 -->

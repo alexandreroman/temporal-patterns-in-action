@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, onBeforeUnmount, ref, watch } from "vue";
 import type { EventEnvelope } from "~~/shared/events";
 
 /**
@@ -79,6 +79,56 @@ const derived = computed<Derived>(() => {
 
   return { phase, llmCalls, toolCalls, tokens, activeTool };
 });
+
+// Tween the displayed token count so viewers see it tick up (e.g. 50 → 100)
+// instead of snapping. Honors prefers-reduced-motion.
+const displayedTokens = ref(0);
+let tweenFrame: number | null = null;
+
+function cancelTween() {
+  if (tweenFrame !== null) {
+    cancelAnimationFrame(tweenFrame);
+    tweenFrame = null;
+  }
+}
+
+watch(
+  () => derived.value.tokens,
+  (target, previous) => {
+    cancelTween();
+    const from = displayedTokens.value;
+    if (target === from) return;
+
+    const reduceMotion =
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+    // Snap on reset (new run) or when motion is reduced.
+    if (reduceMotion || target < (previous ?? 0)) {
+      displayedTokens.value = target;
+      return;
+    }
+
+    const delta = target - from;
+    // Scale duration with jump size so big leaps feel proportional, capped at 800ms.
+    const duration = Math.min(800, 300 + Math.min(delta, 500));
+    const start = performance.now();
+
+    const step = (now: number) => {
+      const t = Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - t, 3); // easeOutCubic
+      displayedTokens.value = Math.round(from + delta * eased);
+      if (t < 1) {
+        tweenFrame = requestAnimationFrame(step);
+      } else {
+        tweenFrame = null;
+      }
+    };
+    tweenFrame = requestAnimationFrame(step);
+  },
+  { immediate: true },
+);
+
+onBeforeUnmount(cancelTween);
 </script>
 
 <template>
@@ -103,8 +153,8 @@ const derived = computed<Derived>(() => {
         <div class="text-[10px] uppercase tracking-wide text-slate-500 dark:text-slate-400">
           Tokens used
         </div>
-        <div class="mt-auto text-sm font-medium text-slate-800 dark:text-slate-100">
-          {{ derived.tokens.toLocaleString() }}
+        <div class="mt-auto text-sm font-medium text-slate-800 dark:text-slate-100 tabular-nums">
+          {{ displayedTokens.toLocaleString() }}
         </div>
       </div>
     </div>

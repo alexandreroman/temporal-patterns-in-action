@@ -1,9 +1,11 @@
+# syntax=docker/dockerfile:1
 FROM node:22-alpine AS deps
 WORKDIR /app
 RUN corepack enable
 COPY package.json pnpm-lock.yaml ./
 RUN corepack prepare pnpm@10.7.0 --activate
-RUN pnpm install --frozen-lockfile
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store \
+    pnpm install --frozen-lockfile --store-dir=/pnpm/store
 
 FROM deps AS build
 ENV NUXT_TELEMETRY_DISABLED=1

@@ -5,6 +5,10 @@ on:
     branches: [main]
   pull_request:
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 permissions:
   contents: read
 
@@ -101,6 +105,8 @@ jobs:
           platforms: linux/${{ matrix.arch }}
           push: true
           tags: ${{ env.IMAGE }}:linux-${{ matrix.arch }}
+          cache-from: type=gha,scope=frontend-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=frontend-${{ matrix.arch }}
 
   frontend-manifest:
     name: Publish frontend multi-arch manifest
@@ -172,6 +178,8 @@ jobs:
           platforms: linux/${{ matrix.arch }}
           push: true
           tags: ${{ env.IMAGE }}:linux-${{ matrix.arch }}
+          cache-from: type=gha,scope=worker-${{ matrix.pattern }}-${{ matrix.arch }}
+          cache-to: type=gha,mode=max,scope=worker-${{ matrix.pattern }}-${{ matrix.arch }}
 
   worker-manifests:
     name: Publish worker multi-arch manifest (${{ matrix.pattern }})

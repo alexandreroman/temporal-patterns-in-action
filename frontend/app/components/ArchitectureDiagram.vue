@@ -1,10 +1,4 @@
 <script setup lang="ts">
-/**
- * Generic architecture diagram shell: UI → Temporal → Worker → four downstream
- * services. Pattern-specific wrappers (SagaArchitecture, BatchArchitecture)
- * reduce their event stream to the shared `ArchState` shape and supply labels.
- */
-
 import type { ArchState, EdgeState, NodeState } from "~/types/architecture";
 
 defineProps<{
@@ -12,9 +6,6 @@ defineProps<{
   serviceLabels: [string, string, string, string];
   workerLabel: string;
   label: string;
-  // Optional codec badge rendered just above the worker. Used by the
-  // encryption pattern to surface the PayloadCodec that intercepts payloads
-  // between Temporal and the worker.
   codec?: string;
 }>();
 
@@ -149,8 +140,7 @@ const edgeAnim: Record<EdgeState, string> = {
       </text>
     </g>
 
-    <!-- Codec badges (encryption pattern): same codec wraps the UI client
-         and the worker — Temporal only sees ciphertext on the wire. -->
+    <!-- Same codec on UI client and worker — Temporal sees ciphertext only. -->
     <template v-if="codec">
       <g v-for="cx in [90, 420]" :key="cx">
         <text

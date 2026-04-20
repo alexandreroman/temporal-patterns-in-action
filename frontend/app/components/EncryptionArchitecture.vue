@@ -3,13 +3,6 @@ import { computed } from "vue";
 import type { EventEnvelope } from "~~/shared/events";
 import type { ArchState, Edges, EdgeKey, Nodes, NodeKey } from "~/types/architecture";
 
-/**
- * Encryption architecture: UI -> Temporal -> (Codec-wrapped) Worker -> (Validator |
- * Payment | Shipping | Email). Four activities — no compensation — so the
- * reducer is a thinner version of SagaArchitecture without the comp-step
- * handling.
- */
-
 const NODE_IDS: NodeKey[] = ["ui", "temporal", "worker", "s1", "s2", "s3", "s4"];
 const EDGE_IDS: EdgeKey[] = ["ui_tmp", "tmp_wk", "wk_s1", "wk_s2", "wk_s3", "wk_s4"];
 const SERVICE_NODES: NodeKey[] = ["s1", "s2", "s3", "s4"];
@@ -27,9 +20,7 @@ const props = defineProps<{
   scenario: "clear" | "encrypted";
 }>();
 
-const codecLabel = computed(() =>
-  props.scenario === "encrypted" ? "AES-256-GCM" : undefined,
-);
+const isEncrypted = computed(() => props.scenario === "encrypted");
 
 function initialNodes(): Nodes {
   return {
@@ -72,10 +63,8 @@ const arch = computed<ArchState>(() => {
   const nodes = initialNodes();
   const edges = initialEdges();
 
-  // Running stays true as long as we've seen at least one event and no
-  // terminal event has closed the run. The worker doesn't emit a
-  // workflow.started signal — the Nuxt SSE endpoint synthesises only the
-  // terminal events — so the first observed event anchors the run.
+  // No workflow.started event is emitted, so the first observed event anchors
+  // the run; closes only when a terminal event arrives.
   let running = props.events.length > 0;
 
   for (const env of props.events) {
@@ -104,9 +93,8 @@ const arch = computed<ArchState>(() => {
       }
 
       case "progress.step.failed": {
-        // Don't flip anything terminal here: the worker interceptor emits
-        // progress.step.failed on every retry attempt, so a retriable
-        // timeout would be indistinguishable from a terminal failure.
+        // Fires on every retry attempt, so a retriable timeout is
+        // indistinguishable from a terminal failure — don't flip anything fatal.
         const svc = STEP_TO_SVC[String(data.step ?? "")];
         if (svc) {
           nodes[svc.node] = "error";
@@ -135,8 +123,8 @@ const arch = computed<ArchState>(() => {
     }
   }
 
-  // Keep the UI→Temporal→Worker strip lit while the run is in flight, since
-  // no workflow.started event arrives to set it up explicitly.
+  // Light the UI→Temporal→Worker strip while in flight; no workflow.started
+  // event arrives to do it explicitly.
   if (running) {
     if (nodes.ui === "idle") nodes.ui = "active";
     if (nodes.temporal === "idle") nodes.temporal = "active";
@@ -153,8 +141,8 @@ const arch = computed<ArchState>(() => {
   <ArchitectureDiagram
     :arch="arch"
     :service-labels="['Validator', 'Payment', 'Shipping', 'Email']"
-    :worker-label="scenario === 'encrypted' ? 'Codec-wrapped' : 'No codec'"
-    :codec="codecLabel"
+    :worker-label="isEncrypted ? 'Codec-wrapped' : 'No codec'"
+    :codec="isEncrypted ? 'AES-256-GCM' : undefined"
     label="Encryption architecture diagram"
   />
 </template>

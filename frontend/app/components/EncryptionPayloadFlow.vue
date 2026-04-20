@@ -10,8 +10,7 @@ const props = defineProps<{
   events: EventEnvelope[];
 }>();
 
-// Any step.started event is enough to flag that the worker has received —
-// and therefore decoded — the workflow input at least once.
+// A step.started event means the worker received (and therefore decoded) the input.
 const workerHasDecoded = computed(() =>
   props.events.some((e) => e.type === "progress.step.started"),
 );
@@ -20,8 +19,6 @@ const clientJson = computed(() =>
   props.clientPayload ? JSON.stringify(props.clientPayload, null, 2) : "",
 );
 
-// Break the base64 string into fixed-width lines so the ciphertext panel
-// wraps nicely inside the card.
 const storedBase64Wrapped = computed(() => {
   if (!props.storedPayload || props.scenario !== "encrypted") return "";
   const raw = props.storedPayload.dataBase64;

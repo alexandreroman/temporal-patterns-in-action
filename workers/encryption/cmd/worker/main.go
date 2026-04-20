@@ -29,10 +29,8 @@ func main() {
 	}
 	defer publisher.Close()
 
-	// One Temporal client per data converter. The codec-wired client encrypts
-	// payloads before they leave the process and decrypts them on ingest; the
-	// plain client talks to Temporal with the default JSON converter so the
-	// server sees the raw values.
+	// Two clients: one with the codec (server sees ciphertext), one plain
+	// (server sees raw JSON). Each drives its own task queue.
 	plainClient, err := client.Dial(client.Options{HostPort: address})
 	if err != nil {
 		log.Fatalf("unable to dial temporal (clear): %v", err)
@@ -70,8 +68,7 @@ func main() {
 	log.Printf("encryption worker connected to %s — listening on %s and %s",
 		address, encryption.TaskQueueClear, encryption.TaskQueueEncrypted)
 
-	// Run both workers against the same interrupt channel so Ctrl-C stops
-	// them together. One runs in a goroutine; main blocks on the other.
+	// Shared interrupt channel so Ctrl-C stops both workers together.
 	interruptCh := worker.InterruptCh()
 	go func() {
 		if err := wClear.Run(interruptCh); err != nil {

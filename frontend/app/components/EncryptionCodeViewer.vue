@@ -224,54 +224,33 @@ const SOURCES: Record<CodeLang, EncryptionSource> = {
   },
 };
 
-function latestRelevant(events: EventEnvelope[]): string | null {
-  for (let i = events.length - 1; i >= 0; i--) {
-    const env = events[i];
-    if (!env) continue;
-    if (
-      env.type === "progress.workflow.completed" ||
-      env.type === "progress.workflow.failed" ||
-      env.type === "encryption.order.completed" ||
-      env.type === "progress.step.started" ||
-      env.type === "progress.step.completed" ||
-      env.type === "progress.step.failed"
-    ) {
-      return env.type;
-    }
-  }
-  return null;
-}
-
-function latestStartedStep(events: EventEnvelope[]): string | null {
-  for (let i = events.length - 1; i >= 0; i--) {
-    const env = events[i];
-    if (!env || env.type !== "progress.step.started") continue;
-    const data = env.data as Record<string, unknown>;
-    return typeof data.step === "string" ? data.step : null;
-  }
-  return null;
-}
+const TERMINAL_TYPES: ReadonlySet<string> = new Set([
+  "progress.workflow.completed",
+  "progress.workflow.failed",
+  "encryption.order.completed",
+]);
 
 const currentHighlight = computed<[number, number] | null>(() => {
   const src = SOURCES[lang.value];
-  const latest = latestRelevant(props.events);
-  if (!latest) return null;
+  let lastStartedStep: string | null = null;
 
-  if (
-    latest === "progress.workflow.completed" ||
-    latest === "progress.workflow.failed" ||
-    latest === "encryption.order.completed"
-  ) {
-    return null;
+  for (let i = props.events.length - 1; i >= 0; i--) {
+    const env = props.events[i];
+    if (!env) continue;
+    if (TERMINAL_TYPES.has(env.type)) return null;
+    if (env.type === "progress.step.started") {
+      const step = (env.data as Record<string, unknown>).step;
+      lastStartedStep = typeof step === "string" ? step : null;
+      break;
+    }
   }
 
-  // The codec runs on every activity boundary, so match the current step to
-  // whichever codec half dominates it: client-side work (validate/charge go
-  // through encode on the way out) vs worker-side work (ship/receipt rely on
-  // decode when the activity input arrives).
-  const step = latestStartedStep(props.events);
-  if (step === "validate-order" || step === "charge-card") return src.stepLines.encode;
-  if (step === "ship-order" || step === "send-receipt") return src.stepLines.decode;
+  // Codec runs at every activity boundary: validate/charge exercise encode
+  // (client → server); ship/receipt exercise decode (server → worker).
+  if (lastStartedStep === "validate-order" || lastStartedStep === "charge-card")
+    return src.stepLines.encode;
+  if (lastStartedStep === "ship-order" || lastStartedStep === "send-receipt")
+    return src.stepLines.decode;
   return src.stepLines.register;
 });
 </script>

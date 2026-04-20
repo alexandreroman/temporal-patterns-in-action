@@ -27,16 +27,12 @@ const (
 )
 
 // EncryptionCodec implements converter.PayloadCodec using AES-256-GCM.
-// Package-level note: the codec wraps each Temporal payload (itself a
-// protobuf message) into a fresh payload whose Data is nonce||ciphertext;
-// the original payload — metadata and all — is recovered on Decode.
+// Each inbound payload is marshalled as protobuf, sealed, and wrapped in a
+// fresh payload whose Data is nonce||ciphertext||authTag.
 type EncryptionCodec struct {
 	Key []byte
 }
 
-// Encode seals each incoming payload with AES-256-GCM. The original payload
-// is marshalled as protobuf first so both its metadata and data are covered
-// by the ciphertext.
 func (c *EncryptionCodec) Encode(payloads []*commonpb.Payload) ([]*commonpb.Payload, error) {
 	gcm, err := newGCM(c.Key)
 	if err != nil {
@@ -66,8 +62,7 @@ func (c *EncryptionCodec) Encode(payloads []*commonpb.Payload) ([]*commonpb.Payl
 }
 
 // Decode opens payloads produced by Encode. Payloads with a different
-// encoding are passed through untouched so the codec composes cleanly with
-// whatever else the server returns.
+// encoding are passed through untouched.
 func (c *EncryptionCodec) Decode(payloads []*commonpb.Payload) ([]*commonpb.Payload, error) {
 	gcm, err := newGCM(c.Key)
 	if err != nil {

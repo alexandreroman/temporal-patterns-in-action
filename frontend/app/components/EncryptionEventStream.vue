@@ -47,20 +47,17 @@ function eventLabel(env: EventEnvelope): string {
   }
 }
 
+const BUSINESS_SUCCESS: ReadonlySet<string> = new Set([
+  "encryption.order.validated",
+  "encryption.card.charged",
+  "encryption.order.shipped",
+  "encryption.receipt.sent",
+]);
+
 function dotColor(env: EventEnvelope): DotColor {
   const t = env.type;
   if (t.includes("failed")) return "red";
-  if (t.includes("completed")) return "green";
-  // Business events that signal a successful intermediate milestone.
-  if (
-    t === "encryption.order.validated" ||
-    t === "encryption.card.charged" ||
-    t === "encryption.order.shipped" ||
-    t === "encryption.receipt.sent"
-  ) {
-    return "green";
-  }
-  if (t.includes("started")) return "blue";
+  if (t.includes("completed") || BUSINESS_SUCCESS.has(t)) return "green";
   return "blue";
 }
 </script>

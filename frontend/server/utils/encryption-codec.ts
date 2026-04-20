@@ -1,20 +1,8 @@
-/**
- * AES-256-GCM PayloadCodec — byte-compatible with the Go codec in
- * workers/encryption/codec.go.
- *
- * The codec marshals the entire Temporal Payload (metadata + data) as
- * protobuf, seals it with AES-GCM, and stores `nonce || ciphertext || authTag`
- * in the outer payload's `data` field. On decode, the layered payload is
- * decrypted and the original protobuf is restored — so the application sees
- * the same Payload shape Temporal would have produced without encryption.
- *
- * Why hand-roll the protobuf codec instead of importing `@temporalio/proto`?
- * `@temporalio/proto` is a transitive dependency of `@temporalio/client`; pnpm
- * does not hoist it, so importing it from app code is fragile across installs.
- * The `Payload` message has just two fields (`map<string, bytes>` and
- * `bytes`), and a ~60-line encoder/decoder is cheaper than a new top-level
- * dependency.
- */
+// AES-256-GCM PayloadCodec — byte-compatible with workers/encryption/codec.go.
+// Marshals the full Payload (metadata + data) as protobuf, seals with AES-GCM,
+// stores `nonce || ciphertext || authTag` in the outer payload's data field.
+// The protobuf encoder is hand-rolled because @temporalio/proto is a transitive
+// dep that pnpm does not hoist — importing it from app code is fragile.
 
 import { createCipheriv, createDecipheriv, randomBytes } from "node:crypto";
 import type { Payload } from "@temporalio/client";
@@ -28,8 +16,8 @@ const META_KEY_ID = "v1-demo";
 const NONCE_BYTES = 12;
 const AUTH_TAG_BYTES = 16;
 
-// Subset of the Temporal PayloadCodec interface. Defined locally so this
-// module does not depend on a non-hoisted transitive package.
+// Declared locally — @temporalio/proto is not hoisted by pnpm, so importing
+// it from app code is fragile across installs.
 export interface PayloadCodec {
   encode(payloads: Payload[]): Promise<Payload[]>;
   decode(payloads: Payload[]): Promise<Payload[]>;
@@ -45,8 +33,8 @@ export class EncryptionCodec implements PayloadCodec {
       const cipher = createCipheriv("aes-256-gcm", this.key, nonce);
       const ciphertext = Buffer.concat([cipher.update(plaintext), cipher.final()]);
       const authTag = cipher.getAuthTag();
-      // Go's gcm.Seal returns ciphertext || authTag; mirror that layout so the
-      // wire format is identical across SDKs.
+      // Mirror Go's gcm.Seal layout (ciphertext || authTag) so wire bytes match
+      // across SDKs.
       return {
         metadata: {
           encoding: Buffer.from(META_ENCODING, "utf8"),

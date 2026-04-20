@@ -110,7 +110,7 @@ async function start() {
     </div>
 
     <!-- Architecture diagram -->
-    <div class="mt-4">
+    <div class="mt-2">
       <EncryptionArchitecture :events="events" :scenario="form.scenario" />
     </div>
 

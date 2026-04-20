@@ -91,7 +91,7 @@ async function start() {
     </div>
 
     <!-- Architecture diagram -->
-    <div class="mt-4">
+    <div class="mt-2">
       <SagaArchitecture :events="events" />
     </div>
 

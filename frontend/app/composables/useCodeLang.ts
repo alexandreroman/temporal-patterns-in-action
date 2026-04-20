@@ -6,9 +6,7 @@ const STORAGE_KEY = "tpa:code-lang";
 const DEFAULT: CodeLang = "go";
 
 function isCodeLang(value: unknown): value is CodeLang {
-  return (
-    value === "go" || value === "java" || value === "python" || value === "typescript"
-  );
+  return value === "go" || value === "java" || value === "python" || value === "typescript";
 }
 
 // Shared reactive state across pages + localStorage persistence across reloads.

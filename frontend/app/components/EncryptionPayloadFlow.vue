@@ -92,7 +92,9 @@ const isEncrypted = computed(() => props.scenario === "encrypted");
         v-if="storedPayload"
         class="min-h-0 flex-1 overflow-auto font-mono text-[11px]"
         :class="[
-          isEncrypted ? 'whitespace-pre text-emerald-200' : 'whitespace-pre-wrap break-all text-rose-200',
+          isEncrypted
+            ? 'whitespace-pre text-emerald-200'
+            : 'whitespace-pre-wrap break-all text-rose-200',
         ]"
         >{{ isEncrypted ? storedBase64Wrapped : clientJson }}</pre
       >

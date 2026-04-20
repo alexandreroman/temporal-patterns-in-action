@@ -40,7 +40,7 @@ const isEncrypted = computed(() => props.scenario === "encrypted");
   <div class="grid gap-3 md:grid-cols-[1fr_auto_1fr_auto_1fr] md:items-stretch">
     <!-- 1. Client payload -->
     <section
-      class="flex h-52 flex-col rounded-xl border border-slate-700 bg-slate-900 p-4 text-xs text-slate-200"
+      class="flex h-52 flex-col rounded-xl border border-slate-700 bg-slate-900 px-4 pt-4 pb-2 text-xs text-slate-200"
     >
       <header class="mb-2 flex items-center justify-between gap-2">
         <h3 class="text-sm font-semibold text-slate-100">Client payload</h3>
@@ -61,7 +61,7 @@ const isEncrypted = computed(() => props.scenario === "encrypted");
 
     <!-- 2. Temporal stored payload -->
     <section
-      class="flex h-52 flex-col rounded-xl border p-4 text-xs text-slate-200"
+      class="flex h-52 flex-col rounded-xl border px-4 pt-4 pb-2 text-xs text-slate-200"
       :class="
         !storedPayload
           ? 'border-slate-700 bg-slate-900'
@@ -145,7 +145,7 @@ const isEncrypted = computed(() => props.scenario === "encrypted");
 
     <!-- 3. Worker payload -->
     <section
-      class="flex h-52 flex-col rounded-xl border border-slate-700 bg-slate-900 p-4 text-xs text-slate-200"
+      class="flex h-52 flex-col rounded-xl border border-slate-700 bg-slate-900 px-4 pt-4 pb-2 text-xs text-slate-200"
     >
       <header class="mb-2 flex items-center justify-between gap-2">
         <h3 class="text-sm font-semibold text-slate-100">Worker payload</h3>

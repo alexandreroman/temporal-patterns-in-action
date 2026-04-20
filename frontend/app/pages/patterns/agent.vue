@@ -223,8 +223,11 @@ onBeforeUnmount(() => {
       <AgentStatePanel ref="statePanelRef" :events="events" />
     </div>
 
+    <!-- Status bar -->
+    <AgentStatusBar :events="events" class="mt-6" />
+
     <!-- Code + event stream -->
-    <div class="mt-6 flex flex-col gap-3 lg:flex-row">
+    <div class="mt-4 flex flex-col gap-3 lg:flex-row">
       <div class="min-w-0 lg:w-[560px] lg:shrink-0">
         <AgentCodeViewer :events="events" />
       </div>
@@ -232,9 +235,6 @@ onBeforeUnmount(() => {
         <AgentEventStream :events="events" />
       </div>
     </div>
-
-    <!-- Status bar -->
-    <AgentStatusBar :events="events" class="mt-4" />
 
     <p v-if="finalError" class="mt-4 text-sm text-rose-400">
       {{ finalError }}

@@ -116,8 +116,11 @@ async function start() {
       <BatchGrid :events="events" :total="TOTAL" />
     </div>
 
+    <!-- Status bar -->
+    <BatchStatusBar :events="events" :total="TOTAL" class="mt-6" />
+
     <!-- Code + event stream -->
-    <div class="mt-6 flex flex-col gap-3 lg:flex-row">
+    <div class="mt-4 flex flex-col gap-3 lg:flex-row">
       <div class="min-w-0 lg:w-[560px] lg:shrink-0">
         <BatchCodeViewer :events="events" />
       </div>
@@ -125,9 +128,6 @@ async function start() {
         <BatchEventStream :events="events" />
       </div>
     </div>
-
-    <!-- Status bar -->
-    <BatchStatusBar :events="events" :total="TOTAL" class="mt-4" />
 
     <p v-if="finalError" class="mt-4 text-sm text-rose-400">
       {{ finalError }}

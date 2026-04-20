@@ -67,6 +67,8 @@ services:
         condition: service_healthy
       nats:
         condition: service_healthy
+    deploy:
+      replicas: ${BATCH_WORKER_REPLICAS:-1}
     restart: unless-stopped
 
   worker-agent:

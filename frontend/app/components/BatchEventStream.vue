@@ -7,10 +7,6 @@ defineProps<{
 
 type DotColor = "blue" | "green" | "red" | "amber";
 
-function shortType(type: string): string {
-  return type.replace(/^(progress|batch)\./, "");
-}
-
 function serviceLabel(service: unknown): string {
   if (typeof service !== "string") return "";
   const map: Record<string, string> = {
@@ -56,9 +52,6 @@ function eventLabel(env: EventEnvelope): string {
       return `Batch summary: ${processed}/${total} ok, ${failed} failed`;
     }
     default:
-      if (env.type.startsWith("batch.") || env.type.startsWith("progress.")) {
-        return shortType(env.type);
-      }
       return env.type;
   }
 }

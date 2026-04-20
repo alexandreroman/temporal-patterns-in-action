@@ -50,7 +50,6 @@ export default defineEventHandler(async (event): Promise<EncryptionStartResponse
 
   return {
     workflowId,
-    scenario: body.scenario,
     clientPayload: order,
     storedPayload: { encoding, dataBase64 },
   };

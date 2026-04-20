@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { EventEnvelope } from "~~/shared/events";
-import type { ArchState, Edges, EdgeKey, Nodes, NodeKey } from "~/types/architecture";
+import type { ArchState, EdgeKey, NodeKey } from "~/types/architecture";
 
 /**
  * Batch architecture: UI -> Temporal -> Worker -> (Resize | Thumbnail | CDN |
@@ -10,11 +10,6 @@ import type { ArchState, Edges, EdgeKey, Nodes, NodeKey } from "~/types/architec
  * events — the activity name is always `process-image` and carries no routing
  * information on its own.
  */
-
-const NODE_IDS: NodeKey[] = ["ui", "temporal", "worker", "s1", "s2", "s3", "s4"];
-const EDGE_IDS: EdgeKey[] = ["ui_tmp", "tmp_wk", "wk_s1", "wk_s2", "wk_s3", "wk_s4"];
-const SERVICE_NODES: NodeKey[] = ["s1", "s2", "s3", "s4"];
-const SERVICE_EDGES: EdgeKey[] = ["wk_s1", "wk_s2", "wk_s3", "wk_s4"];
 
 const SERVICE_TO_NODE: Record<string, { node: NodeKey; edge: EdgeKey }> = {
   resize: { node: "s1", edge: "wk_s1" },
@@ -26,43 +21,6 @@ const SERVICE_TO_NODE: Record<string, { node: NodeKey; edge: EdgeKey }> = {
 const props = defineProps<{
   events: EventEnvelope[];
 }>();
-
-function initialNodes(): Nodes {
-  return {
-    ui: "idle",
-    temporal: "idle",
-    worker: "idle",
-    s1: "idle",
-    s2: "idle",
-    s3: "idle",
-    s4: "idle",
-  };
-}
-
-function initialEdges(): Edges {
-  return {
-    ui_tmp: "idle",
-    tmp_wk: "idle",
-    wk_s1: "idle",
-    wk_s2: "idle",
-    wk_s3: "idle",
-    wk_s4: "idle",
-  };
-}
-
-function resetAll(nodes: Nodes, edges: Edges) {
-  for (const id of NODE_IDS) nodes[id] = "idle";
-  for (const id of EDGE_IDS) edges[id] = "idle";
-}
-
-function resetServices(nodes: Nodes, edges: Edges) {
-  for (const id of SERVICE_NODES) {
-    if (nodes[id] !== "ok" && nodes[id] !== "error") nodes[id] = "idle";
-  }
-  for (const id of SERVICE_EDGES) {
-    if (edges[id] !== "error") edges[id] = "idle";
-  }
-}
 
 const arch = computed<ArchState>(() => {
   const nodes = initialNodes();

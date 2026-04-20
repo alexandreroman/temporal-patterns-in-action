@@ -8,13 +8,10 @@ interface Derived {
   message: string;
 }
 
-const props = withDefaults(
-  defineProps<{
-    events: EventEnvelope[];
-    total?: number;
-  }>(),
-  { total: 48 },
-);
+const props = defineProps<{
+  events: EventEnvelope[];
+  total: number;
+}>();
 
 const derived = computed<Derived>(() => {
   if (props.events.length === 0) {

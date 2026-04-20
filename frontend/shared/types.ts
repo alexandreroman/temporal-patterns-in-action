@@ -52,7 +52,6 @@ export interface AgentApprovalResponse {
 
 export interface EncryptionStartResponse {
   workflowId: string;
-  scenario: "clear" | "encrypted";
   /** Plaintext client payload — just the SensitiveOrder object echoed back. */
   clientPayload: SensitiveOrder;
   /**

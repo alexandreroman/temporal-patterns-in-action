@@ -8,9 +8,6 @@ export default defineNuxtConfig({
   vite: {
     plugins: [tailwindcss()],
   },
-  runtimeConfig: {
-    natsUrl: process.env.NATS_URL ?? "nats://localhost:4222",
-  },
   typescript: {
     strict: true,
     typeCheck: false,

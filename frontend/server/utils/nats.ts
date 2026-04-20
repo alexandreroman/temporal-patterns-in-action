@@ -5,8 +5,8 @@ let cached: Promise<NatsConnection> | null = null;
 
 export function getNatsConnection(): Promise<NatsConnection> {
   if (cached !== null) return cached;
-  const config = useRuntimeConfig();
-  cached = connect({ servers: config.natsUrl }).catch((error) => {
+  const servers = process.env.NATS_URL ?? "nats://localhost:4222";
+  cached = connect({ servers }).catch((error) => {
     cached = null;
     throw error;
   });

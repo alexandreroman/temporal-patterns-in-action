@@ -15,6 +15,12 @@ const workerHasDecoded = computed(() =>
   props.events.some((e) => e.type === "progress.step.started"),
 );
 
+const workflowEnded = computed(() =>
+  props.events.some(
+    (e) => e.type === "progress.workflow.completed" || e.type === "progress.workflow.failed",
+  ),
+);
+
 const clientJson = computed(() =>
   props.clientPayload ? JSON.stringify(props.clientPayload, null, 2) : "",
 );
@@ -82,18 +88,6 @@ const isEncrypted = computed(() => props.scenario === "encrypted");
           {{ isEncrypted ? "ciphertext" : "cleartext" }}
         </span>
       </header>
-      <Transition
-        enter-active-class="transition-opacity duration-500"
-        enter-from-class="opacity-0"
-        enter-to-class="opacity-100"
-      >
-        <div
-          v-if="storedPayload"
-          class="mb-2 text-[10px] uppercase tracking-wide text-slate-400"
-        >
-          encoding: {{ storedPayload.encoding }}
-        </div>
-      </Transition>
       <pre
         v-if="storedPayload"
         class="min-h-0 flex-1 overflow-auto font-mono text-[11px]"
@@ -106,12 +100,12 @@ const isEncrypted = computed(() => props.scenario === "encrypted");
         <p class="font-mono text-[11px] text-slate-500">(run the workflow)</p>
       </div>
       <Transition
-        enter-active-class="transition-opacity duration-500"
-        enter-from-class="opacity-0"
-        enter-to-class="opacity-100"
+        enter-active-class="transition duration-700 ease-out"
+        enter-from-class="opacity-0 translate-y-2"
+        enter-to-class="opacity-100 translate-y-0"
       >
         <p
-          v-if="!isEncrypted && storedPayload"
+          v-if="!isEncrypted && storedPayload && workflowEnded"
           class="mt-2 inline-flex items-center gap-1.5 truncate text-[11px] leading-snug text-rose-300"
         >
           <svg
@@ -131,6 +125,31 @@ const isEncrypted = computed(() => props.scenario === "encrypted");
             />
           </svg>
           <span class="truncate">Raw JSON — PII exposed.</span>
+        </p>
+      </Transition>
+      <Transition
+        enter-active-class="transition duration-700 ease-out"
+        enter-from-class="opacity-0 translate-y-2"
+        enter-to-class="opacity-100 translate-y-0"
+      >
+        <p
+          v-if="isEncrypted && storedPayload && workflowEnded"
+          class="mt-2 inline-flex items-center gap-1.5 truncate text-[11px] leading-snug text-emerald-300"
+        >
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="size-3 shrink-0"
+            aria-hidden="true"
+          >
+            <rect x="3" y="11" width="18" height="11" rx="2" />
+            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+          </svg>
+          <span class="truncate">Ciphertext only — Temporal cannot decode it.</span>
         </p>
       </Transition>
     </section>
@@ -161,12 +180,12 @@ const isEncrypted = computed(() => props.scenario === "encrypted");
         </p>
       </div>
       <Transition
-        enter-active-class="transition-opacity duration-500"
-        enter-from-class="opacity-0"
-        enter-to-class="opacity-100"
+        enter-active-class="transition duration-700 ease-out"
+        enter-from-class="opacity-0 translate-y-2"
+        enter-to-class="opacity-100 translate-y-0"
       >
         <p
-          v-if="clientPayload && workerHasDecoded"
+          v-if="clientPayload && workflowEnded"
           class="mt-2 inline-flex items-center gap-1.5 text-[11px] text-slate-400"
         >
           <svg

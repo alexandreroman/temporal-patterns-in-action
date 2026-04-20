@@ -31,6 +31,25 @@ export interface EncryptionStartRequest {
   scenario: "clear" | "encrypted";
 }
 
+export interface AgentStartRequest {
+  runId: string;
+  scenario: "happy" | "retry" | "approval";
+}
+
+export interface AgentStartResponse {
+  workflowId: string;
+}
+
+export interface AgentApprovalRequest {
+  workflowId: string;
+  approved: boolean;
+}
+
+export interface AgentApprovalResponse {
+  workflowId: string;
+  approved: boolean;
+}
+
 export interface EncryptionStartResponse {
   workflowId: string;
   scenario: "clear" | "encrypted";

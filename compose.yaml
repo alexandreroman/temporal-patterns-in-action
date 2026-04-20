@@ -68,3 +68,18 @@ services:
       nats:
         condition: service_healthy
     restart: unless-stopped
+
+  worker-agent:
+    build:
+      context: ./workers
+      args:
+        PATTERN: agent
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+      NATS_URL: nats://nats:4222
+    depends_on:
+      temporal:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+    restart: unless-stopped

@@ -126,6 +126,7 @@ graph LR
 | Saga                  | available     | `workers/saga`               |
 | Long-running batch    | available     | `workers/batch`              |
 | Payload Encryption    | available     | `workers/encryption`         |
+| Durable AI Agent      | available     | `workers/agent`              |
 
 ## License
 

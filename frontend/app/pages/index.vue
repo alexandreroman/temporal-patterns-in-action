@@ -3,7 +3,7 @@ useSeoMeta({ title: "Patterns" });
 
 const NuxtLink = resolveComponent("NuxtLink");
 
-type PatternIcon = "saga" | "batch" | "encryption";
+type PatternIcon = "saga" | "batch" | "encryption" | "agent";
 
 const patterns: {
   slug: string;
@@ -35,6 +35,14 @@ const patterns: {
       "Symmetric PayloadCodec — AES-256-GCM encryption so Temporal stores only ciphertext end-to-end.",
     status: "available",
     icon: "encryption",
+  },
+  {
+    slug: "agent",
+    title: "Durable AI Agent",
+    description:
+      "Travel-planner agent loop — LLM reasoning, MCP tool calls, and a signal-gated human approval.",
+    status: "available",
+    icon: "agent",
   },
 ];
 </script>
@@ -68,7 +76,8 @@ const patterns: {
               >
                 <IconSaga v-if="pattern.icon === 'saga'" class="h-5 w-5" />
                 <IconBatch v-else-if="pattern.icon === 'batch'" class="h-5 w-5" />
-                <IconEncryption v-else class="h-5 w-5" />
+                <IconEncryption v-else-if="pattern.icon === 'encryption'" class="h-5 w-5" />
+                <IconAgent v-else class="h-5 w-5" />
               </span>
               <h2 class="text-lg font-medium text-slate-100">{{ pattern.title }}</h2>
             </div>

@@ -20,19 +20,6 @@ const clientJson = computed(() =>
   props.clientPayload ? JSON.stringify(props.clientPayload, null, 2) : "",
 );
 
-// In the clear scenario, Temporal stores the default JSON payload bytes — so
-// base64-decoding the raw data gives back readable JSON. In the encrypted
-// scenario, decoding would just be ciphertext bytes, so we leave it.
-const storedCleartextJson = computed(() => {
-  if (!props.storedPayload || props.scenario !== "clear") return "";
-  try {
-    const text = Buffer.from(props.storedPayload.dataBase64, "base64").toString("utf8");
-    return JSON.stringify(JSON.parse(text), null, 2);
-  } catch {
-    return Buffer.from(props.storedPayload.dataBase64, "base64").toString("utf8");
-  }
-});
-
 // Break the base64 string into fixed-width lines so the ciphertext panel
 // wraps nicely inside the card.
 const storedBase64Wrapped = computed(() => {
@@ -76,7 +63,11 @@ const isEncrypted = computed(() => props.scenario === "encrypted");
     <section
       class="flex h-52 flex-col rounded-xl border p-4 text-xs text-slate-200"
       :class="
-        isEncrypted ? 'border-emerald-600 bg-emerald-950/40' : 'border-rose-600 bg-rose-950/40'
+        !storedPayload
+          ? 'border-slate-700 bg-slate-900'
+          : isEncrypted
+            ? 'border-emerald-600 bg-emerald-950/40'
+            : 'border-rose-600 bg-rose-950/40'
       "
     >
       <header class="mb-2 flex items-center justify-between gap-2">
@@ -84,7 +75,11 @@ const isEncrypted = computed(() => props.scenario === "encrypted");
         <span
           class="rounded-full px-2 py-0.5 text-[10px]"
           :class="
-            isEncrypted ? 'bg-emerald-800/60 text-emerald-200' : 'bg-rose-800/60 text-rose-200'
+            !storedPayload
+              ? 'bg-slate-800 text-slate-300'
+              : isEncrypted
+                ? 'bg-emerald-800/60 text-emerald-200'
+                : 'bg-rose-800/60 text-rose-200'
           "
         >
           {{ isEncrypted ? "ciphertext" : "cleartext" }}
@@ -104,9 +99,11 @@ const isEncrypted = computed(() => props.scenario === "encrypted");
       </Transition>
       <pre
         v-if="storedPayload"
-        class="min-h-0 flex-1 overflow-auto whitespace-pre font-mono text-[11px]"
-        :class="isEncrypted ? 'text-emerald-200' : 'text-rose-200'"
-        >{{ isEncrypted ? storedBase64Wrapped : storedCleartextJson }}</pre
+        class="min-h-0 flex-1 overflow-auto font-mono text-[11px]"
+        :class="[
+          isEncrypted ? 'whitespace-pre text-emerald-200' : 'whitespace-pre-wrap break-all text-rose-200',
+        ]"
+        >{{ isEncrypted ? storedBase64Wrapped : clientJson }}</pre
       >
       <div v-else class="min-h-0 flex-1 overflow-auto">
         <p class="font-mono text-[11px] text-slate-500">(run the workflow)</p>

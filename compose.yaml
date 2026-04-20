@@ -37,6 +37,12 @@ services:
         condition: service_healthy
       nats:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
     restart: unless-stopped
 
   worker-saga:
@@ -52,6 +58,12 @@ services:
         condition: service_healthy
       nats:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/worker", "-healthcheck"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     restart: unless-stopped
 
   worker-batch:
@@ -67,6 +79,12 @@ services:
         condition: service_healthy
       nats:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/worker", "-healthcheck"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     deploy:
       replicas: ${BATCH_WORKER_REPLICAS:-1}
     restart: unless-stopped
@@ -84,4 +102,10 @@ services:
         condition: service_healthy
       nats:
         condition: service_healthy
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/worker", "-healthcheck"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     restart: unless-stopped

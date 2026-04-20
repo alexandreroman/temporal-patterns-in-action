@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from "vue";
+import { computed, reactive, ref, watch } from "vue";
 import type {
   EncryptionStartRequest,
   EncryptionStartResponse,
@@ -22,6 +22,19 @@ const clientPayload = ref<SensitiveOrder | null>(null);
 const storedPayload = ref<EncryptionStartResponse["storedPayload"] | null>(null);
 
 const { events, waitForOpen } = usePatternStream("encryption", workflowId);
+
+// Switching scenario swaps the codec on the wire, so any existing run's UI
+// state is stale — reset to the empty slate so the user has to trigger a new
+// workflow to observe the new encoding.
+watch(
+  () => form.scenario,
+  () => {
+    workflowId.value = null;
+    clientPayload.value = null;
+    storedPayload.value = null;
+    finalError.value = null;
+  },
+);
 
 const TERMINAL_EVENTS = new Set(["progress.workflow.completed", "progress.workflow.failed"]);
 

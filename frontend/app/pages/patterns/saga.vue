@@ -91,18 +91,18 @@ async function start() {
     </div>
 
     <!-- Architecture diagram -->
-    <div class="mt-8">
+    <div class="mt-4">
       <SagaArchitecture :events="events" />
     </div>
 
     <!-- Pipeline -->
-    <div class="mt-8 flex items-center justify-center gap-4">
+    <div class="mt-2 flex items-center justify-center gap-4">
       <h2 class="shrink-0 text-xs font-medium uppercase tracking-wide text-slate-400">Workflow:</h2>
       <SagaPipeline :events="events" />
     </div>
 
     <!-- Code + event stream -->
-    <div class="mt-12 flex flex-col gap-3 lg:flex-row">
+    <div class="mt-6 flex flex-col gap-3 lg:flex-row">
       <div class="min-w-0 lg:w-[560px] lg:shrink-0">
         <SagaCodeViewer :events="events" />
       </div>

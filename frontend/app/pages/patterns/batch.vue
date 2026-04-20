@@ -91,12 +91,12 @@ async function start() {
     </div>
 
     <!-- Architecture diagram -->
-    <div class="mt-8">
+    <div class="mt-4">
       <BatchArchitecture :events="events" />
     </div>
 
     <!-- Metrics + slots: label column on the left, data on the right -->
-    <div class="mt-8 grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-4">
+    <div class="mt-2 grid grid-cols-[auto_1fr] items-center gap-x-3 gap-y-4">
       <h2 class="text-xs font-medium uppercase tracking-wide text-slate-400">Metrics:</h2>
       <BatchMetrics :events="events" :total="TOTAL" />
 
@@ -105,12 +105,12 @@ async function start() {
     </div>
 
     <!-- Grid -->
-    <div class="mt-6">
+    <div class="mt-4">
       <BatchGrid :events="events" :total="TOTAL" />
     </div>
 
     <!-- Code + event stream -->
-    <div class="mt-12 flex flex-col gap-3 lg:flex-row">
+    <div class="mt-6 flex flex-col gap-3 lg:flex-row">
       <div class="min-w-0 lg:w-[560px] lg:shrink-0">
         <BatchCodeViewer :events="events" />
       </div>

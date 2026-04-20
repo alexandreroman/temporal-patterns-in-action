@@ -110,12 +110,12 @@ async function start() {
     </div>
 
     <!-- Architecture diagram -->
-    <div class="mt-8">
+    <div class="mt-4">
       <EncryptionArchitecture :events="events" :scenario="form.scenario" />
     </div>
 
     <!-- Payload flow: client → Temporal → worker -->
-    <div class="mt-8">
+    <div class="mt-2">
       <EncryptionPayloadFlow
         :scenario="form.scenario"
         :client-payload="clientPayload"
@@ -125,7 +125,7 @@ async function start() {
     </div>
 
     <!-- Code + event stream -->
-    <div class="mt-12 flex flex-col gap-3 lg:flex-row">
+    <div class="mt-6 flex flex-col gap-3 lg:flex-row">
       <div class="min-w-0 lg:w-[560px] lg:shrink-0">
         <EncryptionCodeViewer :events="events" />
       </div>

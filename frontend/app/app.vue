@@ -19,7 +19,7 @@ useHead({
       </div>
     </header>
 
-    <main class="mx-auto max-w-5xl px-6 py-10">
+    <main class="mx-auto max-w-5xl px-6 pt-4 pb-10">
       <NuxtPage />
     </main>
   </div>

@@ -43,12 +43,12 @@ const edgeAnim: Record<EdgeState, string> = {
 </script>
 
 <template>
-  <svg viewBox="0 0 680 240" class="w-full" role="img" :aria-label="label">
+  <svg viewBox="0 0 680 200" class="w-full" role="img" :aria-label="label">
     <!-- UI -->
     <g>
       <rect
         x="40"
-        y="95"
+        y="75"
         width="100"
         height="50"
         rx="8"
@@ -58,19 +58,19 @@ const edgeAnim: Record<EdgeState, string> = {
       />
       <text
         x="90"
-        y="115"
+        y="95"
         text-anchor="middle"
         dominant-baseline="central"
-        class="fill-slate-800 dark:fill-slate-100 text-[13px] font-medium"
+        class="fill-slate-800 dark:fill-slate-100 text-[12px] font-medium"
       >
         UI
       </text>
       <text
         x="90"
-        y="131"
+        y="111"
         text-anchor="middle"
         dominant-baseline="central"
-        class="fill-slate-500 dark:fill-slate-400 text-[11px]"
+        class="fill-slate-500 dark:fill-slate-400 text-[10px]"
       >
         Client
       </text>
@@ -80,7 +80,7 @@ const edgeAnim: Record<EdgeState, string> = {
     <g>
       <rect
         x="190"
-        y="95"
+        y="75"
         width="130"
         height="50"
         rx="8"
@@ -90,19 +90,19 @@ const edgeAnim: Record<EdgeState, string> = {
       />
       <text
         x="255"
-        y="115"
+        y="95"
         text-anchor="middle"
         dominant-baseline="central"
-        class="fill-slate-800 dark:fill-slate-100 text-[13px] font-medium"
+        class="fill-slate-800 dark:fill-slate-100 text-[12px] font-medium"
       >
         Temporal
       </text>
       <text
         x="255"
-        y="131"
+        y="111"
         text-anchor="middle"
         dominant-baseline="central"
-        class="fill-slate-500 dark:fill-slate-400 text-[11px]"
+        class="fill-slate-500 dark:fill-slate-400 text-[10px]"
       >
         Orchestrator
       </text>
@@ -112,7 +112,7 @@ const edgeAnim: Record<EdgeState, string> = {
     <g>
       <rect
         x="370"
-        y="95"
+        y="75"
         width="100"
         height="50"
         rx="8"
@@ -122,19 +122,19 @@ const edgeAnim: Record<EdgeState, string> = {
       />
       <text
         x="420"
-        y="115"
+        y="95"
         text-anchor="middle"
         dominant-baseline="central"
-        class="fill-slate-800 dark:fill-slate-100 text-[13px] font-medium"
+        class="fill-slate-800 dark:fill-slate-100 text-[12px] font-medium"
       >
         Worker
       </text>
       <text
         x="420"
-        y="131"
+        y="111"
         text-anchor="middle"
         dominant-baseline="central"
-        class="fill-slate-500 dark:fill-slate-400 text-[11px]"
+        class="fill-slate-500 dark:fill-slate-400 text-[10px]"
       >
         {{ workerLabel }}
       </text>
@@ -145,7 +145,7 @@ const edgeAnim: Record<EdgeState, string> = {
       <g v-for="cx in [90, 420]" :key="cx">
         <text
           :x="cx"
-          y="48"
+          y="28"
           text-anchor="middle"
           dominant-baseline="central"
           class="fill-emerald-500 dark:fill-emerald-400 text-[10px] font-semibold"
@@ -154,7 +154,7 @@ const edgeAnim: Record<EdgeState, string> = {
         </text>
         <rect
           :x="cx - 50"
-          y="58"
+          y="38"
           width="100"
           height="22"
           rx="11"
@@ -163,7 +163,7 @@ const edgeAnim: Record<EdgeState, string> = {
         />
         <text
           :x="cx"
-          y="70"
+          y="50"
           text-anchor="middle"
           dominant-baseline="central"
           class="fill-emerald-700 dark:fill-emerald-200 text-[11px] font-medium"
@@ -172,9 +172,9 @@ const edgeAnim: Record<EdgeState, string> = {
         </text>
         <line
           :x1="cx"
-          y1="80"
+          y1="60"
           :x2="cx"
-          y2="95"
+          y2="75"
           class="stroke-emerald-400 dark:stroke-emerald-500"
           :class="arch.running ? 'edge-flow-active' : ''"
           stroke-width="2"
@@ -187,7 +187,7 @@ const edgeAnim: Record<EdgeState, string> = {
     <g>
       <rect
         x="530"
-        y="12"
+        y="8"
         width="120"
         height="40"
         rx="8"
@@ -197,10 +197,10 @@ const edgeAnim: Record<EdgeState, string> = {
       />
       <text
         x="590"
-        y="32"
+        y="28"
         text-anchor="middle"
         dominant-baseline="central"
-        class="fill-slate-800 dark:fill-slate-100 text-[12px] font-medium"
+        class="fill-slate-800 dark:fill-slate-100 text-[11px] font-medium"
       >
         {{ serviceLabels[0] }}
       </text>
@@ -210,7 +210,7 @@ const edgeAnim: Record<EdgeState, string> = {
     <g>
       <rect
         x="530"
-        y="68"
+        y="56"
         width="120"
         height="40"
         rx="8"
@@ -220,10 +220,10 @@ const edgeAnim: Record<EdgeState, string> = {
       />
       <text
         x="590"
-        y="88"
+        y="76"
         text-anchor="middle"
         dominant-baseline="central"
-        class="fill-slate-800 dark:fill-slate-100 text-[12px] font-medium"
+        class="fill-slate-800 dark:fill-slate-100 text-[11px] font-medium"
       >
         {{ serviceLabels[1] }}
       </text>
@@ -233,7 +233,7 @@ const edgeAnim: Record<EdgeState, string> = {
     <g>
       <rect
         x="530"
-        y="124"
+        y="104"
         width="120"
         height="40"
         rx="8"
@@ -243,10 +243,10 @@ const edgeAnim: Record<EdgeState, string> = {
       />
       <text
         x="590"
-        y="144"
+        y="124"
         text-anchor="middle"
         dominant-baseline="central"
-        class="fill-slate-800 dark:fill-slate-100 text-[12px] font-medium"
+        class="fill-slate-800 dark:fill-slate-100 text-[11px] font-medium"
       >
         {{ serviceLabels[2] }}
       </text>
@@ -256,7 +256,7 @@ const edgeAnim: Record<EdgeState, string> = {
     <g>
       <rect
         x="530"
-        y="180"
+        y="152"
         width="120"
         height="40"
         rx="8"
@@ -266,10 +266,10 @@ const edgeAnim: Record<EdgeState, string> = {
       />
       <text
         x="590"
-        y="200"
+        y="172"
         text-anchor="middle"
         dominant-baseline="central"
-        class="fill-slate-800 dark:fill-slate-100 text-[12px] font-medium"
+        class="fill-slate-800 dark:fill-slate-100 text-[11px] font-medium"
       >
         {{ serviceLabels[3] }}
       </text>
@@ -278,9 +278,9 @@ const edgeAnim: Record<EdgeState, string> = {
     <!-- Edges -->
     <line
       x1="140"
-      y1="120"
+      y1="100"
       x2="188"
-      y2="120"
+      y2="100"
       fill="none"
       class="transition-all duration-300"
       :class="[edgeStroke[arch.edges.ui_tmp], arch.running ? edgeAnim[arch.edges.ui_tmp] : '']"
@@ -293,9 +293,9 @@ const edgeAnim: Record<EdgeState, string> = {
     />
     <line
       x1="320"
-      y1="120"
+      y1="100"
       x2="368"
-      y2="120"
+      y2="100"
       fill="none"
       class="transition-all duration-300"
       :class="[edgeStroke[arch.edges.tmp_wk], arch.running ? edgeAnim[arch.edges.tmp_wk] : '']"
@@ -308,9 +308,9 @@ const edgeAnim: Record<EdgeState, string> = {
     />
     <line
       x1="470"
-      y1="108"
+      y1="88"
       x2="528"
-      y2="38"
+      y2="28"
       fill="none"
       class="transition-all duration-300"
       :class="[edgeStroke[arch.edges.wk_s1], arch.running ? edgeAnim[arch.edges.wk_s1] : '']"
@@ -321,9 +321,9 @@ const edgeAnim: Record<EdgeState, string> = {
     />
     <line
       x1="470"
-      y1="115"
+      y1="95"
       x2="528"
-      y2="88"
+      y2="76"
       fill="none"
       class="transition-all duration-300"
       :class="[edgeStroke[arch.edges.wk_s2], arch.running ? edgeAnim[arch.edges.wk_s2] : '']"
@@ -334,9 +334,9 @@ const edgeAnim: Record<EdgeState, string> = {
     />
     <line
       x1="470"
-      y1="125"
+      y1="105"
       x2="528"
-      y2="144"
+      y2="124"
       fill="none"
       class="transition-all duration-300"
       :class="[edgeStroke[arch.edges.wk_s3], arch.running ? edgeAnim[arch.edges.wk_s3] : '']"
@@ -347,9 +347,9 @@ const edgeAnim: Record<EdgeState, string> = {
     />
     <line
       x1="470"
-      y1="132"
+      y1="112"
       x2="528"
-      y2="200"
+      y2="172"
       fill="none"
       class="transition-all duration-300"
       :class="[edgeStroke[arch.edges.wk_s4], arch.running ? edgeAnim[arch.edges.wk_s4] : '']"

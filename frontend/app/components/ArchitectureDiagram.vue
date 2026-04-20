@@ -176,6 +176,7 @@ const edgeAnim: Record<EdgeState, string> = {
           :x2="cx"
           y2="95"
           class="stroke-emerald-400 dark:stroke-emerald-500"
+          :class="arch.running ? 'edge-flow-active' : ''"
           stroke-width="2"
           stroke-dasharray="3 3"
         />

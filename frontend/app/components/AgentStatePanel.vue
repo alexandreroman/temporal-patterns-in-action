@@ -230,7 +230,9 @@ const displayedNaiveTokens = useCountTween(() => derived.value.naiveTokens);
       leave-to-class="opacity-0 -translate-y-2"
     >
       <div v-if="derived.hasRetry" class="flex flex-col gap-1.5">
-        <div class="text-[10px] uppercase tracking-wide text-amber-700 dark:text-amber-300 text-center">
+        <div
+          class="text-[10px] uppercase tracking-wide text-amber-700 dark:text-amber-300 text-center"
+        >
           Without Temporal
         </div>
         <div class="grid grid-cols-2 gap-2">

@@ -213,11 +213,7 @@ onBeforeUnmount(() => {
 
     <!-- Conversation + state panel -->
     <div class="mt-4 flex flex-col gap-3 lg:flex-row lg:items-start">
-      <div
-        ref="convoWrapperRef"
-        class="min-w-0 flex-1"
-        :style="convoHeightStyle"
-      >
+      <div ref="convoWrapperRef" class="min-w-0 flex-1" :style="convoHeightStyle">
         <AgentConversation :events="events" :pending-prompt="running ? PROMPT : null" />
       </div>
       <AgentStatePanel ref="statePanelRef" :events="events" />

@@ -1,8 +1,8 @@
 # temporal-patterns-in-action
 
 Runnable demos of the core [Temporal](https://temporal.io)
-patterns — saga, signals & queries, long-running
-workflows — with a Go worker fleet and a Nuxt UI to
+patterns — saga, long-running workflows, payload
+encryption — with a Go worker fleet and a Nuxt UI to
 trigger and observe them.
 
 ## Features
@@ -124,7 +124,6 @@ graph LR
 | Pattern               | Status        | Package                      |
 | --------------------- | ------------- | ---------------------------- |
 | Saga                  | available     | `workers/saga`               |
-| Signals & Queries     | coming soon   | —                            |
 | Long-running batch    | available     | `workers/batch`              |
 | Payload Encryption    | available     | `workers/encryption`         |
 

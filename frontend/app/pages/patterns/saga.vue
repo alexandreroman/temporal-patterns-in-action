@@ -64,9 +64,16 @@ async function start() {
 
     <!-- Control bar -->
     <div class="mt-2 flex flex-wrap items-center justify-between gap-3">
-      <h1 class="text-2xl font-semibold tracking-tight text-slate-100">
-        Saga Pattern &mdash; Order Processing
-      </h1>
+      <div class="flex items-center gap-3">
+        <span
+          class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-800 bg-slate-950 text-slate-300"
+        >
+          <IconSaga class="h-5 w-5" />
+        </span>
+        <h1 class="text-2xl font-semibold tracking-tight text-slate-100">
+          Saga Pattern &mdash; Order Processing
+        </h1>
+      </div>
       <div class="flex items-center gap-2">
         <select
           v-model="form.failAt"

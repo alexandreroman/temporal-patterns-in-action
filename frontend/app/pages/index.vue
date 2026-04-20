@@ -3,33 +3,38 @@ useSeoMeta({ title: "Patterns" });
 
 const NuxtLink = resolveComponent("NuxtLink");
 
-const patterns = [
+type PatternIcon = "saga" | "batch" | "encryption";
+
+const patterns: {
+  slug: string;
+  title: string;
+  description: string;
+  status: "available" | "coming-soon";
+  icon: PatternIcon;
+}[] = [
   {
     slug: "saga",
     title: "Saga",
     description:
       "Order processing saga — reserve inventory, charge payment, ship, notify. Roll back on failure.",
-    status: "available" as const,
+    status: "available",
+    icon: "saga",
   },
   {
     slug: "batch",
     title: "Long-Running Batch",
     description:
       "Worker-throttled fan-out over a large image batch — retries, heartbeats, and a bounded backlog.",
-    status: "available" as const,
+    status: "available",
+    icon: "batch",
   },
   {
     slug: "encryption",
     title: "Payload Encryption",
     description:
       "Symmetric PayloadCodec — AES-256-GCM encryption so Temporal stores only ciphertext end-to-end.",
-    status: "available" as const,
-  },
-  {
-    slug: "signals",
-    title: "Signals & Queries",
-    description: "Interact with a running workflow — approve, cancel, inspect progress.",
-    status: "coming-soon" as const,
+    status: "available",
+    icon: "encryption",
   },
 ];
 </script>
@@ -56,11 +61,20 @@ const patterns = [
               : 'opacity-60'
           "
         >
-          <div class="flex items-center justify-between">
-            <h2 class="text-lg font-medium text-slate-100">{{ pattern.title }}</h2>
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex items-center gap-3">
+              <span
+                class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-800 bg-slate-950 text-slate-300"
+              >
+                <IconSaga v-if="pattern.icon === 'saga'" class="h-5 w-5" />
+                <IconBatch v-else-if="pattern.icon === 'batch'" class="h-5 w-5" />
+                <IconEncryption v-else class="h-5 w-5" />
+              </span>
+              <h2 class="text-lg font-medium text-slate-100">{{ pattern.title }}</h2>
+            </div>
             <span
               v-if="pattern.status === 'coming-soon'"
-              class="rounded-full bg-slate-800 px-2 py-0.5 text-xs text-slate-400"
+              class="shrink-0 rounded-full bg-slate-800 px-2 py-0.5 text-xs text-slate-400"
             >
               coming soon
             </span>

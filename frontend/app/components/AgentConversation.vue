@@ -4,7 +4,7 @@ import type { EventEnvelope } from "~~/shared/events";
 
 interface ChatMessage {
   id: string;
-  role: "user" | "llm" | "tool" | "system";
+  role: "user" | "llm" | "tool" | "system" | "retry";
   content: string;
   toolName?: string;
 }
@@ -56,6 +56,19 @@ const messages = computed<ChatMessage[]>(() => {
         });
         break;
       }
+      case "progress.step.failed": {
+        if (data.step !== "call-llm") break;
+        const attempt = typeof data.attempt === "number" ? data.attempt : 1;
+        out.push({
+          id: env.id,
+          role: "retry",
+          content:
+            `LLM call failed on attempt ${attempt}. Temporal retries automatically ` +
+            `— conversation history, tool results, and prior tokens are preserved, ` +
+            `so the agent resumes exactly where it left off.`,
+        });
+        break;
+      }
     }
   }
 
@@ -85,6 +98,7 @@ const ROLE_LABEL: Record<ChatMessage["role"], string> = {
   llm: "LLM",
   tool: "TOOL",
   system: "SYSTEM",
+  retry: "TEMPORAL",
 };
 
 const ROLE_CLASS: Record<ChatMessage["role"], string> = {
@@ -92,6 +106,7 @@ const ROLE_CLASS: Record<ChatMessage["role"], string> = {
   llm: "text-violet-600 dark:text-violet-300",
   tool: "text-emerald-600 dark:text-emerald-300",
   system: "text-amber-600 dark:text-amber-300",
+  retry: "text-emerald-700 dark:text-emerald-300",
 };
 </script>
 
@@ -113,11 +128,23 @@ const ROLE_CLASS: Record<ChatMessage["role"], string> = {
           v-for="m in messages"
           :key="m.id"
           class="msg-row border-b border-slate-100 px-4 py-2 text-[12px] last:border-0 dark:border-slate-800"
+          :class="
+            m.role === 'retry'
+              ? 'border-l-2 border-l-emerald-400 bg-emerald-50/60 dark:border-l-emerald-500 dark:bg-emerald-950/30'
+              : ''
+          "
         >
           <div class="mb-0.5 text-[10px] font-semibold tracking-wide" :class="ROLE_CLASS[m.role]">
             {{ ROLE_LABEL[m.role] }}
           </div>
-          <div class="leading-relaxed text-slate-700 dark:text-slate-200">
+          <div
+            class="leading-relaxed"
+            :class="
+              m.role === 'retry'
+                ? 'text-emerald-900 dark:text-emerald-100'
+                : 'text-slate-700 dark:text-slate-200'
+            "
+          >
             {{ m.content }}
           </div>
           <div

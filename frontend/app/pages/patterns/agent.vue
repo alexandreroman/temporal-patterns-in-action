@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
 import type {
   AgentApprovalRequest,
   AgentApprovalResponse,
@@ -91,6 +91,49 @@ async function respond(approved: boolean) {
     approving.value = false;
   }
 }
+
+const statePanelRef = ref<{ $el?: HTMLElement } | null>(null);
+const convoWrapperRef = ref<HTMLElement | null>(null);
+const panelHeight = ref<number | null>(null);
+
+const convoHeightStyle = computed(() =>
+  panelHeight.value !== null ? { height: `${panelHeight.value}px` } : {},
+);
+
+let resizeObserver: ResizeObserver | null = null;
+let mediaQuery: MediaQueryList | null = null;
+
+function updatePanelHeight() {
+  const el = statePanelRef.value?.$el as HTMLElement | undefined;
+  if (!el) {
+    panelHeight.value = null;
+    return;
+  }
+  // Only pin height on desktop layout; on mobile the row stacks vertically
+  // and the conversation should keep its own h-72 scroller.
+  if (mediaQuery && !mediaQuery.matches) {
+    panelHeight.value = null;
+    return;
+  }
+  panelHeight.value = el.getBoundingClientRect().height;
+}
+
+onMounted(() => {
+  mediaQuery = window.matchMedia("(min-width: 1024px)");
+  mediaQuery.addEventListener("change", updatePanelHeight);
+
+  const el = statePanelRef.value?.$el as HTMLElement | undefined;
+  if (el) {
+    resizeObserver = new ResizeObserver(() => updatePanelHeight());
+    resizeObserver.observe(el);
+  }
+  updatePanelHeight();
+});
+
+onBeforeUnmount(() => {
+  resizeObserver?.disconnect();
+  mediaQuery?.removeEventListener("change", updatePanelHeight);
+});
 </script>
 
 <template>
@@ -162,11 +205,15 @@ async function respond(approved: boolean) {
     </div>
 
     <!-- Conversation + state panel -->
-    <div class="mt-4 flex flex-col gap-3 lg:flex-row">
-      <div class="min-w-0 flex-1">
+    <div class="mt-4 flex flex-col gap-3 lg:flex-row lg:items-start">
+      <div
+        ref="convoWrapperRef"
+        class="min-w-0 flex-1"
+        :style="convoHeightStyle"
+      >
         <AgentConversation :events="events" :pending-prompt="running ? PROMPT : null" />
       </div>
-      <AgentStatePanel :events="events" />
+      <AgentStatePanel ref="statePanelRef" :events="events" />
     </div>
 
     <!-- Code + event stream -->

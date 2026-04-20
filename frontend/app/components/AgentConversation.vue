@@ -97,14 +97,14 @@ const ROLE_CLASS: Record<ChatMessage["role"], string> = {
 
 <template>
   <div
-    class="flex flex-col overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700"
+    class="flex flex-col overflow-hidden rounded-xl border border-slate-200 dark:border-slate-700 lg:h-full"
   >
     <div
       class="border-b border-slate-200 px-4 py-2 text-xs font-medium text-slate-700 dark:border-slate-700 dark:text-slate-300"
     >
       Agent conversation
     </div>
-    <div ref="scroller" class="h-72 overflow-y-auto">
+    <div ref="scroller" class="h-72 overflow-y-auto lg:h-auto lg:min-h-0 lg:flex-1">
       <p v-if="messages.length === 0" class="py-6 text-center text-xs text-slate-400">
         No messages yet.
       </p>

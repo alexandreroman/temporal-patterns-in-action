@@ -77,11 +77,11 @@ func TestBatchProcessingWorkflow_RetriesSucceed(t *testing.T) {
 
 	a := &flakyActivities{Activities: Activities{Publisher: events.NopPublisher{}}}
 	env.RegisterWorkflow(ProcessImageWorkflow)
-	env.RegisterActivityWithOptions(a.Activities.ResizeImage, activity.RegisterOptions{Name: "resize-image"})
+	env.RegisterActivityWithOptions(a.ResizeImage, activity.RegisterOptions{Name: "resize-image"})
 	env.RegisterActivityWithOptions(a.CreateThumbnail, activity.RegisterOptions{Name: "create-thumbnail"})
-	env.RegisterActivityWithOptions(a.Activities.UploadToCDN, activity.RegisterOptions{Name: "upload-cdn"})
-	env.RegisterActivityWithOptions(a.Activities.WriteMetadata, activity.RegisterOptions{Name: "write-metadata"})
-	env.RegisterActivityWithOptions(a.Activities.ReportBatchSummary, activity.RegisterOptions{Name: "report-batch-summary"})
+	env.RegisterActivityWithOptions(a.UploadToCDN, activity.RegisterOptions{Name: "upload-cdn"})
+	env.RegisterActivityWithOptions(a.WriteMetadata, activity.RegisterOptions{Name: "write-metadata"})
+	env.RegisterActivityWithOptions(a.ReportBatchSummary, activity.RegisterOptions{Name: "report-batch-summary"})
 
 	env.ExecuteWorkflow(BatchProcessingWorkflow, BatchInput{
 		BatchID:     "batch-retry",

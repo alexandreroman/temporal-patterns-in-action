@@ -46,7 +46,7 @@ func RunWorker(pattern, taskQueue string, register func(w worker.Worker, publish
 		log.Printf("nats unavailable at %s (%v) — running without event publishing", natsURL, err)
 		publisher = NopPublisher{}
 	}
-	defer publisher.Close()
+	defer func() { _ = publisher.Close() }()
 
 	c, err := client.Dial(client.Options{HostPort: address})
 	if err != nil {
@@ -91,7 +91,7 @@ func runHealthcheck() {
 	if err != nil {
 		os.Exit(1)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 	if resp.StatusCode != http.StatusOK {
 		os.Exit(1)
 	}

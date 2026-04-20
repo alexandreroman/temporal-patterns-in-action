@@ -27,7 +27,7 @@ func main() {
 		log.Printf("nats unavailable at %s (%v) — running without event publishing", natsURL, err)
 		publisher = events.NopPublisher{}
 	}
-	defer publisher.Close()
+	defer func() { _ = publisher.Close() }()
 
 	// Two clients: one with the codec (server sees ciphertext), one plain
 	// (server sees raw JSON). Each drives its own task queue.

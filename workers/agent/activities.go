@@ -131,11 +131,21 @@ func firstUserMessage(history []Message) string {
 	return ""
 }
 
+// scriptedTokens returns a realistic-looking (non-round) token count per loop,
+// growing as conversation history accumulates.
+func scriptedTokens(loop int) int {
+	table := []int{742, 918, 1187, 1463, 1724}
+	if loop >= 1 && loop <= len(table) {
+		return table[loop-1]
+	}
+	return table[len(table)-1]
+}
+
 // scriptedLLM returns the agent's next decision for a given scenario/loop.
 // Keeping every trajectory in a single switch makes it easy to read the
 // whole demo at a glance, and fully determines what the UI will show.
 func scriptedLLM(req LLMRequest) LLMResponse {
-	tokens := 700 + 80*req.Loop
+	tokens := scriptedTokens(req.Loop)
 	switch req.Loop {
 	case 1:
 		return LLMResponse{

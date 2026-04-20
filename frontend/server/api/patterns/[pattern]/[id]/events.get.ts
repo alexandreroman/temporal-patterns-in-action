@@ -6,6 +6,7 @@ import type { EventEnvelope } from "~~/shared/events";
 const HEARTBEAT_INTERVAL_MS = 15_000;
 const DESCRIBE_POLL_INTERVAL_MS = 250;
 const DESCRIBE_POLL_DEADLINE_MS = 30_000;
+const TERMINAL_POLL_INTERVAL_MS = 500;
 
 export default defineEventHandler(async (event) => {
   const pattern = getRouterParam(event, "pattern");
@@ -72,14 +73,17 @@ async function watchTerminalState(
     const { runId, status } = description;
 
     if (status.name === "RUNNING") {
-      try {
-        await handle.result();
-        if (isClosed()) return;
+      // Poll describe() rather than awaiting handle.result(): the result
+      // payload may be encrypted (e.g. the encryption pattern), and the plain
+      // Temporal client has no PayloadCodec. describe() reports status without
+      // decoding the payload, keeping this endpoint pattern-agnostic.
+      const terminal = await waitForTerminal(handle, isClosed);
+      if (!terminal || isClosed()) return;
+      if (terminal === "COMPLETED") {
         await pushSynthetic(push, pattern, workflowId, runId, "progress.workflow.completed", {});
-      } catch (err) {
-        if (isClosed()) return;
+      } else {
         await pushSynthetic(push, pattern, workflowId, runId, "progress.workflow.failed", {
-          error: String((err as Error)?.message ?? err),
+          error: `workflow ${terminal.toLowerCase()}`,
         });
       }
       return;
@@ -98,6 +102,22 @@ async function watchTerminalState(
   } catch (err) {
     console.error("sse: terminal-state watcher failed", { pattern, workflowId, err });
   }
+}
+
+async function waitForTerminal(
+  handle: { describe: () => Promise<{ status: { name: string } }> },
+  isClosed: () => boolean,
+): Promise<string | null> {
+  while (!isClosed()) {
+    try {
+      const { status } = await handle.describe();
+      if (status.name !== "RUNNING") return status.name;
+    } catch {
+      // Transient error — keep polling until the stream closes.
+    }
+    await sleep(TERMINAL_POLL_INTERVAL_MS);
+  }
+  return null;
 }
 
 async function waitForDescription(

@@ -1,7 +1,7 @@
 .DEFAULT_GOAL := help
 
 # Known patterns — each has a dedicated binary under <pattern>/cmd/worker.
-PATTERNS := saga batch
+PATTERNS := saga batch encryption
 
 ##@ Development
 

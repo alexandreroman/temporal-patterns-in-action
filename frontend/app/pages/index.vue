@@ -19,6 +19,13 @@ const patterns = [
     status: "available" as const,
   },
   {
+    slug: "encryption",
+    title: "Payload Encryption",
+    description:
+      "Symmetric PayloadCodec — AES-256-GCM encryption so Temporal stores only ciphertext end-to-end.",
+    status: "available" as const,
+  },
+  {
     slug: "signals",
     title: "Signals & Queries",
     description: "Interact with a running workflow — approve, cancel, inspect progress.",

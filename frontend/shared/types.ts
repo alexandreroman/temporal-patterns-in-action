@@ -18,3 +18,30 @@ export interface BatchStartRequest {
 export interface BatchStartResponse {
   workflowId: string;
 }
+
+export interface SensitiveOrder {
+  orderId: string;
+  customer: { name: string; email: string; cardLast4: string };
+  items: Array<{ sku: string; qty: number; price: number }>;
+  total: number;
+}
+
+export interface EncryptionStartRequest {
+  orderId: string;
+  scenario: "clear" | "encrypted";
+}
+
+export interface EncryptionStartResponse {
+  workflowId: string;
+  scenario: "clear" | "encrypted";
+  /** Plaintext client payload — just the SensitiveOrder object echoed back. */
+  clientPayload: SensitiveOrder;
+  /**
+   * How Temporal sees the workflow start input. `encoding` reports what's in
+   * the payload metadata; `dataBase64` is the raw bytes of payload.data.
+   */
+  storedPayload: {
+    encoding: string;
+    dataBase64: string;
+  };
+}

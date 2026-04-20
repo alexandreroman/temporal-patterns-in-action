@@ -60,8 +60,7 @@ services:
   worker-saga:
     build:
       context: ./workers
-      args:
-        PATTERN: saga
+      dockerfile: saga/Dockerfile
     environment:
       TEMPORAL_ADDRESS: temporal:7233
       NATS_URL: nats://nats:4222
@@ -85,8 +84,7 @@ services:
   worker-batch:
     build:
       context: ./workers
-      args:
-        PATTERN: batch
+      dockerfile: batch/Dockerfile
     environment:
       TEMPORAL_ADDRESS: temporal:7233
       NATS_URL: nats://nats:4222
@@ -111,8 +109,31 @@ services:
   worker-agent:
     build:
       context: ./workers
-      args:
-        PATTERN: agent
+      dockerfile: agent/Dockerfile
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+      NATS_URL: nats://nats:4222
+    depends_on:
+      temporal:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/worker", "-healthcheck"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+    restart: unless-stopped
+
+  worker-encryption:
+    build:
+      context: ./workers
+      dockerfile: encryption/Dockerfile
     environment:
       TEMPORAL_ADDRESS: temporal:7233
       NATS_URL: nats://nats:4222

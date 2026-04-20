@@ -144,7 +144,7 @@ const chipClass: Record<StepState, string> = {
           >&rarr;</span
         >
         <div
-          class="min-w-[128px] rounded-lg border px-3 py-2 text-center transition-all duration-300"
+          class="min-w-[160px] rounded-lg border px-3 py-2 text-center transition-all duration-300"
           :class="chipClass[states[step.id]]"
         >
           <div class="flex items-center justify-center gap-1 text-[12px] font-medium">

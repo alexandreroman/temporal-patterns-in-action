@@ -7,7 +7,7 @@ useSeoMeta({ title: "Saga" });
 type FailAt = NonNullable<SagaStartRequest["failAt"]>;
 
 const form = reactive({
-  failAt: "shipping" as FailAt,
+  failAt: "" as FailAt,
 });
 
 const workflowId = ref<string | null>(null);

@@ -12,7 +12,7 @@ const PARALLELISM = 4;
 type Scenario = BatchStartRequest["scenario"];
 
 const form = reactive({
-  scenario: "failures" as Scenario,
+  scenario: "clean" as Scenario,
 });
 
 const workflowId = ref<string | null>(null);

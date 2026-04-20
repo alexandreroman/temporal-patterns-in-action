@@ -1,4 +1,4 @@
-.DEFAULT_GOAL := help
+.DEFAULT_GOAL := app-up
 
 ##@ Infra
 
@@ -13,6 +13,20 @@ infra-down: ## Stop local Temporal server and NATS
 .PHONY: infra-logs
 infra-logs: ## Follow Temporal server logs
 	docker-compose logs -f temporal
+
+##@ App
+
+.PHONY: app-up
+app-up: ## Build and run the full stack (infra, frontend, workers) in containers
+	docker-compose up -d --build
+
+.PHONY: app-down
+app-down: ## Stop the full stack and remove containers
+	docker-compose down
+
+.PHONY: app-logs
+app-logs: ## Follow logs from every container
+	docker-compose logs -f
 
 ##@ Modules
 

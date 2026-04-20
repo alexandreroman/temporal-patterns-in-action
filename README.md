@@ -1,5 +1,8 @@
 # Temporal Patterns In Action
 
+[![CI](https://github.com/alexandreroman/temporal-patterns-in-action/actions/workflows/ci.yml/badge.svg)](https://github.com/alexandreroman/temporal-patterns-in-action/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
+
 Runnable demos of the core [Temporal](https://temporal.io) patterns —
 saga, long-running batch, durable AI agent, payload encryption — with
 Go workers and a Frontend to trigger and observe them.

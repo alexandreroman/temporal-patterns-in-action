@@ -15,7 +15,7 @@ const patterns = [
     slug: "batch",
     title: "Long-Running Batch",
     description:
-      "Parallel sliding window over a large image batch — retries, heartbeats, and a bounded backlog.",
+      "Worker-throttled fan-out over a large image batch — retries, heartbeats, and a bounded backlog.",
     status: "available" as const,
   },
   {

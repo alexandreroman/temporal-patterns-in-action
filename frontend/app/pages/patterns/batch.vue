@@ -68,7 +68,7 @@ async function start() {
     <!-- Control bar -->
     <div class="mt-2 flex flex-wrap items-center justify-between gap-3">
       <h1 class="text-2xl font-semibold tracking-tight text-slate-100">
-        Long-Running Batch &mdash; Parallel Sliding Window
+        Long-Running Batch &mdash; Worker-Throttled Fan-Out
       </h1>
       <div class="flex items-center gap-2">
         <select

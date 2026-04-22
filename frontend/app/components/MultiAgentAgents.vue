@@ -152,7 +152,7 @@ const CHIP_CLS: Record<ChipState, string> = {
 <template>
   <div class="flex flex-1 flex-col gap-1.5">
     <div
-      v-for="(topic, i) in topics"
+      v-for="topic in topics"
       :key="topic.index"
       class="rounded-md border px-3 py-2 transition-all duration-300 lg:flex-1"
       :class="CARD_CLS[topic.state]"
@@ -166,9 +166,6 @@ const CHIP_CLS: Record<ChipState, string> = {
         >
           {{ TAG_LABEL[topic.state] }}
         </span>
-      </div>
-      <div class="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
-        Subtopic {{ i + 1 }}/3
       </div>
       <div v-if="topic.queries.length > 0" class="mt-1.5 flex flex-wrap gap-1">
         <span

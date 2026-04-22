@@ -66,9 +66,9 @@ const SOURCES: Record<CodeLang, BatchSource> = {
       "}",
     ],
     stepLines: {
-      dispatch: [6, 16],
-      drain: [18, 25],
-      summary: [28, 29],
+      dispatch: [5, 15],
+      drain: [17, 24],
+      summary: [26, 28],
     },
   },
   java: {
@@ -115,9 +115,9 @@ const SOURCES: Record<CodeLang, BatchSource> = {
       "}",
     ],
     stepLines: {
-      dispatch: [7, 18],
-      drain: [20, 24],
-      summary: [26, 27],
+      dispatch: [6, 17],
+      drain: [19, 23],
+      summary: [25, 25],
     },
   },
   typescript: {
@@ -171,9 +171,9 @@ const SOURCES: Record<CodeLang, BatchSource> = {
       "}",
     ],
     stepLines: {
-      dispatch: [12, 25],
-      drain: [27, 28],
-      summary: [30, 31],
+      dispatch: [12, 24],
+      drain: [26, 27],
+      summary: [29, 29],
     },
   },
   python: {
@@ -220,9 +220,9 @@ const SOURCES: Record<CodeLang, BatchSource> = {
       "        await workflow.execute_activity(write_metadata, in_, **opts)",
     ],
     stepLines: {
-      dispatch: [9, 16],
-      drain: [18, 21],
-      summary: [23, 25],
+      dispatch: [8, 15],
+      drain: [17, 20],
+      summary: [22, 24],
     },
   },
 };

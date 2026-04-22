@@ -71,8 +71,8 @@ const SOURCES: Record<CodeLang, AgentSource> = {
       llmCall: [6, 14],
       toolCheck: [16, 17],
       toolExec: [18, 25],
-      approval: [28, 34],
-      finalAnswer: [37, 39],
+      approval: [28, 36],
+      finalAnswer: [38, 40],
     },
   },
   java: {
@@ -121,7 +121,7 @@ const SOURCES: Record<CodeLang, AgentSource> = {
       toolCheck: [11, 12],
       toolExec: [13, 16],
       approval: [18, 27],
-      finalAnswer: [30, 32],
+      finalAnswer: [29, 31],
     },
   },
   typescript: {

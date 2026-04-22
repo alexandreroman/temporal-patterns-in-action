@@ -125,8 +125,8 @@ const SOURCES: Record<CodeLang, EncryptionSource> = {
     ],
     stepLines: {
       encode: [0, 18],
-      decode: [20, 36],
-      register: [38, 43],
+      decode: [20, 35],
+      register: [37, 43],
     },
   },
   typescript: {
@@ -172,9 +172,9 @@ const SOURCES: Record<CodeLang, EncryptionSource> = {
       "});",
     ],
     stepLines: {
-      encode: [0, 13],
-      decode: [15, 29],
-      register: [31, 36],
+      encode: [0, 14],
+      decode: [16, 30],
+      register: [32, 37],
     },
   },
   python: {

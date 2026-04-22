@@ -13,9 +13,6 @@ func main() {
 	events.RunWorker(entity.Pattern, entity.TaskQueue, func(w worker.Worker, pub events.Publisher) {
 		w.RegisterWorkflow(entity.ShoppingCartWorkflow)
 
-		// Register each entity activity under its canonical kebab-case name so
-		// the NATS event interceptor emits progress.step.* events matching the
-		// step IDs used by the workflow and the frontend pipeline.
 		a := &entity.Activities{Publisher: pub}
 		w.RegisterActivityWithOptions(a.ValidateItem, activity.RegisterOptions{Name: "validate-item"})
 		w.RegisterActivityWithOptions(a.PriceItem, activity.RegisterOptions{Name: "price-item"})

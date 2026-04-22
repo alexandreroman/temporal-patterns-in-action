@@ -43,8 +43,8 @@ func fastActivityOptions() workflow.ActivityOptions {
 // fail (which the scripted demo never does).
 func DeepResearchWorkflow(ctx workflow.Context, req DeepResearchRequest) (Report, error) {
 	logger := workflow.GetLogger(ctx)
-	parentID := workflow.GetInfo(ctx).WorkflowExecution.ID
-	parentRunID := workflow.GetInfo(ctx).WorkflowExecution.RunID
+	parentExec := workflow.GetInfo(ctx).WorkflowExecution
+	parentID, parentRunID := parentExec.ID, parentExec.RunID
 
 	progress := Progress{Phase: PhaseIdle}
 	if err := workflow.SetQueryHandler(ctx, "getProgress", func() (Progress, error) {

@@ -4,14 +4,11 @@ import type { EventEnvelope } from "~~/shared/events";
 
 type DotColor = "blue" | "green" | "red" | "amber";
 
-const props = withDefaults(
-  defineProps<{
-    events: EventEnvelope[];
-    labelFor: (env: EventEnvelope) => string;
-    dotColor?: (env: EventEnvelope) => DotColor;
-  }>(),
-  { dotColor: () => (): DotColor => "blue" },
-);
+const props = defineProps<{
+  events: EventEnvelope[];
+  labelFor: (env: EventEnvelope) => string;
+  dotColor: (env: EventEnvelope) => DotColor;
+}>();
 
 const reversed = computed(() => [...props.events].reverse());
 
@@ -82,9 +79,6 @@ function formatTime(env: EventEnvelope): string {
 .event-enter-from {
   opacity: 0;
   transform: translateY(-6px);
-}
-.event-move {
-  transition: transform 0.25s ease-out;
 }
 .event-row {
   animation: event-flash 1s ease-out;

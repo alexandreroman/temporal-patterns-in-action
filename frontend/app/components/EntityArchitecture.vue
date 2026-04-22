@@ -37,12 +37,10 @@ const arch = computed<ArchState>(() => {
     switch (env.type) {
       case "progress.step.started": {
         const svc = STEP_TO_SVC[step];
+        if (svc) resetServices(nodes, edges);
         nodes.temporal = "active";
         nodes.worker = "active";
         if (svc) {
-          resetServices(nodes, edges);
-          nodes.temporal = "active";
-          nodes.worker = "active";
           nodes[svc.node] = "active";
           edges[svc.edge] = "active";
         }

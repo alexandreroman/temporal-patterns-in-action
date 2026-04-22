@@ -7,7 +7,6 @@ import type { CodeSource } from "~/types/code-viewer";
 type HighlightKey = "init" | "llmCall" | "toolCheck" | "toolExec" | "approval" | "finalAnswer";
 
 interface AgentSource extends CodeSource {
-  lines: string[];
   hl: Record<HighlightKey, [number, number]>;
 }
 

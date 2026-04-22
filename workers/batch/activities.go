@@ -50,11 +50,12 @@ func (a *Activities) WriteMetadata(ctx context.Context, in StageInput) error {
 // business events route to the parent workflow's NATS subject via
 // PublishBusinessAs so the UI sees one per-batch stream.
 func (a *Activities) runStage(ctx context.Context, in StageInput, emitCompleted bool) error {
-	attempt := int(activity.GetInfo(ctx).Attempt)
+	info := activity.GetInfo(ctx)
+	attempt := int(info.Attempt)
+	runID := info.WorkflowExecution.RunID
 	activity.GetLogger(ctx).Info("Processing stage",
 		"batch", in.BatchID, "index", in.Index, "service", in.Service, "attempt", attempt)
 
-	runID := activity.GetInfo(ctx).WorkflowExecution.RunID
 	events.PublishBusinessAs(ctx, a.Publisher, Pattern, in.RootWorkflowID, runID, TypeItemStarted, map[string]any{
 		"index":   in.Index,
 		"service": in.Service,

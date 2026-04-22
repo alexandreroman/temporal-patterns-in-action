@@ -13,9 +13,6 @@ func main() {
 	events.RunWorker(agent.Pattern, agent.TaskQueue, func(w worker.Worker, pub events.Publisher) {
 		w.RegisterWorkflow(agent.TravelAgentWorkflow)
 
-		// Register each activity under its canonical kebab-case name so the
-		// NATS event interceptor emits progress.step.* events matching the
-		// step IDs used by the frontend.
 		a := &agent.Activities{Publisher: pub}
 		w.RegisterActivityWithOptions(a.CallLLM, activity.RegisterOptions{Name: "call-llm"})
 		w.RegisterActivityWithOptions(a.ExecuteMCPTool, activity.RegisterOptions{Name: "execute-mcp-tool"})

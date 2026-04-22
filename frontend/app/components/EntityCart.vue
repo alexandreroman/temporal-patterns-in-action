@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from "vue";
+import { computed } from "vue";
 import type { EventEnvelope } from "~~/shared/events";
 
 /**
@@ -63,55 +63,6 @@ const rows = computed<Row[]>(() => {
 });
 
 const totalCents = computed(() => rows.value.reduce((sum, r) => sum + r.priceCents * r.qty, 0));
-
-// Tween the displayed total so viewers see the number tick up between
-// signals. Mirrors the inline implementation in AgentStatePanel /
-// MultiAgentMetrics.
-function useCountTween(source: () => number) {
-  const displayed = ref(0);
-  let frame: number | null = null;
-  const cancel = () => {
-    if (frame !== null) {
-      cancelAnimationFrame(frame);
-      frame = null;
-    }
-  };
-
-  watch(
-    source,
-    (target, previous) => {
-      cancel();
-      const from = displayed.value;
-      if (target === from) return;
-
-      const reduceMotion =
-        typeof window !== "undefined" &&
-        window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-      if (reduceMotion || target < (previous ?? 0)) {
-        displayed.value = target;
-        return;
-      }
-
-      const delta = target - from;
-      const duration = Math.min(800, 300 + Math.min(delta, 500));
-      const start = performance.now();
-
-      const step = (now: number) => {
-        const t = Math.min(1, (now - start) / duration);
-        const eased = 1 - Math.pow(1 - t, 3);
-        displayed.value = Math.round(from + delta * eased);
-        if (t < 1) frame = requestAnimationFrame(step);
-        else frame = null;
-      };
-      frame = requestAnimationFrame(step);
-    },
-    { immediate: true },
-  );
-
-  onBeforeUnmount(cancel);
-  return displayed;
-}
-
 const displayedTotalCents = useCountTween(() => totalCents.value);
 
 function formatDollars(cents: number): string {

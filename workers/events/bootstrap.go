@@ -22,6 +22,10 @@ const healthPort = 8080
 // to override tuning fields (e.g. MaxConcurrentActivityExecutionSize); the
 // interceptor list is always set by this function. Returns only on failure
 // or interrupt.
+//
+// Callers register every activity under a kebab-case name (e.g. "call-llm")
+// so the event interceptor can emit progress.step.* events matching the step
+// IDs used by the frontend.
 func RunWorker(pattern, taskQueue string, register func(w worker.Worker, publisher Publisher), extra ...worker.Options) {
 	// The distroless runtime image has no shell, wget, or curl, so Compose
 	// healthchecks re-exec the worker binary with `-healthcheck` to probe the

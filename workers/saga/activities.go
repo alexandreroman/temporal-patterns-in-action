@@ -12,10 +12,7 @@ import (
 	"github.com/alexandreroman/temporal-patterns-in-action/workers/events"
 )
 
-const (
-	mainStepDelay     = 2500 * time.Millisecond
-	compensationDelay = mainStepDelay
-)
+const mainStepDelay = 2500 * time.Millisecond
 
 // Activities groups the saga pattern activities. Fields can be used for
 // dependency injection (HTTP clients, DB handles, event publisher, etc.).
@@ -60,7 +57,7 @@ func (a *Activities) CheckFraud(ctx context.Context, txID string, input OrderInp
 // ReleaseFraudHold compensates CheckFraud.
 func (a *Activities) ReleaseFraudHold(ctx context.Context, txID string, checkID string) error {
 	activity.GetLogger(ctx).Info("Releasing fraud hold", "id", checkID, "transactionId", txID)
-	time.Sleep(compensationDelay)
+	time.Sleep(mainStepDelay)
 	events.PublishBusiness(ctx, a.Publisher, Pattern, TypeFraudReleased, map[string]any{"checkId": checkID})
 	return nil
 }
@@ -86,7 +83,7 @@ func (a *Activities) PrepareShipment(ctx context.Context, txID string, input Ord
 // CancelShipment compensates PrepareShipment.
 func (a *Activities) CancelShipment(ctx context.Context, txID string, shipmentID string) error {
 	activity.GetLogger(ctx).Info("Cancelling shipment", "shipment", shipmentID, "transactionId", txID)
-	time.Sleep(compensationDelay)
+	time.Sleep(mainStepDelay)
 	events.PublishBusiness(ctx, a.Publisher, Pattern, TypeShipmentCancelled, map[string]any{"shipmentId": shipmentID})
 	return nil
 }
@@ -111,7 +108,7 @@ func (a *Activities) ChargeCustomer(ctx context.Context, txID string, input Orde
 // RefundCustomer compensates ChargeCustomer.
 func (a *Activities) RefundCustomer(ctx context.Context, txID string, paymentID string, amount int) error {
 	activity.GetLogger(ctx).Info("Refunding customer", "payment", paymentID, "amount", amount, "transactionId", txID)
-	time.Sleep(compensationDelay)
+	time.Sleep(mainStepDelay)
 	events.PublishBusiness(ctx, a.Publisher, Pattern, TypeCustomerRefunded, map[string]any{"amount": amount})
 	return nil
 }

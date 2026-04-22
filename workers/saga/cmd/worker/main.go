@@ -13,9 +13,6 @@ func main() {
 	events.RunWorker(saga.Pattern, saga.TaskQueue, func(w worker.Worker, pub events.Publisher) {
 		w.RegisterWorkflow(saga.OrderProcessingWorkflow)
 
-		// Register each saga activity under its canonical kebab-case name so the
-		// NATS event interceptor emits progress.step.* events matching the step IDs
-		// used by the workflow and the frontend pipeline.
 		a := &saga.Activities{Publisher: pub, TimeoutChance: 0.3}
 		w.RegisterActivityWithOptions(a.CheckFraud, activity.RegisterOptions{Name: "check-fraud"})
 		w.RegisterActivityWithOptions(a.ReleaseFraudHold, activity.RegisterOptions{Name: "release-fraud-hold"})

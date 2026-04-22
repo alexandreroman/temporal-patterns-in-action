@@ -14,9 +14,6 @@ func main() {
 		w.RegisterWorkflow(multiagent.DeepResearchWorkflow)
 		w.RegisterWorkflow(multiagent.ResearchAgentWorkflow)
 
-		// Register each activity under its canonical kebab-case name so the
-		// NATS event interceptor emits progress.step.* events matching the
-		// step IDs used by the frontend.
 		a := &multiagent.Activities{Publisher: pub}
 		w.RegisterActivityWithOptions(a.PlanResearch, activity.RegisterOptions{Name: "plan-research"})
 		w.RegisterActivityWithOptions(a.GenerateQueries, activity.RegisterOptions{Name: "generate-queries"})

@@ -11,6 +11,7 @@ function eventLabel(env: EventEnvelope): string {
   const data = env.data as Record<string, unknown>;
   const step = data.step ? String(data.step) : "";
   const error = data.error ? String(data.error) : "";
+  const attempt = typeof data.attempt === "number" ? data.attempt : null;
 
   switch (env.type) {
     case "progress.workflow.completed":
@@ -18,7 +19,7 @@ function eventLabel(env: EventEnvelope): string {
     case "progress.workflow.failed":
       return `Workflow failed: ${error}`;
     case "progress.step.started":
-      return `${step} started (attempt ${data.attempt})`;
+      return `${step} started (attempt ${attempt ?? 1})`;
     case "progress.step.completed":
       return `${step} completed`;
     case "progress.step.failed":

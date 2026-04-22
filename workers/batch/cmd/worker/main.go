@@ -19,11 +19,8 @@ func main() {
 		w.RegisterWorkflow(batch.BatchProcessingWorkflow)
 		w.RegisterWorkflow(batch.ProcessImageWorkflow)
 
-		// Register each batch activity under its canonical kebab-case name so the
-		// NATS event interceptor emits progress.step.* events matching the step IDs
-		// used by the workflow and the frontend pipeline. FailureRate is tuned so
-		// the per-image failure probability (1-(1-r)^4) stays close to the old
-		// ~12% rate: 1-(1-0.05)^4 ≈ 18.5%.
+		// FailureRate is tuned so the per-image failure probability
+		// (1-(1-r)^4) stays close to ~18.5%: 1-(1-0.05)^4.
 		a := &batch.Activities{Publisher: pub, FailureRate: 0.05}
 		w.RegisterActivityWithOptions(a.ResizeImage, activity.RegisterOptions{Name: "resize-image"})
 		w.RegisterActivityWithOptions(a.CreateThumbnail, activity.RegisterOptions{Name: "create-thumbnail"})

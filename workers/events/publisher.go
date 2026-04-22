@@ -20,11 +20,8 @@ type Publisher interface {
 // NopPublisher is a no-op Publisher used when NATS is unavailable or in tests.
 type NopPublisher struct{}
 
-// Publish discards the event.
 func (NopPublisher) Publish(context.Context, string, Envelope) error { return nil }
-
-// Close is a no-op.
-func (NopPublisher) Close() error { return nil }
+func (NopPublisher) Close() error                                    { return nil }
 
 // NATSPublisher publishes events as JSON NATS messages. We issue a short
 // FlushTimeout after each publish so SSE-style consumers see events promptly.

@@ -97,16 +97,22 @@ const CLS: Record<PhaseState, string> = {
 </script>
 
 <template>
-  <div class="flex items-center gap-1">
+  <!--
+    At mobile: self-contained flex row.
+    At lg+: `contents` so the 4 pills + 3 arrows drop directly into the
+    parent grid in patterns/multi-agent.vue, sharing its column tracks
+    with the agents + metrics row below so Synthesis lines up with Stats.
+  -->
+  <div class="flex items-center gap-1 lg:contents">
     <template v-for="(phase, idx) in PHASES" :key="phase.id">
       <span
         v-if="idx > 0"
-        class="shrink-0 px-1 text-xs text-slate-400 dark:text-slate-500"
+        class="shrink-0 self-center px-1 text-xs text-slate-400 dark:text-slate-500"
         aria-hidden="true"
         >&rarr;</span
       >
       <div
-        class="flex-1 rounded-md border px-2 py-1.5 text-center text-xs font-medium transition-all duration-300"
+        class="flex-1 rounded-md border px-2 py-1.5 text-center text-xs font-medium transition-all duration-300 lg:flex-none"
         :class="CLS[states[phase.id]]"
       >
         {{ phase.label }}

@@ -92,15 +92,26 @@ async function start() {
       <MultiAgentArchitecture :events="events" />
     </div>
 
-    <!-- Phase bar -->
-    <div class="mt-2">
+    <!--
+      Phase bar + agents + metrics share one grid at lg+ so Synthesis
+      (row 1, col 7) and Stats (row 2, col 7) land on the same column
+      track — aligning the Stats panel's left edge with Synthesis.
+      At mobile the outer grid collapses to a single column and each
+      block stacks vertically.
+    -->
+    <div
+      class="mt-2 grid gap-y-3 lg:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)_auto_minmax(0,1fr)_auto_minmax(0,1fr)] lg:items-stretch lg:gap-x-1"
+    >
       <MultiAgentPhases :events="events" />
-    </div>
-
-    <!-- Agents + metrics -->
-    <div class="mt-3 flex flex-col gap-3 lg:flex-row lg:items-start">
-      <MultiAgentAgents :events="events" />
-      <MultiAgentMetrics :events="events" />
+      <!--
+        Span 5 cols (not 6) so the Research→Synthesis arrow track (col 6)
+        stays empty in row 2, giving the agents panel a right-edge gap
+        equal to the space between adjacent phase pills. Metrics is pinned
+        to col 7 explicitly; without col-start it would auto-place into
+        col 6 (the empty arrow track) instead of under Synthesis.
+      -->
+      <MultiAgentAgents :events="events" class="lg:col-span-5" />
+      <MultiAgentMetrics :events="events" class="lg:col-start-7" />
     </div>
 
     <!-- Status bar -->

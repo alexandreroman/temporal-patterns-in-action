@@ -167,7 +167,7 @@ const CARDS: readonly Card[] = [
 </script>
 
 <template>
-  <div class="flex w-full flex-col gap-1.5 lg:w-[220px] lg:shrink-0">
+  <div class="flex w-full flex-col gap-1.5">
     <div
       v-for="card in CARDS"
       :key="card.label"

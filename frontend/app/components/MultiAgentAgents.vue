@@ -154,7 +154,7 @@ const CHIP_CLS: Record<ChipState, string> = {
     <div
       v-for="(topic, i) in topics"
       :key="topic.index"
-      class="rounded-md border px-3 py-2 transition-all duration-300"
+      class="rounded-md border px-3 py-2 transition-all duration-300 lg:flex-1"
       :class="CARD_CLS[topic.state]"
     >
       <div class="flex items-center justify-between gap-2">

@@ -59,8 +59,9 @@ const patterns: {
     <h1 class="text-3xl font-semibold tracking-tight text-slate-100">
       Temporal patterns, runnable.
     </h1>
-    <p class="mt-3 max-w-2xl text-slate-400">
-      A set of executable demos for core Temporal patterns. Pick a pattern, trigger it from the UI,
+    <p class="mt-3 text-slate-400">
+      A set of executable demos for core Temporal patterns.<br>
+      Pick a pattern, trigger it from the UI,
       watch it run — then inspect its history in the Temporal Web UI.
     </p>
 

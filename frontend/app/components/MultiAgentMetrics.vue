@@ -167,11 +167,11 @@ const CARDS: readonly Card[] = [
 </script>
 
 <template>
-  <div class="flex w-full flex-col gap-1.5">
+  <div class="flex h-full w-full flex-col gap-1.5">
     <div
       v-for="card in CARDS"
       :key="card.label"
-      class="flex flex-col rounded-md border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-800/60"
+      class="flex flex-1 flex-col rounded-md border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-800/60"
     >
       <div class="text-[10px] uppercase tracking-wide text-slate-500 dark:text-slate-400">
         {{ card.label }}

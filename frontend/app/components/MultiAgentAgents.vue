@@ -124,11 +124,11 @@ const topics = computed<Topic[]>(() => {
 });
 
 const CARD_CLS: Record<CardState, string> = {
-  idle: "border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900",
-  running: "border-blue-300 bg-blue-50 dark:border-blue-500 dark:bg-blue-950",
-  done: "border-emerald-300 bg-emerald-50 dark:border-emerald-500 dark:bg-emerald-950",
-  partial: "border-amber-300 bg-amber-50 dark:border-amber-500 dark:bg-amber-950",
-  failed: "border-rose-300 bg-rose-50 dark:border-rose-500 dark:bg-rose-950",
+  idle: "border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/60",
+  running: "border-blue-300 bg-slate-50 dark:border-blue-500 dark:bg-slate-800/60",
+  done: "border-emerald-300 bg-slate-50 dark:border-emerald-500 dark:bg-slate-800/60",
+  partial: "border-amber-300 bg-slate-50 dark:border-amber-500 dark:bg-slate-800/60",
+  failed: "border-rose-300 bg-slate-50 dark:border-rose-500 dark:bg-slate-800/60",
 };
 
 const TAG_LABEL: Record<CardState, string> = {
@@ -167,11 +167,11 @@ const CHIP_CLS: Record<ChipState, string> = {
           {{ TAG_LABEL[topic.state] }}
         </span>
       </div>
-      <div v-if="topic.queries.length > 0" class="mt-1.5 flex flex-wrap gap-1">
+      <div v-if="topic.queries.length > 0" class="mt-1.5 flex flex-col items-start gap-1">
         <span
           v-for="(q, qi) in topic.queries"
           :key="qi"
-          class="max-w-[180px] truncate rounded border px-1.5 py-0.5 font-mono text-[10px] transition-all duration-300"
+          class="truncate rounded border px-2 py-1 font-mono text-[10px] transition-all duration-300"
           :class="CHIP_CLS[q.state]"
           :title="q.text"
         >

@@ -24,6 +24,13 @@ const patterns: {
     icon: "batch",
   },
   {
+    slug: "entity",
+    title: "Entity Workflow",
+    description:
+      "Shopping cart as a long-lived signal-driven workflow — add/update/remove items and query state in real time.",
+    icon: "entity",
+  },
+  {
     slug: "encryption",
     title: "Payload Encryption",
     description:
@@ -43,13 +50,6 @@ const patterns: {
     description:
       "Deep-research orchestrator fanning out to 3 research agents — parent workflow, child workflows, partial-failure tolerance on fan-in.",
     icon: "multi-agent",
-  },
-  {
-    slug: "entity",
-    title: "Entity Workflow",
-    description:
-      "Shopping cart as a long-lived signal-driven workflow — add/update/remove items and query state in real time.",
-    icon: "entity",
   },
 ];
 </script>

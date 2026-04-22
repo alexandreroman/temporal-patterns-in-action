@@ -169,7 +169,7 @@ async function runScenario(): Promise<void> {
           class="cursor-pointer rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
           @click="runScenario"
         >
-          {{ starting ? "Starting…" : running ? "Running…" : "Run scenario" }}
+          {{ starting || running ? "Running…" : "Run scenario" }}
         </button>
       </div>
     </div>

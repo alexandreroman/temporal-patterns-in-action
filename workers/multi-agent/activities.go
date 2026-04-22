@@ -65,6 +65,7 @@ func (a *Activities) PlanResearch(ctx context.Context, req DeepResearchRequest) 
 
 	events.PublishBusiness(ctx, a.Publisher, Pattern, TypePlanReady, map[string]any{
 		"subtopics": plan.Subtopics,
+		"tokens":    scriptedPlanTokens,
 	})
 	return plan, nil
 }
@@ -90,6 +91,7 @@ func (a *Activities) GenerateQueries(ctx context.Context, plan ResearchPlan) (Re
 
 	events.PublishBusiness(ctx, a.Publisher, Pattern, TypeQueriesReady, map[string]any{
 		"queries": out.Topics,
+		"tokens":  scriptedQueriesTokens,
 	})
 	return out, nil
 }
@@ -165,6 +167,7 @@ func (a *Activities) WebSearch(ctx context.Context, in SearchInput) (SearchResul
 			"topicIndex":   in.TopicIndex,
 			"queryIndex":   in.QueryIndex,
 			"sourcesFound": len(sources),
+			"tokens":       scriptedSearchTokens(in.TopicIndex, in.QueryIndex),
 		})
 
 	return SearchResult{
@@ -228,8 +231,41 @@ func (a *Activities) SynthesizeReport(ctx context.Context, in SynthesisInput) (R
 		"citations":    report.Citations,
 		"sourcesUsed":  report.SourcesUsed,
 		"partialCount": report.PartialCount,
+		"tokens":       scriptedSynthesisTokens(sourcesUsed),
 	})
 	return report, nil
+}
+
+// Realistic-looking (non-round) token counts emitted per LLM call so the UI
+// counter ticks through believable numbers instead of round multiples.
+// Plan/Queries/Synthesis are parent-side LLM calls; the search table covers
+// each (topicIndex, queryIndex) pair for the three scripted subtopics.
+const (
+	scriptedPlanTokens    = 612
+	scriptedQueriesTokens = 847
+)
+
+var scriptedSearchTokensTable = [3][2]int{
+	{186, 213}, // Job displacement
+	{174, 241}, // New job creation
+	{197, 228}, // Policy & regulation
+}
+
+func scriptedSearchTokens(topicIndex, queryIndex int) int {
+	if topicIndex < 0 || topicIndex >= len(scriptedSearchTokensTable) {
+		return 203
+	}
+	if queryIndex < 0 || queryIndex >= len(scriptedSearchTokensTable[topicIndex]) {
+		return 203
+	}
+	return scriptedSearchTokensTable[topicIndex][queryIndex]
+}
+
+// scriptedSynthesisTokens scales with the number of sources the synthesis
+// call folds together so partial runs report a visibly lower total than the
+// happy path.
+func scriptedSynthesisTokens(sourcesUsed int) int {
+	return 1423 + sourcesUsed*89
 }
 
 // scriptedSources returns a small, stable set of fake sources per (topic,

@@ -24,3 +24,4 @@
 - [Nuxt server env vars: process.env, not runtimeConfig](references/feedback_nuxt_runtime_env.md) — runtimeConfig defaults bake at build time; plain env vars are ignored unless prefixed `NUXT_*`.
 - [Node healthcheck: use 127.0.0.1, not localhost](references/feedback_node_healthcheck_ipv6.md) — busybox wget resolves `localhost` to `::1` first; Nuxt listens on IPv4 only, so the probe gets connection refused.
 - [Default scenario to happy path](references/feedback_default_scenario_happy_path.md) — every new pattern page's scenario selector must default to the success option, not the failure/partial variant.
+- [Realistic animated token counters](references/feedback_token_counters.md) — emit non-round tokens per step from the worker and animate the UI with `useCountTween`; mirror `AgentStatePanel.vue`.

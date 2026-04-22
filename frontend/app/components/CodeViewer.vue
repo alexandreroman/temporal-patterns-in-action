@@ -30,7 +30,7 @@ const TOKENIZED = computed<Record<string, ThemedToken[][]>>(() => {
 
 const currentTokens = computed(() => TOKENIZED.value[lang.value] ?? []);
 
-const gutterWidth = computed(() => `calc(${String(currentTokens.value.length).length}ch + 1rem)`);
+const gutterWidth = computed(() => `calc(${String(currentTokens.value.length).length}ch + 2.5rem)`);
 
 const scrollerRef = ref<HTMLElement | null>(null);
 const lineRefs = ref<(HTMLElement | null)[]>([]);
@@ -138,14 +138,14 @@ watch(
     </div>
     <div
       ref="scrollerRef"
-      class="shiki-code overflow-auto bg-white dark:bg-slate-900 p-4 font-mono leading-relaxed"
+      class="shiki-code overflow-auto bg-white dark:bg-slate-900 py-4 font-mono leading-relaxed"
       :class="fullscreen ? 'flex-1 min-h-0 text-[15px]' : 'max-h-80 text-[11px]'"
     >
       <span
         v-for="(tokens, idx) in currentTokens"
         :key="idx"
         :ref="(el) => (lineRefs[idx] = el as HTMLElement | null)"
-        class="flex whitespace-pre rounded px-2 py-px transition-colors duration-300"
+        class="flex min-w-max whitespace-pre py-px transition-colors duration-300"
         :class="
           highlight && idx >= highlight[0] && idx <= highlight[1]
             ? 'bg-blue-50 dark:bg-blue-950'
@@ -153,7 +153,7 @@ watch(
         "
       >
         <span
-          class="shrink-0 select-none pr-4 text-right tabular-nums text-slate-400 dark:text-slate-600"
+          class="shrink-0 select-none pl-4 pr-6 text-right tabular-nums text-slate-400 dark:text-slate-600"
           :style="{ width: gutterWidth }"
           aria-hidden="true"
           >{{ idx + 1 }}</span

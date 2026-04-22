@@ -104,11 +104,17 @@ const CARDS: readonly Card[] = [
 </script>
 
 <template>
-  <div class="flex h-full w-full flex-col gap-1.5">
+  <!--
+    Small screens: 2x2 grid of counters with Phase spanning the top row
+    (5 cards total). At lg+: revert to the vertical flex stack so the
+    panel lines up with the agents column.
+  -->
+  <div class="grid grid-cols-2 gap-1.5 lg:flex lg:h-full lg:w-full lg:flex-col">
     <div
-      v-for="card in CARDS"
+      v-for="(card, idx) in CARDS"
       :key="card.label"
-      class="flex flex-1 flex-col rounded-md border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-800/60"
+      class="flex flex-col rounded-md border border-slate-200 bg-slate-50 px-3 py-2 dark:border-slate-700 dark:bg-slate-800/60 lg:flex-1"
+      :class="{ 'col-span-2 lg:col-span-1': idx === 0 }"
     >
       <div class="text-[10px] uppercase tracking-wide text-slate-500 dark:text-slate-400">
         {{ card.label }}

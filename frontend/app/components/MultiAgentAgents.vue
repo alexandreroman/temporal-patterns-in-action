@@ -148,10 +148,15 @@ const CHIP_CLS: Record<ChipState, string> = {
 
 <template>
   <div class="flex flex-1 flex-col gap-1.5">
+    <!--
+      Reserve enough vertical space at the small breakpoint to fit two
+      rows of wrapped pills, so the card height stays stable when the
+      queries arrive. At lg+ flex-1 takes over and min-h is cleared.
+    -->
     <div
       v-for="topic in topics"
       :key="topic.index"
-      class="rounded-md border px-3 py-2 lg:flex-1"
+      class="min-h-20 rounded-md border px-3 py-2 lg:min-h-0 lg:flex-1"
       :class="CARD_CLS"
     >
       <div class="flex items-center justify-between gap-2">

@@ -1,5 +1,26 @@
 {
   "enabledPlugins": {
     "skillbox@skillbox": true
+  },
+  "permissions": {
+    "allow": [
+      "Bash(go *)",
+      "Bash(gofmt *)",
+      "Bash(golangci-lint *)",
+      "Bash(workflowcheck *)",
+      "Bash(temporal *)",
+      "Bash(make *)",
+      "Bash(git *)",
+      "Bash(pnpm *)",
+      "Bash(npm *)",
+      "Bash(npx prettier *)",
+      "Bash(corepack *)",
+      "Bash(docker-compose *)",
+      "Bash(podman compose *)",
+      "Bash(lsof *)",
+      "Bash(nc -z localhost *)",
+      "WebFetch(domain:temporal.io)",
+      "Skill(skillbox:*)"
+    ]
   }
 }

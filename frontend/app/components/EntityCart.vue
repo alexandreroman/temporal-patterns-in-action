@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 import type { EventEnvelope } from "~~/shared/events";
 
 /**
@@ -68,11 +68,25 @@ const displayedTotalCents = useCountTween(() => totalCents.value);
 function formatDollars(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
 }
+
+const scrollEl = ref<HTMLDivElement | null>(null);
+
+watch(
+  () => props.events.length,
+  async (len, prev) => {
+    if (len <= (prev ?? 0)) return;
+    const last = props.events[len - 1];
+    if (last?.type !== "entity.item.added") return;
+    await nextTick();
+    const el = scrollEl.value;
+    if (el) el.scrollTop = el.scrollHeight;
+  },
+);
 </script>
 
 <template>
   <div
-    class="flex h-full min-h-[28rem] flex-col rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900"
+    class="flex h-[14.5rem] flex-col rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900"
   >
     <div
       class="flex items-center justify-between gap-3 border-b border-slate-200 px-4 py-2 dark:border-slate-700"
@@ -87,7 +101,7 @@ function formatDollars(cents: number): string {
       </div>
     </div>
 
-    <div class="flex-1 px-3 py-2">
+    <div ref="scrollEl" class="relative flex-1 overflow-y-auto px-3 py-2">
       <p v-if="rows.length === 0" class="py-6 text-center text-xs text-slate-400">
         Cart is empty — run the scenario
       </p>

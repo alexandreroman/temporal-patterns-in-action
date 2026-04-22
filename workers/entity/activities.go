@@ -3,6 +3,7 @@ package entity
 import (
 	"context"
 	"fmt"
+	"math/rand/v2"
 	"time"
 
 	"go.temporal.io/sdk/activity"
@@ -13,6 +14,17 @@ import (
 // mainStepDelay is the simulated step delay tuned so the UI has time to render
 // each state transition without making the demo feel sluggish.
 const mainStepDelay = 600 * time.Millisecond
+
+// Catalog / Pricing backends are intentionally flakey to showcase Temporal's
+// retry story. Each call sleeps a random duration; a fraction of calls exceed
+// the activity StartToCloseTimeout (see workflow.go) and trigger a retry.
+const (
+	flakeyFastMinDelay = 300 * time.Millisecond
+	flakeyFastMaxDelay = 900 * time.Millisecond
+	flakeySlowMinDelay = 2500 * time.Millisecond
+	flakeySlowMaxDelay = 4500 * time.Millisecond
+	flakeySlowOdds     = 4 // 1-in-N chance of a slow response (here: 25%).
+)
 
 // Activities groups the entity pattern activities. Fields can be used for
 // dependency injection (catalog client, payment gateway, event publisher, ...).
@@ -29,14 +41,37 @@ func (a *Activities) pause(d time.Duration) {
 	time.Sleep(d)
 }
 
+// callFlakeyService blocks for a random duration, mostly short but occasionally
+// long enough to exceed the surrounding activity timeout. Respects context
+// cancellation so a timed-out activity releases its worker slot immediately.
+func (a *Activities) callFlakeyService(ctx context.Context) error {
+	if a.FastMode {
+		return nil
+	}
+	var d time.Duration
+	if rand.IntN(flakeySlowOdds) == 0 {
+		d = flakeySlowMinDelay + rand.N(flakeySlowMaxDelay-flakeySlowMinDelay)
+	} else {
+		d = flakeyFastMinDelay + rand.N(flakeyFastMaxDelay-flakeyFastMinDelay)
+	}
+	timer := time.NewTimer(d)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-timer.C:
+		return nil
+	}
+}
+
 // ValidateItem simulates a product-catalog lookup. The step appears in the
 // progress.step.* event stream via the activity interceptor; no business
 // event is published here.
 func (a *Activities) ValidateItem(ctx context.Context, item AddItemSignal) error {
 	activity.GetLogger(ctx).Info("validating item",
-		"itemId", item.ItemID, "name", item.Name)
-	a.pause(mainStepDelay)
-	return nil
+		"itemId", item.ItemID, "name", item.Name,
+		"attempt", activity.GetInfo(ctx).Attempt)
+	return a.callFlakeyService(ctx)
 }
 
 // PriceItem returns the item price. The demo echoes the caller-supplied price
@@ -44,8 +79,12 @@ func (a *Activities) ValidateItem(ctx context.Context, item AddItemSignal) error
 // entity.item.added business event is emitted here, once the item has a
 // definitive price.
 func (a *Activities) PriceItem(ctx context.Context, item AddItemSignal) (int, error) {
-	activity.GetLogger(ctx).Info("pricing item", "itemId", item.ItemID)
-	a.pause(mainStepDelay)
+	activity.GetLogger(ctx).Info("pricing item",
+		"itemId", item.ItemID,
+		"attempt", activity.GetInfo(ctx).Attempt)
+	if err := a.callFlakeyService(ctx); err != nil {
+		return 0, err
+	}
 	events.PublishBusiness(ctx, a.Publisher, Pattern, TypeItemAdded, map[string]any{
 		"itemId":     item.ItemID,
 		"name":       item.Name,

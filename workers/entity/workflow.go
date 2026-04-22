@@ -7,6 +7,7 @@ package entity
 import (
 	"time"
 
+	"go.temporal.io/sdk/temporal"
 	"go.temporal.io/sdk/workflow"
 )
 
@@ -19,6 +20,20 @@ func ShoppingCartWorkflow(ctx workflow.Context, state CartState) error {
 
 	ctx = workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
 		StartToCloseTimeout: 5 * time.Second,
+	})
+
+	// Catalog (validate-item) and Pricing (price-item) call flakey backends:
+	// short timeout so stragglers are pre-empted, and unlimited retries so the
+	// workflow eventually makes progress no matter how long the service
+	// wobbles.
+	flakeyCtx := workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
+		StartToCloseTimeout: 1500 * time.Millisecond,
+		RetryPolicy: &temporal.RetryPolicy{
+			InitialInterval:    200 * time.Millisecond,
+			BackoffCoefficient: 1.5,
+			MaximumInterval:    1 * time.Second,
+			// MaximumAttempts=0 → retry forever.
+		},
 	})
 
 	// Queries are side-effect-free observers by Temporal contract, but
@@ -73,12 +88,12 @@ func ShoppingCartWorkflow(ctx workflow.Context, state CartState) error {
 
 		switch {
 		case gotAdd:
-			if err := workflow.ExecuteActivity(ctx, a.ValidateItem, addSig).Get(ctx, nil); err != nil {
+			if err := workflow.ExecuteActivity(flakeyCtx, a.ValidateItem, addSig).Get(ctx, nil); err != nil {
 				logger.Warn("validate-item failed", "error", err)
 				continue
 			}
 			var priceCents int
-			if err := workflow.ExecuteActivity(ctx, a.PriceItem, addSig).Get(ctx, &priceCents); err != nil {
+			if err := workflow.ExecuteActivity(flakeyCtx, a.PriceItem, addSig).Get(ctx, &priceCents); err != nil {
 				logger.Warn("price-item failed", "error", err)
 				continue
 			}

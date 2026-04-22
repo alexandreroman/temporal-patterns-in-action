@@ -60,9 +60,9 @@ const patterns: {
       Temporal patterns, runnable.
     </h1>
     <p class="mt-3 text-slate-400">
-      A set of executable demos for core Temporal patterns.<br>
-      Pick a pattern, trigger it from the UI,
-      watch it run — then inspect its history in the Temporal Web UI.
+      A set of executable demos for core Temporal patterns.<br />
+      Pick a pattern, trigger it from the UI, watch it run — then inspect its history in the
+      Temporal Web UI.
     </p>
 
     <ul class="mt-10 grid auto-rows-fr gap-4 sm:grid-cols-2">

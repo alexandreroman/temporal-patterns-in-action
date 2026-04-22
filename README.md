@@ -8,6 +8,8 @@ saga, long-running batch, durable AI agent, payload encryption,
 multi-agent deep research — with Go workers and a Frontend to trigger
 and observe them.
 
+![Temporal patterns in action](patterns.png)
+
 ## Prerequisites
 
 - [Docker](https://www.docker.com/) or

@@ -84,6 +84,75 @@ graph LR
 | `workers/`  | Go workers, one binary per pattern               |
 | `frontend/` | Nuxt 4 + Vue 3 + Tailwind CSS 4 UI and API       |
 
+### How a run flows
+
+1. The user picks a pattern in the UI and triggers a
+   scenario. The Nuxt server route starts a Temporal
+   workflow and immediately opens a Server-Sent Events
+   (SSE) stream back to the browser.
+2. The matching Go worker polls its task queue, runs
+   the workflow, and executes activities. Temporal owns
+   the durable state — retries, timers, history — so a
+   worker crash is replayed, not lost.
+3. Each activity publishes lifecycle events
+   (`progress.step.started|completed|failed`) to NATS
+   via a shared Temporal interceptor. Activities also
+   emit business events (e.g.
+   `saga.inventory.reserved`) where the pattern needs
+   to show domain-level progress.
+4. The Nuxt SSE endpoint subscribes to the relevant
+   NATS subjects, forwards envelopes to the browser,
+   and synthesises a terminal
+   `progress.workflow.completed|failed` event from
+   `handle.result()` once the workflow ends.
+
+### Why NATS
+
+Temporal is the source of truth for workflow state,
+but polling its history from the browser to animate
+a live timeline is awkward and lossy. NATS acts as
+a **low-latency fan-out bus** between workers and the
+frontend:
+
+- **Push, not poll** — activities publish as they
+  progress; the UI renders events as they arrive.
+- **Subject hierarchy**
+  `patterns.<pattern>.<workflowId>.<category>` lets
+  the frontend filter per-run, per-pattern, or
+  cluster-wide without parsing payloads.
+- **Clean Temporal timeline** — publishing happens in
+  activity scope (via an interceptor), never from
+  workflow code, so the Temporal Web UI stays focused
+  on the pattern's real activities with no
+  `LocalActivityMarker` clutter.
+
+### Why a frontend
+
+The Temporal Web UI already shows workflow history,
+but it is generic by design. This project ships a
+purpose-built frontend because the patterns are
+**pedagogical**: each one has a story to tell that a
+raw event list cannot.
+
+- **One page per pattern**, with a scenario selector
+  that lets you pick happy path, partial failure, or
+  compensation without editing code.
+- **Live timeline** driven by the NATS event stream —
+  steps light up in order, compensations highlight in
+  a different style, retries are visible.
+- **Pattern-specific panels** — saga compensation
+  bracket, batch progress bar, agent reasoning / tool
+  calls, multi-agent fan-out — render state that
+  would be buried in a generic history view.
+- **Side-by-side source viewer** pins the exact
+  snippet responsible for the step currently running,
+  with a language switcher (Go, Java, Python,
+  TypeScript) so the UI doubles as a guided tour of
+  the code in your SDK of choice.
+- **Link back to Temporal Web UI** on every run for
+  when you want to inspect raw history, retries, or
+  the event payloads directly.
+
 ## Patterns
 
 | Pattern                      | Package               |

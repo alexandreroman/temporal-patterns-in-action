@@ -4,9 +4,9 @@
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
 Runnable demos of the core [Temporal](https://temporal.io) patterns —
-saga, long-running batch, durable AI agent, payload encryption,
-multi-agent deep research — with Go workers and a Frontend to trigger
-and observe them.
+saga, entity workflow, long-running batch, payload encryption,
+durable AI agent, multi-agent deep research — with Go workers and a
+Frontend to trigger and observe them.
 
 ![Temporal patterns in action](patterns.png)
 
@@ -141,9 +141,10 @@ raw event list cannot.
   steps light up in order, compensations highlight in
   a different style, retries are visible.
 - **Pattern-specific panels** — saga compensation
-  bracket, batch progress bar, agent reasoning / tool
-  calls, multi-agent fan-out — render state that
-  would be buried in a generic history view.
+  bracket, entity cart state, batch progress bar,
+  agent reasoning / tool calls, multi-agent fan-out —
+  render state that would be buried in a generic
+  history view.
 - **Side-by-side source viewer** pins the exact
   snippet responsible for the step currently running,
   with a language switcher (Go, Java, Python,
@@ -158,6 +159,7 @@ raw event list cannot.
 | Pattern                      | Package               |
 | ---------------------------- | --------------------- |
 | Saga                         | `workers/saga`        |
+| Entity Workflow              | `workers/entity`      |
 | Long-running batch           | `workers/batch`       |
 | Payload Encryption           | `workers/encryption`  |
 | Durable AI Agent             | `workers/agent`       |

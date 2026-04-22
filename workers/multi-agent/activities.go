@@ -220,7 +220,6 @@ func (a *Activities) SynthesizeReport(ctx context.Context, in SynthesisInput) (R
 			"Synthesised report from %d topics (%d sources, %d partial).",
 			len(in.Results), sourcesUsed, partialCount),
 		Sections:     len(in.Results),
-		Citations:    sourcesUsed,
 		SourcesUsed:  sourcesUsed,
 		PartialCount: partialCount,
 	}
@@ -228,7 +227,6 @@ func (a *Activities) SynthesizeReport(ctx context.Context, in SynthesisInput) (R
 	events.PublishBusiness(ctx, a.Publisher, Pattern, TypeReportReady, map[string]any{
 		"summary":      report.Summary,
 		"sections":     report.Sections,
-		"citations":    report.Citations,
 		"sourcesUsed":  report.SourcesUsed,
 		"partialCount": report.PartialCount,
 		"tokens":       scriptedSynthesisTokens(sourcesUsed),
@@ -252,12 +250,6 @@ var scriptedSearchTokensTable = [3][2]int{
 }
 
 func scriptedSearchTokens(topicIndex, queryIndex int) int {
-	if topicIndex < 0 || topicIndex >= len(scriptedSearchTokensTable) {
-		return 203
-	}
-	if queryIndex < 0 || queryIndex >= len(scriptedSearchTokensTable[topicIndex]) {
-		return 203
-	}
 	return scriptedSearchTokensTable[topicIndex][queryIndex]
 }
 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from "vue";
+import { computed } from "vue";
 import type { EventEnvelope } from "~~/shared/events";
 
 /**
@@ -39,12 +39,7 @@ const derived = computed<Derived>(() => {
   let sourcesFound = 0;
   let tokens = 0;
   let anySearchFailed = false;
-  let terminalCompleted = false;
-  let terminalFailed = false;
-
-  const addTokens = (data: Record<string, unknown>) => {
-    if (typeof data.tokens === "number") tokens += data.tokens;
-  };
+  let terminal = false;
 
   for (const env of props.events) {
     const data = env.data as Record<string, unknown>;
@@ -62,7 +57,7 @@ const derived = computed<Derived>(() => {
       case "multi-agent.plan.ready":
       case "multi-agent.queries.ready":
       case "multi-agent.report.ready":
-        addTokens(data);
+        if (typeof data.tokens === "number") tokens += data.tokens;
         break;
       case "multi-agent.fanout.started":
         phase = "Research";
@@ -71,83 +66,25 @@ const derived = computed<Derived>(() => {
         webSearches++;
         break;
       case "multi-agent.search.completed": {
-        const found = typeof data.sourcesFound === "number" ? data.sourcesFound : 0;
-        sourcesFound += found;
-        addTokens(data);
+        if (typeof data.sourcesFound === "number") sourcesFound += data.sourcesFound;
+        if (typeof data.tokens === "number") tokens += data.tokens;
         break;
       }
       case "multi-agent.search.failed":
         anySearchFailed = true;
         break;
-      case "multi-agent.child.completed":
-        if (data.partial) anySearchFailed = true;
-        break;
       case "progress.workflow.completed":
-        terminalCompleted = true;
-        break;
       case "progress.workflow.failed":
-        terminalFailed = true;
+        terminal = true;
         break;
     }
   }
 
   if (phase === "Research" && anySearchFailed) phase = "Research (partial)";
-  if (terminalCompleted) phase = "Done";
-  else if (terminalFailed) phase = "Done";
+  if (terminal) phase = "Done";
 
   return { phase, llmCalls, webSearches, sourcesFound, tokens };
 });
-
-// Tween the token counter so viewers see it tick up (e.g. 612 → 1459)
-// instead of snapping. Honors prefers-reduced-motion and snaps on reset
-// (new run). Mirrors AgentStatePanel.useCountTween.
-function useCountTween(source: () => number) {
-  const displayed = ref(0);
-  let frame: number | null = null;
-  const cancel = () => {
-    if (frame !== null) {
-      cancelAnimationFrame(frame);
-      frame = null;
-    }
-  };
-
-  watch(
-    source,
-    (target, previous) => {
-      cancel();
-      const from = displayed.value;
-      if (target === from) return;
-
-      const reduceMotion =
-        typeof window !== "undefined" &&
-        window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-      if (reduceMotion || target < (previous ?? 0)) {
-        displayed.value = target;
-        return;
-      }
-
-      const delta = target - from;
-      const duration = Math.min(800, 300 + Math.min(delta, 500));
-      const start = performance.now();
-
-      const step = (now: number) => {
-        const t = Math.min(1, (now - start) / duration);
-        const eased = 1 - Math.pow(1 - t, 3);
-        displayed.value = Math.round(from + delta * eased);
-        if (t < 1) {
-          frame = requestAnimationFrame(step);
-        } else {
-          frame = null;
-        }
-      };
-      frame = requestAnimationFrame(step);
-    },
-    { immediate: true },
-  );
-
-  onBeforeUnmount(cancel);
-  return displayed;
-}
 
 const displayedTokens = useCountTween(() => derived.value.tokens);
 

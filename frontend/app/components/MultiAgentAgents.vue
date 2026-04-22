@@ -123,13 +123,10 @@ const topics = computed<Topic[]>(() => {
   return [...byIndex.values()].sort((a, b) => a.index - b.index);
 });
 
-const CARD_CLS: Record<CardState, string> = {
-  idle: "border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/60",
-  running: "border-blue-300 bg-slate-50 dark:border-blue-500 dark:bg-slate-800/60",
-  done: "border-emerald-300 bg-slate-50 dark:border-emerald-500 dark:bg-slate-800/60",
-  partial: "border-amber-300 bg-slate-50 dark:border-amber-500 dark:bg-slate-800/60",
-  failed: "border-rose-300 bg-slate-50 dark:border-rose-500 dark:bg-slate-800/60",
-};
+// Cards reuse the neutral slate border of the Stats panel at every state;
+// the tag label and per-query chips carry the running/done/partial/failed
+// signal on their own.
+const CARD_CLS = "border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/60";
 
 const TAG_LABEL: Record<CardState, string> = {
   idle: "idle",
@@ -154,8 +151,8 @@ const CHIP_CLS: Record<ChipState, string> = {
     <div
       v-for="topic in topics"
       :key="topic.index"
-      class="rounded-md border px-3 py-2 transition-all duration-300 lg:flex-1"
-      :class="CARD_CLS[topic.state]"
+      class="rounded-md border px-3 py-2 lg:flex-1"
+      :class="CARD_CLS"
     >
       <div class="flex items-center justify-between gap-2">
         <span class="text-xs font-medium text-slate-800 dark:text-slate-100">
@@ -167,17 +164,41 @@ const CHIP_CLS: Record<ChipState, string> = {
           {{ TAG_LABEL[topic.state] }}
         </span>
       </div>
-      <div v-if="topic.queries.length > 0" class="mt-1.5 flex flex-col items-start gap-1">
+      <TransitionGroup
+        v-if="topic.queries.length > 0"
+        tag="div"
+        name="pill"
+        appear
+        class="mt-1.5 flex flex-wrap items-start gap-2"
+      >
         <span
           v-for="(q, qi) in topic.queries"
           :key="qi"
-          class="truncate rounded border px-2 py-1 font-mono text-[10px] transition-all duration-300"
+          class="rounded border px-2 py-1 font-mono text-[10px] transition-all duration-300"
           :class="CHIP_CLS[q.state]"
+          :style="{ animationDelay: `${qi * 70}ms` }"
           :title="q.text"
         >
           {{ q.text }}
         </span>
-      </div>
+      </TransitionGroup>
     </div>
   </div>
 </template>
+
+<style scoped>
+.pill-enter-active,
+.pill-appear-active {
+  animation: pill-in 350ms ease-out both;
+}
+@keyframes pill-in {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.92);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+</style>

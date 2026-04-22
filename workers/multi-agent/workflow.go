@@ -114,8 +114,6 @@ func DeepResearchWorkflow(ctx workflow.Context, req DeepResearchRequest) (Report
 			}
 			continue
 		}
-		progress.WebSearches += len(result.Sources) / 2 // 2 sources per search
-		progress.SourcesFound += len(result.Sources)
 		successful = append(successful, result)
 		if rerr := workflow.ExecuteActivity(fastCtx, a.RecordChildOutcome, ChildOutcomeInput{
 			TopicIndex: result.TopicIndex,

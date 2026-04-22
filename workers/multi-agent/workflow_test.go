@@ -38,7 +38,7 @@ func TestDeepResearchWorkflow_Happy(t *testing.T) {
 	var report Report
 	require.NoError(t, env.GetWorkflowResult(&report))
 	require.Greater(t, report.Sections, 0)
-	require.Greater(t, report.Citations, 0)
+	require.Greater(t, report.SourcesUsed, 0)
 	require.Equal(t, 0, report.PartialCount)
 }
 
@@ -65,7 +65,7 @@ func TestDeepResearchWorkflow_Partial(t *testing.T) {
 	var report Report
 	require.NoError(t, env.GetWorkflowResult(&report))
 	require.Greater(t, report.Sections, 0)
-	require.Greater(t, report.Citations, 0)
+	require.Greater(t, report.SourcesUsed, 0)
 	require.Greater(t, report.PartialCount, 0, "partial scenario should mark at least one topic as partial")
 
 	// Happy path: 3 topics × 2 queries × 2 sources = 12. Partial path: two

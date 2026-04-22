@@ -37,7 +37,6 @@ const states = computed<Record<PhaseId, PhaseState>>(() => {
   };
 
   let anySearchFailed = false;
-  let reportReady = false;
 
   for (const env of props.events) {
     const data = env.data as Record<string, unknown>;
@@ -62,19 +61,8 @@ const states = computed<Record<PhaseId, PhaseState>>(() => {
         anySearchFailed = true;
         break;
       case "multi-agent.report.ready":
-        reportReady = true;
         map.research = anySearchFailed ? "warn" : "done";
         map.synthesis = "done";
-        break;
-      case "progress.workflow.completed":
-        if (map.plan === "idle") map.plan = "done";
-        if (map.queries === "idle") map.queries = "done";
-        if (map.research === "active") {
-          map.research = anySearchFailed ? "warn" : "done";
-        }
-        if (map.synthesis === "active" || (reportReady && map.synthesis === "idle")) {
-          map.synthesis = "done";
-        }
         break;
       case "progress.workflow.failed":
         for (const id of ["plan", "queries", "research", "synthesis"] as PhaseId[]) {

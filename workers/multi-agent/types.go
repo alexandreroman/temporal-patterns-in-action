@@ -139,7 +139,6 @@ type SynthesisInput struct {
 type Report struct {
 	Summary      string `json:"summary"`
 	Sections     int    `json:"sections"`
-	Citations    int    `json:"citations"`
 	SourcesUsed  int    `json:"sourcesUsed"`
 	PartialCount int    `json:"partialCount"`
 }
@@ -147,12 +146,9 @@ type Report struct {
 // Progress is returned by the getProgress query handler. Parallels the
 // counters exposed by agent / batch so the demo page has a uniform surface.
 type Progress struct {
-	Phase        string `json:"phase"`
-	LLMCalls     int    `json:"llmCalls"`
-	WebSearches  int    `json:"webSearches"`
-	SourcesFound int    `json:"sourcesFound"`
-	Tokens       int    `json:"tokens"`
-	Completed    bool   `json:"completed"`
+	Phase     string `json:"phase"`
+	LLMCalls  int    `json:"llmCalls"`
+	Completed bool   `json:"completed"`
 }
 
 // Phase strings reported by the getProgress query.

@@ -282,63 +282,47 @@ const SOURCES: Record<CodeLang, MultiAgentSource> = {
   },
 };
 
-function latestRelevant(events: EventEnvelope[]): string | null {
+// Each event type the code viewer reacts to maps to one of the five steps,
+// or to `null` when the run is over and nothing should be highlighted.
+const EVENT_TO_STEP: Record<string, StepKey | null> = {
+  "progress.workflow.completed": null,
+  "progress.workflow.failed": null,
+  "multi-agent.plan.ready": "plan",
+  "multi-agent.queries.ready": "queries",
+  "multi-agent.fanout.started": "fanout",
+  "multi-agent.search.started": "fanout",
+  "multi-agent.search.completed": "fanout",
+  "multi-agent.search.failed": "fanout",
+  "multi-agent.child.completed": "fanin",
+  "multi-agent.child.failed": "fanin",
+  "multi-agent.report.ready": "synth",
+};
+
+const STEP_BY_ACTIVITY: Record<string, StepKey> = {
+  "plan-research": "plan",
+  "generate-queries": "queries",
+  "synthesize-report": "synth",
+};
+
+function latestStep(events: EventEnvelope[]): StepKey | null | undefined {
   for (let i = events.length - 1; i >= 0; i--) {
     const env = events[i];
     if (!env) continue;
-    const data = env.data as Record<string, unknown>;
-    const step = typeof data.step === "string" ? data.step : "";
-    const t = env.type;
-
-    if (t === "progress.workflow.completed" || t === "progress.workflow.failed") return t;
-    if (t === "multi-agent.plan.ready") return t;
-    if (t === "multi-agent.queries.ready") return t;
-    if (t === "multi-agent.fanout.started") return t;
-    if (t === "multi-agent.search.started") return t;
-    if (t === "multi-agent.search.completed") return t;
-    if (t === "multi-agent.search.failed") return t;
-    if (t === "multi-agent.child.completed") return t;
-    if (t === "multi-agent.child.failed") return t;
-    if (t === "multi-agent.report.ready") return t;
-    if (t === "progress.step.started" || t === "progress.step.completed") {
-      if (step === "plan-research") return "step.plan";
-      if (step === "generate-queries") return "step.queries";
-      if (step === "synthesize-report") return "step.synth";
+    if (env.type in EVENT_TO_STEP) return EVENT_TO_STEP[env.type];
+    if (env.type === "progress.step.started" || env.type === "progress.step.completed") {
+      const step = (env.data as Record<string, unknown>).step;
+      if (typeof step === "string" && step in STEP_BY_ACTIVITY) return STEP_BY_ACTIVITY[step];
     }
   }
-  return null;
+  return undefined;
 }
 
 const lang = useCodeLang();
 
 const currentHighlight = computed<[number, number] | null>(() => {
-  const src = SOURCES[lang.value];
-  const latest = latestRelevant(props.events);
-  if (!latest) return null;
-
-  switch (latest) {
-    case "progress.workflow.completed":
-    case "progress.workflow.failed":
-      return null;
-    case "step.plan":
-    case "multi-agent.plan.ready":
-      return src.stepLines.plan;
-    case "step.queries":
-    case "multi-agent.queries.ready":
-      return src.stepLines.queries;
-    case "multi-agent.fanout.started":
-    case "multi-agent.search.started":
-    case "multi-agent.search.completed":
-    case "multi-agent.search.failed":
-      return src.stepLines.fanout;
-    case "multi-agent.child.completed":
-    case "multi-agent.child.failed":
-      return src.stepLines.fanin;
-    case "step.synth":
-    case "multi-agent.report.ready":
-      return src.stepLines.synth;
-  }
-  return null;
+  const step = latestStep(props.events);
+  if (!step) return null;
+  return SOURCES[lang.value].stepLines[step];
 });
 </script>
 

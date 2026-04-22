@@ -135,7 +135,7 @@ const arch = computed<ArchState>(() => {
   <ArchitectureDiagram
     :arch="arch"
     :service-labels="['LLM API', 'Web search', 'Doc retrieval', 'News API']"
-    worker-label="Parent wf"
+    worker-label="Supervisor"
     label="Multi-agent deep research architecture diagram"
   />
 </template>

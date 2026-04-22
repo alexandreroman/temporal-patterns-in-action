@@ -50,6 +50,15 @@ export interface AgentApprovalResponse {
   approved: boolean;
 }
 
+export interface MultiAgentStartRequest {
+  runId: string;
+  scenario: "happy" | "partial";
+}
+
+export interface MultiAgentStartResponse {
+  workflowId: string;
+}
+
 export interface EncryptionStartResponse {
   workflowId: string;
   /** Plaintext client payload — just the SensitiveOrder object echoed back. */

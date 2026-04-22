@@ -1,7 +1,7 @@
 <script setup lang="ts">
 useSeoMeta({ title: "Patterns" });
 
-type PatternIcon = "saga" | "batch" | "encryption" | "agent";
+type PatternIcon = "saga" | "batch" | "encryption" | "agent" | "multi-agent";
 
 const patterns: {
   slug: string;
@@ -37,6 +37,13 @@ const patterns: {
       "Travel-planner agent loop — LLM reasoning, MCP tool calls, and a signal-gated human approval.",
     icon: "agent",
   },
+  {
+    slug: "multi-agent",
+    title: "Multi-Agent",
+    description:
+      "Deep-research orchestrator fanning out to 3 research agents — parent workflow, child workflows, partial-failure tolerance on fan-in.",
+    icon: "multi-agent",
+  },
 ];
 </script>
 
@@ -63,6 +70,7 @@ const patterns: {
               <IconSaga v-if="pattern.icon === 'saga'" class="h-5 w-5" />
               <IconBatch v-else-if="pattern.icon === 'batch'" class="h-5 w-5" />
               <IconEncryption v-else-if="pattern.icon === 'encryption'" class="h-5 w-5" />
+              <IconMultiAgent v-else-if="pattern.icon === 'multi-agent'" class="h-5 w-5" />
               <IconAgent v-else class="h-5 w-5" />
             </span>
             <h2 class="text-lg font-medium text-slate-100">{{ pattern.title }}</h2>

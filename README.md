@@ -4,8 +4,9 @@
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 
 Runnable demos of the core [Temporal](https://temporal.io) patterns —
-saga, long-running batch, durable AI agent, payload encryption — with
-Go workers and a Frontend to trigger and observe them.
+saga, long-running batch, durable AI agent, payload encryption,
+multi-agent deep research — with Go workers and a Frontend to trigger
+and observe them.
 
 ## Prerequisites
 
@@ -81,12 +82,13 @@ graph LR
 
 ## Patterns
 
-| Pattern            | Package              |
-| ------------------ | -------------------- |
-| Saga               | `workers/saga`       |
-| Long-running batch | `workers/batch`      |
-| Payload Encryption | `workers/encryption` |
-| Durable AI Agent   | `workers/agent`      |
+| Pattern                      | Package               |
+| ---------------------------- | --------------------- |
+| Saga                         | `workers/saga`        |
+| Long-running batch           | `workers/batch`       |
+| Payload Encryption           | `workers/encryption`  |
+| Durable AI Agent             | `workers/agent`       |
+| Multi-agent (deep research)  | `workers/multi-agent` |
 
 ## License
 

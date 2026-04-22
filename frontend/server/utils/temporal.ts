@@ -51,3 +51,6 @@ export const ENCRYPTION_WORKFLOW_TYPE = "ProcessSensitiveOrderWorkflow";
 export const AGENT_TASK_QUEUE = "patterns-agent";
 export const AGENT_WORKFLOW_TYPE = "TravelAgentWorkflow";
 export const AGENT_APPROVAL_SIGNAL = "approval";
+
+export const MULTI_AGENT_TASK_QUEUE = "patterns-multi-agent";
+export const MULTI_AGENT_WORKFLOW_TYPE = "DeepResearchWorkflow";

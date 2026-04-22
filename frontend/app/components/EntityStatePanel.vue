@@ -1,14 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { EventEnvelope } from "~~/shared/events";
-import type { EntityCartProgress } from "~~/shared/types";
-
-/**
- * Sidecar panel summarising the entity workflow's signal/query counters.
- * Counts come primarily from the live event stream; when the page has just
- * received a getCart query response we trust those numbers in place of the
- * estimated ones.
- */
 
 type Status =
   | "Idle"
@@ -22,7 +14,6 @@ type Status =
 
 const props = defineProps<{
   events: EventEnvelope[];
-  progress?: EntityCartProgress | null;
 }>();
 
 interface Derived {
@@ -34,6 +25,7 @@ interface Derived {
 const derived = computed<Derived>(() => {
   let status: Status = props.events.length === 0 ? "Idle" : "Waiting for signals";
   let signalsReceived = 0;
+  let queriesAnswered = 0;
 
   for (const env of props.events) {
     const data = env.data as Record<string, unknown>;
@@ -66,6 +58,7 @@ const derived = computed<Derived>(() => {
         break;
       case "entity.query.getCart":
         status = "Query: getCart";
+        queriesAnswered++;
         break;
       case "progress.workflow.completed":
         status = "Completed";
@@ -76,14 +69,7 @@ const derived = computed<Derived>(() => {
     }
   }
 
-  // When a fresh getCart query response is available, prefer its authoritative
-  // counts over our local estimates.
-  const prog = props.progress;
-  return {
-    status,
-    signalsReceived: prog ? prog.signalsReceived : signalsReceived,
-    queriesAnswered: prog ? prog.queriesAnswered : 0,
-  };
+  return { status, signalsReceived, queriesAnswered };
 });
 
 const displayedSignals = useCountTween(() => derived.value.signalsReceived);

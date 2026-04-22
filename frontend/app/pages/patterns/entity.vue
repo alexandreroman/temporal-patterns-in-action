@@ -3,7 +3,6 @@ import { computed, ref } from "vue";
 import type { EventEnvelope } from "~~/shared/events";
 import type {
   EntityAddItemPayload,
-  EntityCartProgress,
   EntityQueryResponse,
   EntitySignalPayload,
   EntitySignalRequest,
@@ -19,7 +18,6 @@ const STEP_DELAY_MS = 1200;
 const workflowId = ref<string | null>(null);
 const starting = ref(false);
 const finalError = ref<string | null>(null);
-const progress = ref<EntityCartProgress | null>(null);
 // Local UI events spliced into the live stream so the code viewer can
 // highlight the getCart range without a real NATS event flowing through.
 const localEvents = ref<EventEnvelope[]>([]);
@@ -62,10 +60,9 @@ async function sendSignal(signal: EntitySignalPayload): Promise<void> {
 async function queryCart(): Promise<void> {
   const id = workflowId.value;
   if (!id) return;
-  const res = await $fetch<EntityQueryResponse>("/api/entity/query", {
+  await $fetch<EntityQueryResponse>("/api/entity/query", {
     query: { workflowId: id },
   });
-  progress.value = res.progress;
   // Synthetic envelope so EntityCodeViewer can highlight the getCart range —
   // not a real NATS event, purely a UI affordance.
   localEvents.value = [
@@ -86,7 +83,6 @@ async function queryCart(): Promise<void> {
 async function runScenario(): Promise<void> {
   finalError.value = null;
   starting.value = true;
-  progress.value = null;
   localEvents.value = [];
   const cartId = randomSuffix();
   workflowId.value = `entity-${cartId}`;
@@ -184,7 +180,7 @@ async function runScenario(): Promise<void> {
       <div class="min-w-0 flex-1">
         <EntityCart :events="events" :workflow-id="workflowId" />
       </div>
-      <EntityStatePanel :events="events" :progress="progress" />
+      <EntityStatePanel :events="events" />
     </div>
 
     <!-- Status bar -->

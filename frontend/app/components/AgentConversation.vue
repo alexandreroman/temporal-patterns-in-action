@@ -14,6 +14,13 @@ const props = defineProps<{
   pendingPrompt: string | null;
 }>();
 
+// Stable key for the initial user prompt so the fallback placeholder and the
+// event-driven message render as the *same* DOM node. Otherwise the key flip
+// (`pending-prompt` → envelope id) triggers a TransitionGroup leave+enter, and
+// the `.msg-row` flash animation keeps the leaving element around for ~1s —
+// briefly showing two copies of the same prompt before one disappears.
+const USER_PROMPT_KEY = "user-prompt";
+
 const messages = computed<ChatMessage[]>(() => {
   const out: ChatMessage[] = [];
   let seenUserPrompt = false;
@@ -24,7 +31,7 @@ const messages = computed<ChatMessage[]>(() => {
       case "agent.user.prompt": {
         const prompt = typeof data.prompt === "string" ? data.prompt : "";
         if (prompt) {
-          out.push({ id: env.id, role: "user", content: prompt });
+          out.push({ id: USER_PROMPT_KEY, role: "user", content: prompt });
           seenUserPrompt = true;
         }
         break;
@@ -75,7 +82,7 @@ const messages = computed<ChatMessage[]>(() => {
   // Fallback: user prompt hasn't propagated through NATS yet but the UI
   // already knows what was submitted. Keep the panel responsive.
   if (!seenUserPrompt && props.pendingPrompt) {
-    out.unshift({ id: "pending-prompt", role: "user", content: props.pendingPrompt });
+    out.unshift({ id: USER_PROMPT_KEY, role: "user", content: props.pendingPrompt });
   }
 
   return out;

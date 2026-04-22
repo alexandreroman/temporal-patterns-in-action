@@ -25,3 +25,4 @@
 - [Node healthcheck: use 127.0.0.1, not localhost](references/feedback_node_healthcheck_ipv6.md) — busybox wget resolves `localhost` to `::1` first; Nuxt listens on IPv4 only, so the probe gets connection refused.
 - [Default scenario to happy path](references/feedback_default_scenario_happy_path.md) — every new pattern page's scenario selector must default to the success option, not the failure/partial variant.
 - [Realistic animated token counters](references/feedback_token_counters.md) — emit non-round tokens per step from the worker and animate the UI with `useCountTween`; mirror `AgentStatePanel.vue`.
+- [Stable Vue keys for placeholder items](references/feedback_stable_keys_for_placeholder_messages.md) — optimistic placeholder and event-driven row in a `<TransitionGroup>` must share one `:key`, or `.msg-flash` makes both linger during the swap.

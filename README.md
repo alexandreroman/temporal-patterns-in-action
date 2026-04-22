@@ -17,6 +17,8 @@ and observe them.
 
 ## Getting Started
 
+https://github.com/user-attachments/assets/01131162-3e34-4e5a-8bf6-3d16da19a930
+
 Bring up the full stack — Temporal dev server, NATS, the Frontend,
 and every worker:
 

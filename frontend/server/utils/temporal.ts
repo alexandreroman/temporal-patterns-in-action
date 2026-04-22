@@ -54,3 +54,11 @@ export const AGENT_APPROVAL_SIGNAL = "approval";
 
 export const MULTI_AGENT_TASK_QUEUE = "patterns-multi-agent";
 export const MULTI_AGENT_WORKFLOW_TYPE = "DeepResearchWorkflow";
+
+export const ENTITY_TASK_QUEUE = "patterns-entity";
+export const ENTITY_WORKFLOW_TYPE = "ShoppingCartWorkflow";
+export const ENTITY_SIGNAL_ADD_ITEM = "addItem";
+export const ENTITY_SIGNAL_UPDATE_QTY = "updateQty";
+export const ENTITY_SIGNAL_REMOVE_ITEM = "removeItem";
+export const ENTITY_SIGNAL_CHECKOUT = "checkout";
+export const ENTITY_QUERY_GET_CART = "getCart";

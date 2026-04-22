@@ -72,3 +72,67 @@ export interface EncryptionStartResponse {
     dataBase64: string;
   };
 }
+
+export interface EntityCartItem {
+  itemId: string;
+  name: string;
+  priceCents: number;
+  qty: number;
+}
+
+export interface EntityStartRequest {
+  cartId: string;
+}
+
+export interface EntityStartResponse {
+  workflowId: string;
+}
+
+export type EntitySignalType = "addItem" | "updateQty" | "removeItem" | "checkout";
+
+export interface EntityAddItemPayload {
+  itemId: string;
+  name: string;
+  priceCents: number;
+  qty: number;
+}
+
+export interface EntityUpdateQtyPayload {
+  itemId: string;
+  qty: number;
+}
+
+export interface EntityRemoveItemPayload {
+  itemId: string;
+}
+
+export type EntitySignalPayload =
+  | { type: "addItem"; payload: EntityAddItemPayload }
+  | { type: "updateQty"; payload: EntityUpdateQtyPayload }
+  | { type: "removeItem"; payload: EntityRemoveItemPayload }
+  | { type: "checkout"; payload: Record<string, never> };
+
+export interface EntitySignalRequest {
+  workflowId: string;
+  signal: EntitySignalPayload;
+}
+
+export interface EntitySignalResponse {
+  workflowId: string;
+  type: EntitySignalType;
+}
+
+export interface EntityCartProgress {
+  cartId: string;
+  items: EntityCartItem[];
+  totalCents: number;
+  signalsReceived: number;
+  queriesAnswered: number;
+  checkedOut: boolean;
+  historyLength: number;
+}
+
+export interface EntityQueryResponse {
+  workflowId: string;
+  progress: EntityCartProgress;
+}

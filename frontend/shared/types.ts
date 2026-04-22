@@ -2,7 +2,7 @@ export interface SagaStartRequest {
   customerId: string;
   orderId: string;
   amount: number;
-  failAt?: "" | "inventory" | "payment" | "shipping" | "notification";
+  failAt?: "" | "fraud" | "shipment" | "charge" | "notification";
 }
 
 export interface SagaStartResponse {

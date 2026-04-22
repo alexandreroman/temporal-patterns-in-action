@@ -4,23 +4,23 @@ import type { EventEnvelope } from "~~/shared/events";
 import type { ArchState, EdgeKey, NodeKey } from "~/types/architecture";
 
 /**
- * Saga architecture: UI -> Temporal -> Worker -> (Inventory | Payment |
- *                                                  Shipping | Notification)
+ * Saga architecture: UI -> Temporal -> Worker -> (Fraud | Shipment |
+ *                                                 Payment | Notification)
  * Maps saga step names to the four generic service slots `s1..s4` and folds
  * the event stream into the shared ArchState consumed by ArchitectureDiagram.
  */
 
 const STEP_TO_SVC: Record<string, { node: NodeKey; edge: EdgeKey }> = {
-  "reserve-inventory": { node: "s1", edge: "wk_s1" },
-  "release-inventory": { node: "s1", edge: "wk_s1" },
-  "charge-payment": { node: "s2", edge: "wk_s2" },
-  "refund-payment": { node: "s2", edge: "wk_s2" },
-  "ship-order": { node: "s3", edge: "wk_s3" },
-  "cancel-shipment": { node: "s3", edge: "wk_s3" },
+  "check-fraud": { node: "s1", edge: "wk_s1" },
+  "release-fraud-hold": { node: "s1", edge: "wk_s1" },
+  "prepare-shipment": { node: "s2", edge: "wk_s2" },
+  "cancel-shipment": { node: "s2", edge: "wk_s2" },
+  "charge-customer": { node: "s3", edge: "wk_s3" },
+  "refund-customer": { node: "s3", edge: "wk_s3" },
   "send-confirmation": { node: "s4", edge: "wk_s4" },
 };
 
-const COMP_STEPS = new Set(["release-inventory", "refund-payment", "cancel-shipment"]);
+const COMP_STEPS = new Set(["release-fraud-hold", "cancel-shipment", "refund-customer"]);
 
 const props = defineProps<{
   events: EventEnvelope[];
@@ -113,7 +113,7 @@ const arch = computed<ArchState>(() => {
 <template>
   <ArchitectureDiagram
     :arch="arch"
-    :service-labels="['Inventory', 'Payment', 'Shipping', 'Notification']"
+    :service-labels="['Fraud', 'Shipment', 'Payment', 'Notification']"
     worker-label="Saga logic"
     label="Saga architecture diagram"
   />

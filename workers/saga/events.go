@@ -6,11 +6,11 @@ const Pattern = "saga"
 // Saga-specific business event types. Prefixed with the pattern name to
 // guarantee no collision with types emitted by other patterns.
 const (
-	TypeInventoryReserved = "saga.inventory.reserved"
-	TypeInventoryReleased = "saga.inventory.released"
-	TypePaymentCharged    = "saga.payment.charged"
-	TypePaymentRefunded   = "saga.payment.refunded"
-	TypeOrderShipped      = "saga.shipping.shipped"
-	TypeShipmentCancelled = "saga.shipping.cancelled"
-	TypeConfirmationSent  = "saga.notification.sent"
+	TypeFraudChecked     = "saga.fraud.checked"
+	TypeFraudReleased    = "saga.fraud.released"
+	TypeShipmentPrepared = "saga.shipment.prepared"
+	TypeShipmentCancelled = "saga.shipment.cancelled"
+	TypeCustomerCharged  = "saga.customer.charged"
+	TypeCustomerRefunded = "saga.customer.refunded"
+	TypeConfirmationSent = "saga.notification.sent"
 )

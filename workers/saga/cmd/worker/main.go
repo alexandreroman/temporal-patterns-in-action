@@ -17,12 +17,12 @@ func main() {
 		// NATS event interceptor emits progress.step.* events matching the step IDs
 		// used by the workflow and the frontend pipeline.
 		a := &saga.Activities{Publisher: pub, TimeoutChance: 0.3}
-		w.RegisterActivityWithOptions(a.ReserveInventory, activity.RegisterOptions{Name: "reserve-inventory"})
-		w.RegisterActivityWithOptions(a.ReleaseInventory, activity.RegisterOptions{Name: "release-inventory"})
-		w.RegisterActivityWithOptions(a.ChargePayment, activity.RegisterOptions{Name: "charge-payment"})
-		w.RegisterActivityWithOptions(a.RefundPayment, activity.RegisterOptions{Name: "refund-payment"})
-		w.RegisterActivityWithOptions(a.ShipOrder, activity.RegisterOptions{Name: "ship-order"})
+		w.RegisterActivityWithOptions(a.CheckFraud, activity.RegisterOptions{Name: "check-fraud"})
+		w.RegisterActivityWithOptions(a.ReleaseFraudHold, activity.RegisterOptions{Name: "release-fraud-hold"})
+		w.RegisterActivityWithOptions(a.PrepareShipment, activity.RegisterOptions{Name: "prepare-shipment"})
 		w.RegisterActivityWithOptions(a.CancelShipment, activity.RegisterOptions{Name: "cancel-shipment"})
+		w.RegisterActivityWithOptions(a.ChargeCustomer, activity.RegisterOptions{Name: "charge-customer"})
+		w.RegisterActivityWithOptions(a.RefundCustomer, activity.RegisterOptions{Name: "refund-customer"})
 		w.RegisterActivityWithOptions(a.SendConfirmation, activity.RegisterOptions{Name: "send-confirmation"})
 	})
 }

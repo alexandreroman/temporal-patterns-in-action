@@ -13,16 +13,16 @@ const props = defineProps<{
 }>();
 
 const STEP_LABELS: Record<string, string> = {
-  "reserve-inventory": "Reserve inventory",
-  "release-inventory": "Release inventory",
-  "charge-payment": "Charge payment",
-  "refund-payment": "Refund payment",
-  "ship-order": "Ship order",
+  "check-fraud": "Check fraud",
+  "release-fraud-hold": "Release fraud hold",
+  "prepare-shipment": "Prepare shipment",
   "cancel-shipment": "Cancel shipment",
+  "charge-customer": "Charge customer",
+  "refund-customer": "Refund customer",
   "send-confirmation": "Send confirmation",
 };
 
-const COMP_STEPS = new Set(["release-inventory", "refund-payment", "cancel-shipment"]);
+const COMP_STEPS = new Set(["release-fraud-hold", "cancel-shipment", "refund-customer"]);
 
 const derived = computed<Derived>(() => {
   if (props.events.length === 0) {

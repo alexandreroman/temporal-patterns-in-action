@@ -39,77 +39,80 @@ func (a *Activities) maybeInjectRandomTimeout(ctx context.Context) error {
 	return ctx.Err()
 }
 
-// ReserveInventory reserves stock for the order and returns an item/reservation ID.
-func (a *Activities) ReserveInventory(ctx context.Context, txID string, input OrderInput) (string, error) {
-	activity.GetLogger(ctx).Info("Reserving inventory",
+// CheckFraud screens the order for fraud and returns a fraud-check hold ID
+// that downstream compensation can release.
+func (a *Activities) CheckFraud(ctx context.Context, txID string, input OrderInput) (string, error) {
+	activity.GetLogger(ctx).Info("Checking fraud",
 		"customer", input.CustomerID, "order", input.OrderID, "transactionId", txID)
 	if err := a.maybeInjectRandomTimeout(ctx); err != nil {
 		return "", err
 	}
 	time.Sleep(mainStepDelay)
-	if input.FailAt == "inventory" {
+	if input.FailAt == "fraud" {
 		return "", temporal.NewNonRetryableApplicationError(
-			"inventory unavailable", "InventoryUnavailable", nil)
+			"fraud detected", "FraudDetected", nil)
 	}
-	itemID := fmt.Sprintf("inv-%s", input.OrderID)
-	events.PublishBusiness(ctx, a.Publisher, Pattern, TypeInventoryReserved, map[string]any{"itemId": itemID})
-	return itemID, nil
+	checkID := fmt.Sprintf("chk-%s", input.OrderID)
+	events.PublishBusiness(ctx, a.Publisher, Pattern, TypeFraudChecked, map[string]any{"checkId": checkID})
+	return checkID, nil
 }
 
-// ReleaseInventory compensates ReserveInventory.
-func (a *Activities) ReleaseInventory(ctx context.Context, txID string, itemID string) error {
-	activity.GetLogger(ctx).Info("Releasing inventory", "id", itemID, "transactionId", txID)
+// ReleaseFraudHold compensates CheckFraud.
+func (a *Activities) ReleaseFraudHold(ctx context.Context, txID string, checkID string) error {
+	activity.GetLogger(ctx).Info("Releasing fraud hold", "id", checkID, "transactionId", txID)
 	time.Sleep(compensationDelay)
-	events.PublishBusiness(ctx, a.Publisher, Pattern, TypeInventoryReleased, map[string]any{"itemId": itemID})
+	events.PublishBusiness(ctx, a.Publisher, Pattern, TypeFraudReleased, map[string]any{"checkId": checkID})
 	return nil
 }
 
-// ChargePayment charges the customer for the order. The reservation ID keeps
-// the call idempotent on the payment provider side.
-func (a *Activities) ChargePayment(ctx context.Context, txID string, input OrderInput, reservationID string) (string, error) {
-	activity.GetLogger(ctx).Info("Charging payment",
-		"customer", input.CustomerID, "amount", input.Amount, "reservation", reservationID, "transactionId", txID)
+// PrepareShipment reserves a shipment slot for the order and returns a
+// shipment ID that its compensation can cancel.
+func (a *Activities) PrepareShipment(ctx context.Context, txID string, input OrderInput, checkID string) (string, error) {
+	activity.GetLogger(ctx).Info("Preparing shipment",
+		"order", input.OrderID, "check", checkID, "transactionId", txID)
 	if err := a.maybeInjectRandomTimeout(ctx); err != nil {
 		return "", err
 	}
 	time.Sleep(mainStepDelay)
-	if input.FailAt == "payment" {
+	if input.FailAt == "shipment" {
+		return "", temporal.NewNonRetryableApplicationError(
+			"shipment unavailable", "ShipmentUnavailable", nil)
+	}
+	shipmentID := fmt.Sprintf("shp-%s", input.OrderID)
+	events.PublishBusiness(ctx, a.Publisher, Pattern, TypeShipmentPrepared, map[string]any{"shipmentId": shipmentID})
+	return shipmentID, nil
+}
+
+// CancelShipment compensates PrepareShipment.
+func (a *Activities) CancelShipment(ctx context.Context, txID string, shipmentID string) error {
+	activity.GetLogger(ctx).Info("Cancelling shipment", "shipment", shipmentID, "transactionId", txID)
+	time.Sleep(compensationDelay)
+	events.PublishBusiness(ctx, a.Publisher, Pattern, TypeShipmentCancelled, map[string]any{"shipmentId": shipmentID})
+	return nil
+}
+
+// ChargeCustomer charges the customer for the order. The shipment ID keeps
+// the call idempotent on the payment provider side.
+func (a *Activities) ChargeCustomer(ctx context.Context, txID string, input OrderInput, shipmentID string) (string, error) {
+	activity.GetLogger(ctx).Info("Charging customer",
+		"customer", input.CustomerID, "amount", input.Amount, "shipment", shipmentID, "transactionId", txID)
+	if err := a.maybeInjectRandomTimeout(ctx); err != nil {
+		return "", err
+	}
+	time.Sleep(mainStepDelay)
+	if input.FailAt == "charge" {
 		return "", temporal.NewNonRetryableApplicationError(
 			"payment declined", "PaymentDeclined", nil)
 	}
-	events.PublishBusiness(ctx, a.Publisher, Pattern, TypePaymentCharged, map[string]any{"amount": input.Amount})
-	return fmt.Sprintf("pay-%s", reservationID), nil
+	events.PublishBusiness(ctx, a.Publisher, Pattern, TypeCustomerCharged, map[string]any{"amount": input.Amount})
+	return fmt.Sprintf("pay-%s", shipmentID), nil
 }
 
-// RefundPayment compensates ChargePayment.
-func (a *Activities) RefundPayment(ctx context.Context, txID string, paymentID string, amount int) error {
-	activity.GetLogger(ctx).Info("Refunding payment", "payment", paymentID, "amount", amount, "transactionId", txID)
+// RefundCustomer compensates ChargeCustomer.
+func (a *Activities) RefundCustomer(ctx context.Context, txID string, paymentID string, amount int) error {
+	activity.GetLogger(ctx).Info("Refunding customer", "payment", paymentID, "amount", amount, "transactionId", txID)
 	time.Sleep(compensationDelay)
-	events.PublishBusiness(ctx, a.Publisher, Pattern, TypePaymentRefunded, map[string]any{"amount": amount})
-	return nil
-}
-
-// ShipOrder dispatches the order and returns a tracking ID.
-func (a *Activities) ShipOrder(ctx context.Context, txID string, input OrderInput) (string, error) {
-	activity.GetLogger(ctx).Info("Shipping order", "order", input.OrderID, "transactionId", txID)
-	if err := a.maybeInjectRandomTimeout(ctx); err != nil {
-		return "", err
-	}
-	time.Sleep(mainStepDelay)
-	if input.FailAt == "shipping" {
-		return "", temporal.NewNonRetryableApplicationError(
-			"shipping unavailable", "ShippingUnavailable", nil)
-	}
-	trackingID := fmt.Sprintf("trk-%s", input.OrderID)
-	events.PublishBusiness(ctx, a.Publisher, Pattern, TypeOrderShipped, map[string]any{"trackingId": trackingID})
-	return trackingID, nil
-}
-
-// CancelShipment compensates ShipOrder.
-func (a *Activities) CancelShipment(ctx context.Context, txID string, trackingID string) error {
-	activity.GetLogger(ctx).Info("Cancelling shipment", "tracking", trackingID, "transactionId", txID)
-	time.Sleep(compensationDelay)
-	events.PublishBusiness(ctx, a.Publisher, Pattern, TypeShipmentCancelled, map[string]any{"trackingId": trackingID})
+	events.PublishBusiness(ctx, a.Publisher, Pattern, TypeCustomerRefunded, map[string]any{"amount": amount})
 	return nil
 }
 

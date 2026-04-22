@@ -34,7 +34,7 @@ async function start() {
   starting.value = true;
   const orderId = `order-${randomSuffix()}`;
   // Subscribe BEFORE starting the workflow: core NATS has no replay, and
-  // the first progress.step.started (reserve-inventory) fires almost
+  // the first progress.step.started (check-fraud) fires almost
   // immediately after start — we would miss it if the SSE stream opened
   // only after the start() response came back.
   workflowId.value = `saga-${orderId}`;
@@ -81,9 +81,9 @@ async function start() {
           class="rounded-md border border-slate-700 bg-slate-800 px-2 py-1 text-xs text-slate-200 disabled:opacity-50"
         >
           <option value="">No failure</option>
-          <option value="inventory">Fail at reserve inventory</option>
-          <option value="payment">Fail at charge payment</option>
-          <option value="shipping">Fail at ship order</option>
+          <option value="fraud">Fail at check fraud</option>
+          <option value="shipment">Fail at prepare shipment</option>
+          <option value="charge">Fail at charge customer</option>
           <option value="notification">Fail at send confirmation</option>
         </select>
         <button

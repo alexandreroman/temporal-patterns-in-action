@@ -10,7 +10,7 @@ type OrderInput struct {
 	Amount        int    `json:"amount"`
 	TransactionID string `json:"transactionId"`
 	// FailAt simulates a failure at a given step for demo purposes.
-	// Accepted values: "", "inventory", "payment", "shipping", "notification".
+	// Accepted values: "", "fraud", "shipment", "charge", "notification".
 	FailAt string `json:"failAt,omitempty"`
 }
 

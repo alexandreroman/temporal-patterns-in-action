@@ -8,8 +8,8 @@ import (
 	"go.temporal.io/sdk/workflow"
 )
 
-// OrderProcessingWorkflow reserves inventory, charges the customer, ships the
-// order, and sends a confirmation email. If any step fails, previously-
+// OrderProcessingWorkflow runs a fraud check, prepares the shipment, charges
+// the customer, and sends a confirmation. If any step fails, previously-
 // completed steps are compensated in reverse order. Compensations run on a
 // disconnected context so they execute even if the workflow itself is
 // cancelled.
@@ -55,50 +55,50 @@ func OrderProcessingWorkflow(ctx workflow.Context, input OrderInput) (OrderResul
 		}
 	}
 
-	// Step 1 — reserve inventory
-	progress.CurrentStep = "reserve-inventory"
-	var itemID string
-	if err := workflow.ExecuteActivity(ctx, a.ReserveInventory, txID, input).Get(ctx, &itemID); err != nil {
-		progress.Failed = "reserve-inventory"
+	// Step 1 — check fraud
+	progress.CurrentStep = "check-fraud"
+	var checkID string
+	if err := workflow.ExecuteActivity(ctx, a.CheckFraud, txID, input).Get(ctx, &checkID); err != nil {
+		progress.Failed = "check-fraud"
 		result.Status = "failed"
 		runCompensations()
 		return result, err
 	}
 	compensations = append(compensations, func(c workflow.Context) error {
-		return workflow.ExecuteActivity(c, a.ReleaseInventory, txID, itemID).Get(c, nil)
+		return workflow.ExecuteActivity(c, a.ReleaseFraudHold, txID, checkID).Get(c, nil)
 	})
-	progress.Completed = append(progress.Completed, "reserve-inventory")
-	result.Confirmed = append(result.Confirmed, itemID)
+	progress.Completed = append(progress.Completed, "check-fraud")
+	result.Confirmed = append(result.Confirmed, checkID)
 
-	// Step 2 — charge payment
-	progress.CurrentStep = "charge-payment"
+	// Step 2 — prepare shipment
+	progress.CurrentStep = "prepare-shipment"
+	var shipmentID string
+	if err := workflow.ExecuteActivity(ctx, a.PrepareShipment, txID, input, checkID).Get(ctx, &shipmentID); err != nil {
+		progress.Failed = "prepare-shipment"
+		result.Status = "failed"
+		runCompensations()
+		return result, err
+	}
+	compensations = append(compensations, func(c workflow.Context) error {
+		return workflow.ExecuteActivity(c, a.CancelShipment, txID, shipmentID).Get(c, nil)
+	})
+	progress.Completed = append(progress.Completed, "prepare-shipment")
+	result.Confirmed = append(result.Confirmed, shipmentID)
+
+	// Step 3 — charge customer
+	progress.CurrentStep = "charge-customer"
 	var paymentID string
-	if err := workflow.ExecuteActivity(ctx, a.ChargePayment, txID, input, itemID).Get(ctx, &paymentID); err != nil {
-		progress.Failed = "charge-payment"
+	if err := workflow.ExecuteActivity(ctx, a.ChargeCustomer, txID, input, shipmentID).Get(ctx, &paymentID); err != nil {
+		progress.Failed = "charge-customer"
 		result.Status = "failed"
 		runCompensations()
 		return result, err
 	}
 	compensations = append(compensations, func(c workflow.Context) error {
-		return workflow.ExecuteActivity(c, a.RefundPayment, txID, paymentID, input.Amount).Get(c, nil)
+		return workflow.ExecuteActivity(c, a.RefundCustomer, txID, paymentID, input.Amount).Get(c, nil)
 	})
-	progress.Completed = append(progress.Completed, "charge-payment")
+	progress.Completed = append(progress.Completed, "charge-customer")
 	result.Confirmed = append(result.Confirmed, paymentID)
-
-	// Step 3 — ship the order
-	progress.CurrentStep = "ship-order"
-	var trackingID string
-	if err := workflow.ExecuteActivity(ctx, a.ShipOrder, txID, input).Get(ctx, &trackingID); err != nil {
-		progress.Failed = "ship-order"
-		result.Status = "failed"
-		runCompensations()
-		return result, err
-	}
-	compensations = append(compensations, func(c workflow.Context) error {
-		return workflow.ExecuteActivity(c, a.CancelShipment, txID, trackingID).Get(c, nil)
-	})
-	progress.Completed = append(progress.Completed, "ship-order")
-	result.Confirmed = append(result.Confirmed, trackingID)
 
 	// Step 4 — send confirmation
 	progress.CurrentStep = "send-confirmation"

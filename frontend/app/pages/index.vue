@@ -13,7 +13,7 @@ const patterns: {
     slug: "saga",
     title: "Saga",
     description:
-      "Order processing saga — reserve inventory, charge payment, ship, notify. Roll back on failure.",
+      "Order processing saga — check fraud, prepare shipment, charge customer, notify. Roll back on failure.",
     icon: "saga",
   },
   {

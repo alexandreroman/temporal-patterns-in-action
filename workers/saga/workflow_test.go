@@ -61,7 +61,7 @@ func TestOrderProcessingWorkflow_HappyPath(t *testing.T) {
 	require.Len(t, result.Confirmed, 4)
 }
 
-func TestOrderProcessingWorkflow_PaymentFails(t *testing.T) {
+func TestOrderProcessingWorkflow_ChargeFails(t *testing.T) {
 	suite := &testsuite.WorkflowTestSuite{}
 	env := suite.NewTestWorkflowEnvironment()
 	registerTestActivities(env, events.NopPublisher{})
@@ -70,7 +70,7 @@ func TestOrderProcessingWorkflow_PaymentFails(t *testing.T) {
 		CustomerID: "bob",
 		OrderID:    "order-456",
 		Amount:     2000,
-		FailAt:     "payment",
+		FailAt:     "charge",
 	})
 
 	require.True(t, env.IsWorkflowCompleted())
@@ -82,10 +82,9 @@ func TestOrderProcessingWorkflow_PaymentFails(t *testing.T) {
 	require.Equal(t, "PaymentDeclined", appErr.Type())
 }
 
-// TestOrderProcessingWorkflow_ShippingFails verifies that when shipping fails
-// the prior compensations (refund payment, release inventory) both run in
-// reverse order.
-func TestOrderProcessingWorkflow_ShippingFails(t *testing.T) {
+// TestOrderProcessingWorkflow_NotificationFails verifies that when the final
+// step fails, every prior compensation runs in reverse order.
+func TestOrderProcessingWorkflow_NotificationFails(t *testing.T) {
 	suite := &testsuite.WorkflowTestSuite{}
 	env := suite.NewTestWorkflowEnvironment()
 
@@ -96,7 +95,7 @@ func TestOrderProcessingWorkflow_ShippingFails(t *testing.T) {
 		CustomerID: "carol",
 		OrderID:    "order-789",
 		Amount:     1500,
-		FailAt:     "shipping",
+		FailAt:     "notification",
 	})
 
 	require.True(t, env.IsWorkflowCompleted())
@@ -105,18 +104,22 @@ func TestOrderProcessingWorkflow_ShippingFails(t *testing.T) {
 
 	var appErr *temporal.ApplicationError
 	require.True(t, errors.As(err, &appErr))
-	require.Equal(t, "ShippingUnavailable", appErr.Type())
+	require.Equal(t, "NotificationUnavailable", appErr.Type())
 
 	published := pub.snapshot()
-	require.Contains(t, published, TypeInventoryReserved)
-	require.Contains(t, published, TypePaymentCharged)
-	require.Contains(t, published, TypePaymentRefunded)
-	require.Contains(t, published, TypeInventoryReleased)
+	require.Contains(t, published, TypeFraudChecked)
+	require.Contains(t, published, TypeShipmentPrepared)
+	require.Contains(t, published, TypeCustomerCharged)
+	require.Contains(t, published, TypeCustomerRefunded)
+	require.Contains(t, published, TypeShipmentCancelled)
+	require.Contains(t, published, TypeFraudReleased)
 
-	// Reverse order: refund happens before release.
-	refundIdx := indexOf(published, TypePaymentRefunded)
-	releaseIdx := indexOf(published, TypeInventoryReleased)
-	require.Less(t, refundIdx, releaseIdx, "refund must run before inventory release")
+	// Reverse order: refund → cancel shipment → release fraud hold.
+	refundIdx := indexOf(published, TypeCustomerRefunded)
+	cancelIdx := indexOf(published, TypeShipmentCancelled)
+	releaseIdx := indexOf(published, TypeFraudReleased)
+	require.Less(t, refundIdx, cancelIdx, "refund must run before shipment cancellation")
+	require.Less(t, cancelIdx, releaseIdx, "shipment cancellation must run before fraud hold release")
 }
 
 func indexOf(slice []string, target string) int {

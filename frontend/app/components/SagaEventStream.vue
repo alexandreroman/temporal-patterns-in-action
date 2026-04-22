@@ -23,18 +23,18 @@ function eventLabel(env: EventEnvelope): string {
       return `${step} completed`;
     case "progress.step.failed":
       return `${step} failed: ${error}`;
-    case "saga.inventory.reserved":
-      return `Inventory reserved #${data.itemId}`;
-    case "saga.inventory.released":
-      return `Inventory released #${data.itemId}`;
-    case "saga.payment.charged":
-      return `Payment charged EUR${data.amount}`;
-    case "saga.payment.refunded":
-      return `Payment refunded EUR${data.amount}`;
-    case "saga.shipping.shipped":
-      return `Order shipped #${data.trackingId}`;
-    case "saga.shipping.cancelled":
-      return `Shipment cancelled #${data.trackingId}`;
+    case "saga.fraud.checked":
+      return `Fraud check cleared #${data.checkId}`;
+    case "saga.fraud.released":
+      return `Fraud hold released #${data.checkId}`;
+    case "saga.shipment.prepared":
+      return `Shipment prepared #${data.shipmentId}`;
+    case "saga.shipment.cancelled":
+      return `Shipment cancelled #${data.shipmentId}`;
+    case "saga.customer.charged":
+      return `Customer charged EUR${data.amount}`;
+    case "saga.customer.refunded":
+      return `Customer refunded EUR${data.amount}`;
     case "saga.notification.sent":
       return `Confirmation sent to ${data.email}`;
   }
@@ -46,7 +46,12 @@ function dotColor(env: EventEnvelope): DotColor {
   if (t.includes("started")) return "blue";
   if (t.includes("completed")) return "green";
   if (t.includes("failed")) return "red";
-  if (t.includes("compensation") || t.includes("cancelled") || t.includes("refunded"))
+  if (
+    t.includes("released") ||
+    t.includes("cancelled") ||
+    t.includes("refunded") ||
+    t.includes("compensation")
+  )
     return "amber";
   return "blue";
 }

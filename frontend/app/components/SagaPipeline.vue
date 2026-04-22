@@ -14,9 +14,9 @@ import type { EventEnvelope } from "~~/shared/events";
 type StepState = "pending" | "active" | "done" | "failed" | "compensating" | "reverted";
 
 const STEP_IDS = [
-  "reserve-inventory",
-  "charge-payment",
-  "ship-order",
+  "check-fraud",
+  "prepare-shipment",
+  "charge-customer",
   "send-confirmation",
 ] as const;
 type StepId = (typeof STEP_IDS)[number];
@@ -28,16 +28,16 @@ interface Step {
 }
 
 const STEPS: readonly Step[] = [
-  { id: "reserve-inventory", name: "Reserve inventory", comp: "Release inventory" },
-  { id: "charge-payment", name: "Charge payment", comp: "Refund payment" },
-  { id: "ship-order", name: "Ship order", comp: "Cancel shipment" },
+  { id: "check-fraud", name: "Check fraud", comp: "Release fraud hold" },
+  { id: "prepare-shipment", name: "Prepare shipment", comp: "Cancel shipment" },
+  { id: "charge-customer", name: "Charge customer", comp: "Refund customer" },
   { id: "send-confirmation", name: "Send confirmation" },
 ];
 
 const COMP_TO_STEP: Record<string, StepId> = {
-  "release-inventory": "reserve-inventory",
-  "refund-payment": "charge-payment",
-  "cancel-shipment": "ship-order",
+  "release-fraud-hold": "check-fraud",
+  "cancel-shipment": "prepare-shipment",
+  "refund-customer": "charge-customer",
 };
 
 const FORWARD_IDS = new Set<string>(STEP_IDS);
@@ -48,9 +48,9 @@ const props = defineProps<{
 
 const states = computed<Record<StepId, StepState>>(() => {
   const map: Record<StepId, StepState> = {
-    "reserve-inventory": "pending",
-    "charge-payment": "pending",
-    "ship-order": "pending",
+    "check-fraud": "pending",
+    "prepare-shipment": "pending",
+    "charge-customer": "pending",
     "send-confirmation": "pending",
   };
 

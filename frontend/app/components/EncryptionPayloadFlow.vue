@@ -52,9 +52,13 @@ const isEncrypted = computed(() => props.scenario === "encrypted");
         </span>
       </header>
       <pre
+        v-if="clientPayload"
         class="min-h-0 flex-1 overflow-auto whitespace-pre-wrap break-all font-mono text-[11px] text-slate-300"
-        >{{ clientPayload ? clientJson : "(run the workflow)" }}</pre
+        >{{ clientJson }}</pre
       >
+      <div v-else class="min-h-0 flex-1 overflow-auto">
+        <p class="font-mono text-[11px] text-slate-500">(run the workflow)</p>
+      </div>
     </section>
 
     <!-- arrow 1→2 -->

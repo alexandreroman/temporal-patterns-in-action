@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import type { EventEnvelope } from "~~/shared/events";
+import type { DotColor } from "~/types/event-stream";
 
 defineProps<{
   events: EventEnvelope[];
 }>();
-
-type DotColor = "blue" | "green" | "red" | "amber";
 
 function eventLabel(env: EventEnvelope): string {
   const data = env.data as Record<string, unknown>;

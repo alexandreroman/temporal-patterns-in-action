@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import type { EventEnvelope } from "~~/shared/events";
+import type { DotColor } from "~/types/event-stream";
 
 defineProps<{
   events: EventEnvelope[];
 }>();
-
-type DotColor = "blue" | "green" | "red" | "amber";
 
 function truncate(s: string, n = 48): string {
   return s.length > n ? s.slice(0, n - 1) + "…" : s;

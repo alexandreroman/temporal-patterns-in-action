@@ -39,11 +39,6 @@ const running = computed(() => {
   return !streamEvents.value.some((e) => TERMINAL_EVENTS.has(e.type));
 });
 
-function randomSuffix(): string {
-  // 6-char base36 is plenty for a per-run cart id in a demo.
-  return Math.random().toString(36).slice(2, 8);
-}
-
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }

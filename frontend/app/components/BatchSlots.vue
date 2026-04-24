@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { EventEnvelope } from "~~/shared/events";
+import { BATCH_SERVICE_LABEL } from "~/utils/batch-services";
 
 /**
  * Sliding-window view: up to `parallelism` chips showing the items currently
@@ -68,15 +69,8 @@ const activeItems = computed<ActiveItem[]>(() => {
   return Array.from(byIndex.values()).slice(0, props.parallelism);
 });
 
-const SERVICE_LABEL: Record<string, string> = {
-  resize: "Resize",
-  thumbnail: "Thumbnail",
-  cdn: "CDN",
-  metadata: "Metadata",
-};
-
 function serviceLabel(service: string): string {
-  return SERVICE_LABEL[service] ?? service;
+  return BATCH_SERVICE_LABEL[service] ?? service;
 }
 
 function chipText(item: ActiveItem): string {

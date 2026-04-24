@@ -76,26 +76,13 @@ const arch = computed<ArchState>(() => {
         break;
 
       case "progress.workflow.failed":
-        resetServices(nodes, edges);
+        applyWorkflowFailed(nodes, edges);
         running = false;
-        nodes.ui = "error";
-        nodes.temporal = "error";
-        nodes.worker = "error";
-        edges.ui_tmp = "error";
-        edges.tmp_wk = "error";
         break;
     }
   }
 
-  // Keep the UI→Temporal→Worker strip lit while the run is in flight, since
-  // no workflow.started event arrives to set it up explicitly.
-  if (running) {
-    if (nodes.ui === "idle") nodes.ui = "active";
-    if (nodes.temporal === "idle") nodes.temporal = "active";
-    if (nodes.worker === "idle") nodes.worker = "active";
-    if (edges.ui_tmp === "idle") edges.ui_tmp = "active";
-    if (edges.tmp_wk === "idle") edges.tmp_wk = "active";
-  }
+  if (running) applyRunningBaseline(nodes, edges);
 
   return { nodes, edges, running };
 });

@@ -44,11 +44,6 @@ const running = computed(() => {
   return !events.value.some((e) => TERMINAL_EVENTS.has(e.type));
 });
 
-function randomSuffix(): string {
-  // 6-char base36 is plenty for a per-run order ID in a demo.
-  return Math.random().toString(36).slice(2, 8);
-}
-
 async function start() {
   finalError.value = null;
   starting.value = true;

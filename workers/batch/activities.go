@@ -15,11 +15,6 @@ import (
 // dependency injection (HTTP clients, DB handles, event publisher, etc.).
 type Activities struct {
 	Publisher events.Publisher
-	// FailureRate is the probability (0..1) that a stage fails on its first
-	// attempt so Temporal must retry it. Zero disables injection (default for
-	// tests). Applied per stage: with 4 stages a per-image failure probability
-	// of ~18.5% maps to FailureRate ≈ 0.05.
-	FailureRate float64
 }
 
 // ResizeImage is the first stage — simulated image resize.

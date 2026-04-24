@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { EventEnvelope } from "~~/shared/events";
-
-type DotColor = "blue" | "green" | "red" | "amber";
+import type { DotColor } from "~/types/event-stream";
 
 const props = defineProps<{
   events: EventEnvelope[];

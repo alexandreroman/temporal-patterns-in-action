@@ -18,15 +18,15 @@ const healthPort = 8080
 // resolves TEMPORAL_ADDRESS / NATS_URL from the environment, dials Temporal,
 // constructs a worker bound to taskQueue with the progress-event interceptor
 // wired for `pattern`, then invokes `register` so the caller can add its own
-// workflows and activities. An optional worker.Options value may be supplied
-// to override tuning fields (e.g. MaxConcurrentActivityExecutionSize); the
-// interceptor list is always set by this function. Returns only on failure
-// or interrupt.
+// workflows and activities. The `opts` value tunes the worker (e.g.
+// MaxConcurrentActivityExecutionSize); pass worker.Options{} for defaults.
+// The interceptor list is always set by this function. Returns only on
+// failure or interrupt.
 //
 // Callers register every activity under a kebab-case name (e.g. "call-llm")
 // so the event interceptor can emit progress.step.* events matching the step
 // IDs used by the frontend.
-func RunWorker(pattern, taskQueue string, register func(w worker.Worker, publisher Publisher), extra ...worker.Options) {
+func RunWorker(pattern, taskQueue string, register func(w worker.Worker, publisher Publisher), opts worker.Options) {
 	// The distroless runtime image has no shell, wget, or curl, so Compose
 	// healthchecks re-exec the worker binary with `-healthcheck` to probe the
 	// in-process health server.
@@ -58,10 +58,6 @@ func RunWorker(pattern, taskQueue string, register func(w worker.Worker, publish
 	}
 	defer c.Close()
 
-	opts := worker.Options{}
-	if len(extra) > 0 {
-		opts = extra[0]
-	}
 	opts.Interceptors = []interceptor.WorkerInterceptor{NewInterceptor(publisher, pattern)}
 
 	w := worker.New(c, taskQueue, opts)

@@ -18,5 +18,5 @@ func main() {
 		w.RegisterActivityWithOptions(a.ExecuteMCPTool, activity.RegisterOptions{Name: "execute-mcp-tool"})
 		w.RegisterActivityWithOptions(a.RecordApproval, activity.RegisterOptions{Name: "record-approval"})
 		w.RegisterActivityWithOptions(a.ReportPlan, activity.RegisterOptions{Name: "report-plan"})
-	})
+	}, worker.Options{})
 }

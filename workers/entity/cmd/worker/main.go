@@ -20,5 +20,5 @@ func main() {
 		w.RegisterActivityWithOptions(a.RemoveItem, activity.RegisterOptions{Name: "remove-item"})
 		w.RegisterActivityWithOptions(a.ProcessPayment, activity.RegisterOptions{Name: "process-payment"})
 		w.RegisterActivityWithOptions(a.SendConfirmation, activity.RegisterOptions{Name: "send-confirmation"})
-	})
+	}, worker.Options{})
 }

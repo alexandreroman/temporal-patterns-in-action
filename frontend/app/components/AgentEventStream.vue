@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import type { EventEnvelope } from "~~/shared/events";
-
-type DotColor = "blue" | "green" | "red" | "amber";
+import type { DotColor } from "~/types/event-stream";
 
 defineProps<{
   events: EventEnvelope[];

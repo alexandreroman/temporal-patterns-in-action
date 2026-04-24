@@ -24,10 +24,6 @@ const running = computed(() => {
   return !events.value.some((e) => TERMINAL_EVENTS.has(e.type));
 });
 
-function randomSuffix(): string {
-  return Math.random().toString(36).slice(2, 8);
-}
-
 async function start() {
   finalError.value = null;
   starting.value = true;

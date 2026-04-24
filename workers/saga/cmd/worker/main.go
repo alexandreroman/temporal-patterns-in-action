@@ -21,5 +21,5 @@ func main() {
 		w.RegisterActivityWithOptions(a.ChargeCustomer, activity.RegisterOptions{Name: "charge-customer"})
 		w.RegisterActivityWithOptions(a.RefundCustomer, activity.RegisterOptions{Name: "refund-customer"})
 		w.RegisterActivityWithOptions(a.SendConfirmation, activity.RegisterOptions{Name: "send-confirmation"})
-	})
+	}, worker.Options{})
 }

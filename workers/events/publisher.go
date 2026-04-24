@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/nats-io/nats.go"
@@ -53,12 +52,8 @@ func (p *NATSPublisher) Publish(_ context.Context, pattern string, env Envelope)
 	return nil
 }
 
-// NewPublisher dials NATS and returns a NATSPublisher. When url is empty it
-// returns a NopPublisher — useful for local dev without the broker.
+// NewPublisher dials NATS and returns a NATSPublisher.
 func NewPublisher(url string) (Publisher, error) {
-	if strings.TrimSpace(url) == "" {
-		return NopPublisher{}, nil
-	}
 	nc, err := nats.Connect(url,
 		nats.Name("temporal-patterns-worker"),
 		nats.Timeout(5*time.Second),

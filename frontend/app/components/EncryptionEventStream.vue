@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import type { EventEnvelope } from "~~/shared/events";
+import type { DotColor } from "~/types/event-stream";
 
 defineProps<{
   events: EventEnvelope[];
 }>();
-
-type DotColor = "blue" | "green" | "red" | "amber";
 
 const STEP_LABELS: Record<string, string> = {
   "validate-order": "Validate",

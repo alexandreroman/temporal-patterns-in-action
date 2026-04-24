@@ -1,21 +1,15 @@
 <script setup lang="ts">
 import type { EventEnvelope } from "~~/shared/events";
+import type { DotColor } from "~/types/event-stream";
+import { BATCH_SERVICE_LABEL } from "~/utils/batch-services";
 
 defineProps<{
   events: EventEnvelope[];
 }>();
 
-type DotColor = "blue" | "green" | "red" | "amber";
-
 function serviceLabel(service: unknown): string {
   if (typeof service !== "string") return "";
-  const map: Record<string, string> = {
-    resize: "Resize",
-    thumbnail: "Thumbnail",
-    cdn: "CDN",
-    metadata: "Metadata",
-  };
-  return map[service] ?? service;
+  return BATCH_SERVICE_LABEL[service] ?? service;
 }
 
 function eventLabel(env: EventEnvelope): string {

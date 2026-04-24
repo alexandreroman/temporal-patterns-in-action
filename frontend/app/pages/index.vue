@@ -1,7 +1,24 @@
 <script setup lang="ts">
+import type { Component } from "vue";
+import IconSaga from "~/components/IconSaga.vue";
+import IconBatch from "~/components/IconBatch.vue";
+import IconEncryption from "~/components/IconEncryption.vue";
+import IconMultiAgent from "~/components/IconMultiAgent.vue";
+import IconEntity from "~/components/IconEntity.vue";
+import IconAgent from "~/components/IconAgent.vue";
+
 useSeoMeta({ title: "Patterns" });
 
 type PatternIcon = "saga" | "batch" | "encryption" | "agent" | "multi-agent" | "entity";
+
+const ICONS: Record<PatternIcon, Component> = {
+  saga: IconSaga,
+  batch: IconBatch,
+  encryption: IconEncryption,
+  "multi-agent": IconMultiAgent,
+  entity: IconEntity,
+  agent: IconAgent,
+};
 
 const patterns: {
   slug: string;
@@ -75,12 +92,7 @@ const patterns: {
             <span
               class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-800 bg-slate-950 text-slate-300"
             >
-              <IconSaga v-if="pattern.icon === 'saga'" class="h-5 w-5" />
-              <IconBatch v-else-if="pattern.icon === 'batch'" class="h-5 w-5" />
-              <IconEncryption v-else-if="pattern.icon === 'encryption'" class="h-5 w-5" />
-              <IconMultiAgent v-else-if="pattern.icon === 'multi-agent'" class="h-5 w-5" />
-              <IconEntity v-else-if="pattern.icon === 'entity'" class="h-5 w-5" />
-              <IconAgent v-else class="h-5 w-5" />
+              <component :is="ICONS[pattern.icon]" class="h-5 w-5" />
             </span>
             <h2 class="text-lg font-medium text-slate-100">{{ pattern.title }}</h2>
           </div>

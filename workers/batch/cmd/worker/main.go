@@ -19,9 +19,7 @@ func main() {
 		w.RegisterWorkflow(batch.BatchProcessingWorkflow)
 		w.RegisterWorkflow(batch.ProcessImageWorkflow)
 
-		// FailureRate is tuned so the per-image failure probability
-		// (1-(1-r)^4) stays close to ~18.5%: 1-(1-0.05)^4.
-		a := &batch.Activities{Publisher: pub, FailureRate: 0.05}
+		a := &batch.Activities{Publisher: pub}
 		w.RegisterActivityWithOptions(a.ResizeImage, activity.RegisterOptions{Name: "resize-image"})
 		w.RegisterActivityWithOptions(a.CreateThumbnail, activity.RegisterOptions{Name: "create-thumbnail"})
 		w.RegisterActivityWithOptions(a.UploadToCDN, activity.RegisterOptions{Name: "upload-cdn"})

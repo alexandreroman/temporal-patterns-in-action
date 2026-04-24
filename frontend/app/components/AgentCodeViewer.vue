@@ -248,7 +248,6 @@ const highlight = computed<[number, number] | null>(() => {
       case "agent.plan.ready":
         return resolve("finalAnswer");
       case "agent.approval.requested":
-        return resolve("approval");
       case "agent.approval.received":
         return resolve("approval");
       case "agent.tool.started":

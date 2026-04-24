@@ -48,11 +48,6 @@ watch(awaitingApproval, (now) => {
   if (!now) approving.value = false;
 });
 
-function randomSuffix(): string {
-  // 6-char base36 is plenty for a per-run agent ID in a demo.
-  return Math.random().toString(36).slice(2, 8);
-}
-
 async function start() {
   finalError.value = null;
   starting.value = true;
@@ -93,7 +88,6 @@ async function respond(approved: boolean) {
 }
 
 const statePanelRef = ref<{ $el?: HTMLElement } | null>(null);
-const convoWrapperRef = ref<HTMLElement | null>(null);
 const panelHeight = ref<number | null>(null);
 
 const convoHeightStyle = computed(() =>
@@ -213,7 +207,7 @@ onBeforeUnmount(() => {
 
     <!-- Conversation + state panel -->
     <div class="mt-4 flex flex-col gap-3 lg:flex-row lg:items-start">
-      <div ref="convoWrapperRef" class="min-w-0 flex-1" :style="convoHeightStyle">
+      <div class="min-w-0 flex-1" :style="convoHeightStyle">
         <AgentConversation :events="events" :pending-prompt="running ? PROMPT : null" />
       </div>
       <AgentStatePanel ref="statePanelRef" :events="events" />

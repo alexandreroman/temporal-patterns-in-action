@@ -21,5 +21,5 @@ func main() {
 		w.RegisterActivityWithOptions(a.WebSearch, activity.RegisterOptions{Name: "web-search"})
 		w.RegisterActivityWithOptions(a.RecordChildOutcome, activity.RegisterOptions{Name: "record-child-outcome"})
 		w.RegisterActivityWithOptions(a.SynthesizeReport, activity.RegisterOptions{Name: "synthesize-report"})
-	})
+	}, worker.Options{})
 }

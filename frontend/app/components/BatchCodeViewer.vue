@@ -227,7 +227,7 @@ const SOURCES: Record<CodeLang, BatchSource> = {
   },
 };
 
-function latestRelevant(events: EventEnvelope[]): { type: string; attempt: number } | null {
+function latestRelevant(events: EventEnvelope[]): string | null {
   for (let i = events.length - 1; i >= 0; i--) {
     const env = events[i];
     if (!env) continue;
@@ -239,9 +239,7 @@ function latestRelevant(events: EventEnvelope[]): { type: string; attempt: numbe
       env.type === "batch.item.completed" ||
       env.type === "batch.item.attempt_failed"
     ) {
-      const data = env.data as Record<string, unknown>;
-      const attempt = typeof data.attempt === "number" ? data.attempt : 1;
-      return { type: env.type, attempt };
+      return env.type;
     }
   }
   return null;
@@ -253,10 +251,11 @@ const currentHighlight = computed<[number, number] | null>(() => {
   if (!latest) return null;
 
   // Terminal: clear the highlight like saga does.
-  if (latest.type === "progress.workflow.completed") return null;
-  if (latest.type === "progress.workflow.failed") return null;
+  if (latest === "progress.workflow.completed" || latest === "progress.workflow.failed") {
+    return null;
+  }
 
-  if (latest.type === "batch.summary.reported") {
+  if (latest === "batch.summary.reported") {
     return src.stepLines.summary ?? null;
   }
   // batch.item.started / completed / attempt_failed → dispatch phase.

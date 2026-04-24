@@ -15,8 +15,6 @@ const props = defineProps<{
   scenario: "clear" | "encrypted";
 }>();
 
-const isEncrypted = computed(() => props.scenario === "encrypted");
-
 const arch = computed<ArchState>(() => {
   const nodes = initialNodes();
   const edges = initialEdges();
@@ -70,26 +68,13 @@ const arch = computed<ArchState>(() => {
         break;
 
       case "progress.workflow.failed":
-        resetServices(nodes, edges);
+        applyWorkflowFailed(nodes, edges);
         running = false;
-        nodes.ui = "error";
-        nodes.temporal = "error";
-        nodes.worker = "error";
-        edges.ui_tmp = "error";
-        edges.tmp_wk = "error";
         break;
     }
   }
 
-  // Light the UI→Temporal→Worker strip while in flight; no workflow.started
-  // event arrives to do it explicitly.
-  if (running) {
-    if (nodes.ui === "idle") nodes.ui = "active";
-    if (nodes.temporal === "idle") nodes.temporal = "active";
-    if (nodes.worker === "idle") nodes.worker = "active";
-    if (edges.ui_tmp === "idle") edges.ui_tmp = "active";
-    if (edges.tmp_wk === "idle") edges.tmp_wk = "active";
-  }
+  if (running) applyRunningBaseline(nodes, edges);
 
   return { nodes, edges, running };
 });
@@ -99,8 +84,8 @@ const arch = computed<ArchState>(() => {
   <ArchitectureDiagram
     :arch="arch"
     :service-labels="['Validator', 'Payment', 'Shipping', 'Email']"
-    :worker-label="isEncrypted ? 'Codec-wrapped' : 'No codec'"
-    :codec="isEncrypted ? 'AES-256-GCM' : undefined"
+    :worker-label="scenario === 'encrypted' ? 'Codec-wrapped' : 'No codec'"
+    :codec="scenario === 'encrypted' ? 'AES-256-GCM' : undefined"
     label="Encryption architecture diagram"
   />
 </template>

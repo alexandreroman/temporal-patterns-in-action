@@ -66,7 +66,7 @@ func (a *Activities) AnnounceIncidentInjected(ctx context.Context, in AnnounceIn
 
 // ResolveTicket simulates an agent processing a ticket. It acquires a slot
 // from the pool, publishes helpdesk.ticket.assigned with the agent id, sleeps
-// for a random 1.0-1.5s duration to mimic resolution time, then publishes
+// for a random 2.0-3.0s duration to mimic resolution time, then publishes
 // helpdesk.ticket.resolved.
 func (a *Activities) ResolveTicket(ctx context.Context, t Ticket) error {
 	pool := a.slotPoolHandle()
@@ -82,7 +82,7 @@ func (a *Activities) ResolveTicket(ctx context.Context, t Ticket) error {
 		"fairnessWeight": TenantWeight[t.Tenant],
 	})
 
-	dur := time.Duration(1000+rand.IntN(500)) * time.Millisecond
+	dur := time.Duration(2000+rand.IntN(1000)) * time.Millisecond
 	time.Sleep(dur)
 
 	events.PublishBusiness(ctx, a.Publisher, Pattern, TypeTicketResolved, map[string]any{

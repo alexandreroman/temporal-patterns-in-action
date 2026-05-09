@@ -62,3 +62,8 @@ export const ENTITY_SIGNAL_UPDATE_QTY = "updateQty";
 export const ENTITY_SIGNAL_REMOVE_ITEM = "removeItem";
 export const ENTITY_SIGNAL_CHECKOUT = "checkout";
 export const ENTITY_QUERY_GET_CART = "getCart";
+
+export const PRIORITY_FAIRNESS_TASK_QUEUE = "patterns-priority-fairness";
+export const PRIORITY_FAIRNESS_WORKFLOW_TYPE = "HelpdeskRunWorkflow";
+export const PRIORITY_FAIRNESS_SIGNAL_DUMP = "acme-dump-80";
+export const PRIORITY_FAIRNESS_SIGNAL_INCIDENT = "inject-p0-incident";

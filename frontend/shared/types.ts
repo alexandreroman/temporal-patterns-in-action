@@ -136,3 +136,20 @@ export interface EntityQueryResponse {
   workflowId: string;
   progress: EntityCartProgress;
 }
+
+export interface PriorityFairnessStartRequest {
+  workflowId: string;
+  fairnessOn: boolean;
+}
+
+export interface PriorityFairnessStartResponse {
+  workflowId: string;
+}
+
+export interface PriorityFairnessSignalRequest {
+  workflowId: string;
+}
+
+export interface PriorityFairnessSignalResponse {
+  workflowId: string;
+}

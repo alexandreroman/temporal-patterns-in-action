@@ -4,9 +4,8 @@ import { formatLogTime, priorityLevel, tenantById, type LogEntry } from "~/utils
 
 /**
  * Resolution log — newest first, monospace. Each row shows the relative
- * timestamp (MM:SS.d), the priority label chip, the ticket as a
- * priority-colored chip (matching the queue chips), a tenant-colored pill,
- * and the agent slot that resolved it.
+ * timestamp (MM:SS.d), the ticket as a priority-colored chip (matching the
+ * queue chips), a tenant-colored pill, and the agent slot that resolved it.
  */
 
 const props = defineProps<{
@@ -17,7 +16,6 @@ const props = defineProps<{
 interface Row {
   key: string;
   time: string;
-  priorityLabel: string;
   priorityBg: string;
   priorityFg: string;
   tenantName: string;
@@ -34,7 +32,6 @@ const rows = computed<Row[]>(() =>
       // Use index plus ticket so identical tickets across resets keep distinct keys.
       key: `${idx}-${entry.ticket}`,
       time: formatLogTime(entry.time - props.startTime),
-      priorityLabel: lvl.label,
       priorityBg: lvl.bg,
       priorityFg: lvl.fg,
       tenantName: tenant.name,
@@ -71,12 +68,6 @@ const rows = computed<Row[]>(() =>
       <ul v-else class="flex flex-col gap-1 font-mono text-[11px]">
         <li v-for="row in rows" :key="row.key" class="flex items-center gap-2">
           <span class="tabular-nums text-slate-500 dark:text-slate-400">{{ row.time }}</span>
-          <span
-            class="rounded-md px-1.5 py-0.5 tabular-nums"
-            :style="{ backgroundColor: row.priorityBg, color: row.priorityFg }"
-          >
-            {{ row.priorityLabel }}
-          </span>
           <span
             class="rounded-md px-1.5 py-0.5 tabular-nums"
             :style="{ backgroundColor: row.priorityBg, color: row.priorityFg }"

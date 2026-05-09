@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from "vue";
+import { computed, onBeforeUnmount, ref, watch } from "vue";
 import {
   AGENT_SLOTS,
   HISTORY_LEN,
@@ -22,6 +22,7 @@ const WINDOW_MS = HISTORY_LEN * TICK_MS;
 const props = defineProps<{
   spans: TicketSpan[];
   tenants: readonly Tenant[];
+  running: boolean;
 }>();
 
 interface Block {
@@ -44,9 +45,19 @@ function tick(): void {
   now.value = Date.now();
   raf = requestAnimationFrame(tick);
 }
-onMounted(() => {
-  raf = requestAnimationFrame(tick);
-});
+watch(
+  () => props.running,
+  (isRunning) => {
+    if (isRunning) {
+      now.value = Date.now();
+      raf = requestAnimationFrame(tick);
+    } else {
+      cancelAnimationFrame(raf);
+      raf = 0;
+    }
+  },
+  { immediate: true },
+);
 onBeforeUnmount(() => cancelAnimationFrame(raf));
 
 const lanes = computed<Lane[]>(() => {

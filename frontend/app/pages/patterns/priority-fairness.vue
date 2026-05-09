@@ -142,7 +142,7 @@ async function injectIncident(): Promise<void> {
 
     <!-- Resolution timeline -->
     <div class="mt-3">
-      <PriorityFairnessChart :spans="state.ticketHistory" :tenants="TENANTS" />
+      <PriorityFairnessChart :spans="state.ticketHistory" :tenants="TENANTS" :running="running" />
     </div>
 
     <!-- Two-column body -->

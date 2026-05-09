@@ -43,7 +43,6 @@ export const NUM_AGENTS = 4;
 export const TICK_MS = 250;
 export const HISTORY_LEN = 80; // 20 s × 4 ticks/s
 export const LOG_CAP = 80;
-export const TENANT_QUEUE_VISIBLE = 16;
 export const TICKET_DUR_MIN = 4; // ticks
 export const TICKET_DUR_MAX = 6;
 

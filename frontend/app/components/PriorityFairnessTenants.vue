@@ -1,17 +1,16 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
 import {
   priorityLevel,
-  TENANT_QUEUE_VISIBLE,
   type SimState,
   type Tenant,
 } from "~/utils/priority-fairness";
 
 /**
  * Three tenant lanes — each panel has a colored left border, header summary,
- * and a flex-wrap body of priority-tinted ticket chips. The body caps at
- * TENANT_QUEUE_VISIBLE chips and shows a `+N` overflow tile when the queue
- * is deeper.
+ * and a flex-wrap body of priority-tinted ticket chips. The body clips at
+ * two rows; if the queue cannot fit, a `+N` chip is rendered inline as the
+ * last visible chip with the count of trailing tickets that didn't make it in.
  */
 
 const props = defineProps<{
@@ -21,8 +20,7 @@ const props = defineProps<{
 
 interface Lane {
   tenant: Tenant;
-  visible: { id: string; bg: string; fg: string }[];
-  overflow: number;
+  chips: { id: string; bg: string; fg: string }[];
   queued: number;
   resolved: number;
 }
@@ -30,23 +28,88 @@ interface Lane {
 const lanes = computed<Lane[]>(() =>
   props.tenants.map((tenant) => {
     const queue = props.state.queues[tenant.id] ?? [];
-    const visible = queue.slice(0, TENANT_QUEUE_VISIBLE).map((t) => {
+    const chips = queue.map((t) => {
       const lvl = priorityLevel(t.priorityKey);
       return { id: t.id, bg: lvl.bg, fg: lvl.fg };
     });
     return {
       tenant,
-      visible,
-      overflow: Math.max(0, queue.length - TENANT_QUEUE_VISIBLE),
+      chips,
       queued: queue.length,
       resolved: props.state.resolved[tenant.id] ?? 0,
     };
   }),
 );
+
+const root = ref<HTMLElement | null>(null);
+// Per-lane visible-chip cap. `undefined` means "show all chips, no `+N`";
+// any number ≤ chips.length triggers inline `+N` for the remainder.
+const cutoffs = ref<Record<string, number | undefined>>({});
+
+function visibleChips(lane: Lane) {
+  const c = cutoffs.value[lane.tenant.id];
+  return c === undefined ? lane.chips : lane.chips.slice(0, c);
+}
+
+function overflowOf(lane: Lane) {
+  const c = cutoffs.value[lane.tenant.id];
+  return c === undefined ? 0 : Math.max(0, lane.chips.length - c);
+}
+
+function adjustLane(laneId: string) {
+  const el = root.value?.querySelector<HTMLElement>(
+    `[data-wrap="${laneId}"]`,
+  );
+  if (!el) return;
+  if (el.scrollHeight <= el.clientHeight + 1) return;
+  const children = Array.from(el.children) as HTMLElement[];
+  const limit = el.clientHeight;
+  let firstHidden = children.length;
+  for (let i = 0; i < children.length; i++) {
+    const c = children[i];
+    if (c.offsetTop + c.offsetHeight > limit + 1) {
+      firstHidden = i;
+      break;
+    }
+  }
+  // Drop one extra slot for the inline `+N` chip itself.
+  cutoffs.value[laneId] = Math.max(0, firstHidden - 1);
+}
+
+let measureRaf = 0;
+function scheduleMeasure() {
+  if (measureRaf) return;
+  measureRaf = requestAnimationFrame(() => {
+    measureRaf = 0;
+    for (const lane of lanes.value) adjustLane(lane.tenant.id);
+  });
+}
+
+// On resize, the cached cutoff is no longer trustworthy — drop it so the
+// next render shows every chip and a fresh measurement can settle.
+function scheduleReset() {
+  for (const lane of lanes.value) cutoffs.value[lane.tenant.id] = undefined;
+  nextTick(scheduleMeasure);
+}
+
+let ro: ResizeObserver | null = null;
+
+onMounted(() => {
+  scheduleReset();
+  if (!root.value) return;
+  ro = new ResizeObserver(scheduleReset);
+  for (const el of root.value.querySelectorAll<HTMLElement>("[data-wrap]")) {
+    ro.observe(el);
+  }
+});
+
+onUnmounted(() => ro?.disconnect());
+
+watch(lanes, () => scheduleMeasure(), { deep: true });
 </script>
 
 <template>
-  <div class="flex flex-col gap-2">
+  <div ref="root" class="flex flex-col gap-2">
     <div
       v-for="lane in lanes"
       :key="lane.tenant.id"
@@ -67,9 +130,12 @@ const lanes = computed<Lane[]>(() =>
         </div>
       </div>
 
-      <div class="mt-2 flex min-h-[48px] flex-wrap content-start items-start gap-1">
+      <div
+        :data-wrap="lane.tenant.id"
+        class="relative mt-2 flex h-[48px] flex-wrap content-start items-start gap-1 overflow-hidden"
+      >
         <span
-          v-for="t in lane.visible"
+          v-for="t in visibleChips(lane)"
           :key="t.id"
           class="rounded-md px-1.5 py-0.5 font-mono text-[11px] tabular-nums"
           :style="{ backgroundColor: t.bg, color: t.fg }"
@@ -77,13 +143,13 @@ const lanes = computed<Lane[]>(() =>
           {{ t.id }}
         </span>
         <span
-          v-if="lane.overflow > 0"
-          class="rounded-md border border-slate-300 bg-slate-100 px-1.5 py-0.5 font-mono text-[11px] tabular-nums text-slate-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300"
+          v-if="overflowOf(lane) > 0"
+          class="inline-flex w-[39px] justify-center rounded-md bg-slate-200 px-1.5 py-0.5 font-mono text-[11px] tabular-nums text-slate-600 dark:bg-slate-700 dark:text-slate-300"
         >
-          +{{ lane.overflow }}
+          +{{ overflowOf(lane) }}
         </span>
         <span
-          v-if="lane.visible.length === 0 && lane.overflow === 0"
+          v-if="lane.chips.length === 0"
           class="font-mono text-[11px] text-slate-400 dark:text-slate-500"
         >
           (empty)

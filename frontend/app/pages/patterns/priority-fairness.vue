@@ -1,285 +1,100 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, reactive, ref } from "vue";
+import { computed, reactive, ref } from "vue";
 import type { EventEnvelope } from "~~/shared/events";
-import {
-  AGENT_SLOTS,
-  buildEvent,
-  HISTORY_LEN,
-  LOG_CAP,
-  NUM_AGENTS,
-  PRIORITIES,
-  pickRandomTenant,
-  randomDuration,
-  resetTicketIds,
-  seedQueue,
-  TENANTS,
-  TICK_MS,
-  nextTicketId,
-  tenantById,
-  type Agent,
-  type LogEntry,
-  type PriorityKey,
-  type SimState,
-  type TenantId,
-  type Ticket,
-} from "~/utils/priority-fairness";
+import type {
+  PriorityFairnessSignalRequest,
+  PriorityFairnessSignalResponse,
+  PriorityFairnessStartRequest,
+  PriorityFairnessStartResponse,
+} from "~~/shared/types";
+import { PRIORITIES, TENANTS } from "~/utils/priority-fairness";
 
 useSeoMeta({ title: "Priority and Fairness" });
 
-/**
- * Client-side simulation of a multi-tenant helpdesk. The page mirrors the
- * other pattern pages: pick a scenario, hit Run, and a 250 ms tick loop drains
- * the seeded queues using priority + weighted fairness selection. The tick
- * loop also synthesizes EventEnvelope events so the shared CodeViewer +
- * EventStream + StatusBar shells light up the same way they do for saga/batch.
- *
- * No backend yet: a Temporal worker pool will replace the loop in a follow-up
- * commit; the UI semantics already match Temporal's `Priority` struct.
- */
-
 type Scenario = "fairness-on" | "fairness-off";
 
-interface SeedSpec {
-  count: number;
-  mix: readonly number[];
-}
-
-const INITIAL_SEED: Record<TenantId, SeedSpec> = {
-  acme: { count: 35, mix: [5, 20, 55, 20] },
-  brick: { count: 12, mix: [8, 25, 50, 17] },
-  solo: { count: 5, mix: [10, 30, 50, 10] },
-};
-
-const ACME_DUMP_MIX = [2, 10, 78, 10] as const;
-const EVENTS_CAP = 200;
 const TERMINAL_TYPES = new Set(["progress.workflow.completed", "progress.workflow.failed"]);
-
-function freshAgents(): Agent[] {
-  return AGENT_SLOTS.slice(0, NUM_AGENTS).map((slot) => ({
-    slot,
-    ticket: null,
-    tenantId: null,
-    progress: 0,
-    duration: 0,
-  }));
-}
-
-function emptyQueues(): Record<TenantId, Ticket[]> {
-  return { acme: [], brick: [], solo: [] };
-}
-
-function freshState(fairnessOn: boolean): SimState {
-  return {
-    queues: emptyQueues(),
-    resolved: { acme: 0, brick: 0, solo: 0 },
-    inflight: { acme: 0, brick: 0, solo: 0 },
-    agents: freshAgents(),
-    log: [],
-    history: [],
-    startTime: Date.now(),
-    fairnessOn,
-  };
-}
 
 const form = reactive({
   scenario: "fairness-off" as Scenario,
 });
 
-const state = reactive<SimState>(freshState(true));
-const events = ref<EventEnvelope[]>([]);
 const workflowId = ref<string | null>(null);
+const starting = ref(false);
+const finalError = ref<string | null>(null);
 
-let timer: ReturnType<typeof setInterval> | null = null;
+const { events, waitForOpen } = usePatternStream("priority-fairness", workflowId);
+const state = usePriorityFairnessState(events);
 
 const running = computed(() => {
-  if (workflowId.value === null) return false;
+  if (starting.value) return true;
+  if (!workflowId.value) return false;
   return !events.value.some((e) => TERMINAL_TYPES.has(e.type));
 });
 
-function pushEvent(type: string, data: Record<string, unknown>): void {
-  if (!workflowId.value) return;
-  const env = buildEvent(workflowId.value, type, data);
-  events.value.push(env);
-  if (events.value.length > EVENTS_CAP) events.value.shift();
-}
-
-/**
- * Pick the next ticket for an idle agent. Returns the chosen tenantId or
- * null if every queue is empty.
- *
- * Algorithm:
- *  1. Find the lowest priorityKey across non-empty queue heads.
- *  2. Filter to tenants whose head matches that priority.
- *  3. With fairness off (or only one candidate): pick the first in TENANTS order.
- *  4. With fairness on: minimise (resolved + inflight) / weight.
- *     Ties broken by TENANTS order.
- */
-function pickTenant(): TenantId | null {
-  let bestPriority: PriorityKey | null = null;
-  for (const tenant of TENANTS) {
-    const head = state.queues[tenant.id]?.[0];
-    if (!head) continue;
-    if (bestPriority === null || head.priorityKey < bestPriority) {
-      bestPriority = head.priorityKey;
-    }
-  }
-  if (bestPriority === null) return null;
-
-  const candidates: TenantId[] = [];
-  for (const tenant of TENANTS) {
-    const head = state.queues[tenant.id]?.[0];
-    if (head && head.priorityKey === bestPriority) candidates.push(tenant.id);
-  }
-  if (candidates.length === 0) return null;
-  if (candidates.length === 1 || !state.fairnessOn) return candidates[0] ?? null;
-
-  let best: TenantId = candidates[0]!;
-  let bestScore = scoreFor(best);
-  for (let i = 1; i < candidates.length; i++) {
-    const id = candidates[i]!;
-    const score = scoreFor(id);
-    if (score < bestScore) {
-      best = id;
-      bestScore = score;
-    }
-  }
-  return best;
-}
-
-function scoreFor(id: TenantId): number {
-  const tenant = TENANTS.find((t) => t.id === id);
-  const weight = tenant?.weight ?? 1;
-  return (state.resolved[id] + state.inflight[id]) / weight;
-}
-
-function assignIdleAgents(): void {
-  for (const agent of state.agents) {
-    if (agent.ticket) continue;
-    const tenantId = pickTenant();
-    if (!tenantId) return;
-    const queue = state.queues[tenantId];
-    const ticket = queue.shift();
-    if (!ticket) continue;
-    agent.ticket = ticket;
-    agent.tenantId = tenantId;
-    agent.progress = 0;
-    agent.duration = randomDuration();
-    state.inflight[tenantId] += 1;
-    pushEvent("helpdesk.ticket.assigned", {
-      tenantId,
-      priorityKey: ticket.priorityKey,
-      ticketId: ticket.id,
-      agent: agent.slot,
-      fairnessKey: tenantId,
-      fairnessWeight: tenantById(tenantId).weight,
-      queueDepth: queue.length,
-    });
-  }
-}
-
-function tick(): void {
-  const delta: Record<TenantId, number> = { acme: 0, brick: 0, solo: 0 };
-
-  for (const agent of state.agents) {
-    if (!agent.ticket || !agent.tenantId) continue;
-    agent.progress += 1;
-    if (agent.progress >= agent.duration) {
-      const tenantId = agent.tenantId;
-      const ticketId = agent.ticket.id;
-      const priorityKey = agent.ticket.priorityKey;
-      state.resolved[tenantId] += 1;
-      state.inflight[tenantId] = Math.max(0, state.inflight[tenantId] - 1);
-      delta[tenantId] += 1;
-      const entry: LogEntry = {
-        time: Date.now(),
-        ticket: ticketId,
-        tenantId,
-        agent: agent.slot,
-        priorityKey,
-      };
-      state.log.unshift(entry);
-      pushEvent("helpdesk.ticket.resolved", {
-        tenantId,
-        priorityKey,
-        ticketId,
-        agent: agent.slot,
-      });
-      agent.ticket = null;
-      agent.tenantId = null;
-      agent.progress = 0;
-      agent.duration = 0;
-    }
-  }
-
-  if (state.log.length > LOG_CAP) state.log.length = LOG_CAP;
-
-  assignIdleAgents();
-
-  state.history.push({ acme: delta.acme, brick: delta.brick, solo: delta.solo });
-  if (state.history.length > HISTORY_LEN) state.history.shift();
-
-  if (allDrained()) {
-    pushEvent("progress.workflow.completed", {});
-    stopTimer();
-  }
-}
-
-function allDrained(): boolean {
-  for (const tenant of TENANTS) {
-    if ((state.queues[tenant.id]?.length ?? 0) > 0) return false;
-  }
-  return state.agents.every((a) => a.ticket === null);
-}
-
-function stopTimer(): void {
-  if (timer !== null) {
-    clearInterval(timer);
-    timer = null;
-  }
-}
-
-function run(): void {
-  stopTimer();
-  resetTicketIds();
-  const fairnessOn = form.scenario === "fairness-on";
-  const next = freshState(fairnessOn);
-  next.queues = {
-    acme: seedQueue("acme", INITIAL_SEED.acme.count, INITIAL_SEED.acme.mix),
-    brick: seedQueue("brick", INITIAL_SEED.brick.count, INITIAL_SEED.brick.mix),
-    solo: seedQueue("solo", INITIAL_SEED.solo.count, INITIAL_SEED.solo.mix),
+function pushSyntheticStarted(id: string, fairnessOn: boolean): void {
+  // The shared StatusBar / EventStream / CodeViewer shells read fairnessOn
+  // from progress.workflow.started — synthesise it locally so they keep
+  // lighting up the moment the run begins, before any worker event arrives.
+  const env: EventEnvelope = {
+    specversion: "1.0",
+    id: `ui-started-${id}`,
+    source: "ui",
+    type: "progress.workflow.started",
+    workflowId: id,
+    runId: id,
+    time: new Date().toISOString(),
+    data: { fairnessOn },
   };
-  state.queues = next.queues;
-  state.resolved = next.resolved;
-  state.inflight = next.inflight;
-  state.agents = next.agents;
-  state.log = next.log;
-  state.history = next.history;
-  state.startTime = next.startTime;
-  state.fairnessOn = next.fairnessOn;
-
-  events.value.length = 0;
-  workflowId.value = `priority-fairness-${randomSuffix()}`;
-
-  pushEvent("progress.workflow.started", { fairnessOn });
-  timer = setInterval(tick, TICK_MS);
+  events.value = [...events.value, env];
 }
 
-function dumpAcme(): void {
-  if (!running.value) return;
-  const tickets = seedQueue("acme", 80, ACME_DUMP_MIX);
-  state.queues.acme.push(...tickets);
-  pushEvent("helpdesk.dump.executed", { tenantId: "acme", count: tickets.length });
+async function start(): Promise<void> {
+  finalError.value = null;
+  starting.value = true;
+  const fairnessOn = form.scenario === "fairness-on";
+  const id = `priority-fairness-${randomSuffix()}`;
+  workflowId.value = id;
+  try {
+    await waitForOpen();
+    pushSyntheticStarted(id, fairnessOn);
+    await $fetch<PriorityFairnessStartResponse>("/api/priority-fairness/start", {
+      method: "POST",
+      body: { workflowId: id, fairnessOn } satisfies PriorityFairnessStartRequest,
+    });
+  } catch (error) {
+    finalError.value = error instanceof Error ? error.message : String(error);
+    workflowId.value = null;
+  } finally {
+    starting.value = false;
+  }
 }
 
-function injectIncident(): void {
-  if (!running.value) return;
-  const tenantId = pickRandomTenant();
-  const ticketId = nextTicketId();
-  state.queues[tenantId].unshift({ id: ticketId, tenantId, priorityKey: 1 });
-  pushEvent("helpdesk.incident.injected", { tenantId, priorityKey: 1, ticketId });
+async function dumpAcme(): Promise<void> {
+  const id = workflowId.value;
+  if (!id || !running.value) return;
+  try {
+    await $fetch<PriorityFairnessSignalResponse>("/api/priority-fairness/dump", {
+      method: "POST",
+      body: { workflowId: id } satisfies PriorityFairnessSignalRequest,
+    });
+  } catch (error) {
+    finalError.value = error instanceof Error ? error.message : String(error);
+  }
 }
 
-onBeforeUnmount(stopTimer);
+async function injectIncident(): Promise<void> {
+  const id = workflowId.value;
+  if (!id || !running.value) return;
+  try {
+    await $fetch<PriorityFairnessSignalResponse>("/api/priority-fairness/incident", {
+      method: "POST",
+      body: { workflowId: id } satisfies PriorityFairnessSignalRequest,
+    });
+  } catch (error) {
+    finalError.value = error instanceof Error ? error.message : String(error);
+  }
+}
 </script>
 
 <template>
@@ -332,9 +147,9 @@ onBeforeUnmount(stopTimer);
           type="button"
           :disabled="running"
           class="cursor-pointer rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
-          @click="run"
+          @click="start"
         >
-          {{ running ? "Running…" : "Run scenario" }}
+          {{ starting ? "Starting…" : running ? "Running…" : "Run scenario" }}
         </button>
       </div>
     </div>
@@ -400,5 +215,9 @@ onBeforeUnmount(stopTimer);
         <PriorityFairnessEventStream :events="events" />
       </div>
     </div>
+
+    <p v-if="finalError" class="mt-4 text-sm text-rose-400">
+      {{ finalError }}
+    </p>
   </section>
 </template>

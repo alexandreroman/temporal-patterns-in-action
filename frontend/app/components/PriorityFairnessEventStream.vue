@@ -44,6 +44,17 @@ function eventLabel(env: EventEnvelope): string {
     }
     case "helpdesk.incident.injected":
       return `P0 incident injected for ${tenant} (${ticketId})`;
+    case "helpdesk.run.seeded": {
+      const tenants = data.tenants as Record<string, unknown[]> | undefined;
+      const total =
+        tenants !== undefined
+          ? Object.values(tenants).reduce(
+              (sum, list) => sum + (Array.isArray(list) ? list.length : 0),
+              0,
+            )
+          : 0;
+      return `Run seeded — ${total} tickets queued`;
+    }
     default:
       return env.type;
   }
@@ -62,6 +73,8 @@ function dotColor(env: EventEnvelope): DotColor {
     case "helpdesk.incident.injected":
     case "progress.workflow.failed":
       return "red";
+    case "helpdesk.run.seeded":
+      return "blue";
     default:
       return "blue";
   }

@@ -156,14 +156,15 @@ raw event list cannot.
 
 ## Patterns
 
-| Pattern                      | Package               |
-| ---------------------------- | --------------------- |
-| Saga                         | `workers/saga`        |
-| Entity Workflow              | `workers/entity`      |
-| Long-running batch           | `workers/batch`       |
-| Payload Encryption           | `workers/encryption`  |
-| Durable AI Agent             | `workers/agent`       |
-| Multi-agent (deep research)  | `workers/multi-agent` |
+| Pattern                      | Package                     |
+| ---------------------------- | --------------------------- |
+| Saga                         | `workers/saga`              |
+| Entity Workflow              | `workers/entity`            |
+| Long-running batch           | `workers/batch`             |
+| Payload Encryption           | `workers/encryption`        |
+| Durable AI Agent             | `workers/agent`             |
+| Multi-agent (deep research)  | `workers/multi-agent`       |
+| Priority and Fairness        | `workers/priority-fairness` |
 
 ## License
 

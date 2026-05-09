@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"go.temporal.io/sdk/client"
@@ -12,7 +13,23 @@ import (
 	"go.temporal.io/sdk/worker"
 )
 
-const healthPort = 8080
+// healthPort reads HEALTH_PORT from the environment. Zero (the default
+// when the variable is unset or invalid) disables the health server, so
+// running multiple workers on a shared host (e.g. `make dev`) doesn't
+// cause `:8080` collisions. Compose sets HEALTH_PORT=8080 per worker
+// service to enable the in-container probe.
+func healthPort() int {
+	v := os.Getenv("HEALTH_PORT")
+	if v == "" {
+		return 0
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil || n < 0 || n > 65535 {
+		log.Printf("invalid HEALTH_PORT=%q, disabling health server", v)
+		return 0
+	}
+	return n
+}
 
 // RunWorker wires the boilerplate shared by every pattern's cmd/worker/main.go:
 // resolves TEMPORAL_ADDRESS / NATS_URL from the environment, dials Temporal,
@@ -63,7 +80,9 @@ func RunWorker(pattern, taskQueue string, register func(w worker.Worker, publish
 	w := worker.New(c, taskQueue, opts)
 	register(w, publisher)
 
-	go serveHealth()
+	if port := healthPort(); port > 0 {
+		go serveHealth(port)
+	}
 
 	log.Printf("%s worker connected to %s — listening on task queue: %s", pattern, address, taskQueue)
 
@@ -72,13 +91,13 @@ func RunWorker(pattern, taskQueue string, register func(w worker.Worker, publish
 	}
 }
 
-func serveHealth() {
+func serveHealth(port int) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("ok"))
 	})
-	addr := fmt.Sprintf(":%d", healthPort)
+	addr := fmt.Sprintf(":%d", port)
 	log.Printf("health server listening on %s/healthz", addr)
 	if err := http.ListenAndServe(addr, mux); err != nil {
 		log.Printf("health server stopped: %v", err)
@@ -86,8 +105,12 @@ func serveHealth() {
 }
 
 func runHealthcheck() {
+	port := healthPort()
+	if port == 0 {
+		os.Exit(1)
+	}
 	c := &http.Client{Timeout: 2 * time.Second}
-	resp, err := c.Get(fmt.Sprintf("http://localhost:%d/healthz", healthPort))
+	resp, err := c.Get(fmt.Sprintf("http://localhost:%d/healthz", port))
 	if err != nil {
 		os.Exit(1)
 	}

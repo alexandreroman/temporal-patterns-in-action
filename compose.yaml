@@ -64,6 +64,7 @@ services:
     environment:
       TEMPORAL_ADDRESS: temporal:7233
       NATS_URL: nats://nats:4222
+      HEALTH_PORT: 8080
     depends_on:
       temporal:
         condition: service_healthy
@@ -88,6 +89,7 @@ services:
     environment:
       TEMPORAL_ADDRESS: temporal:7233
       NATS_URL: nats://nats:4222
+      HEALTH_PORT: 8080
     depends_on:
       temporal:
         condition: service_healthy
@@ -113,6 +115,7 @@ services:
     environment:
       TEMPORAL_ADDRESS: temporal:7233
       NATS_URL: nats://nats:4222
+      HEALTH_PORT: 8080
     depends_on:
       temporal:
         condition: service_healthy
@@ -137,6 +140,7 @@ services:
     environment:
       TEMPORAL_ADDRESS: temporal:7233
       NATS_URL: nats://nats:4222
+      HEALTH_PORT: 8080
     depends_on:
       temporal:
         condition: service_healthy
@@ -161,6 +165,7 @@ services:
     environment:
       TEMPORAL_ADDRESS: temporal:7233
       NATS_URL: nats://nats:4222
+      HEALTH_PORT: 8080
     depends_on:
       temporal:
         condition: service_healthy
@@ -185,6 +190,7 @@ services:
     environment:
       TEMPORAL_ADDRESS: temporal:7233
       NATS_URL: nats://nats:4222
+      HEALTH_PORT: 8080
     depends_on:
       temporal:
         condition: service_healthy

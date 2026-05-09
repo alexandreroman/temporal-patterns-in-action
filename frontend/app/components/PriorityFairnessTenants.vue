@@ -56,6 +56,14 @@ function overflowOf(lane: Lane) {
   return c === undefined ? 0 : Math.max(0, lane.chips.length - c);
 }
 
+// Pad the count with non-breaking spaces so the `+N` text is always at
+// least 4 monospace cells wide — matching a 4-digit ticket ID. With
+// `tabular-nums + font-mono`, that makes the chip pixel-identical in
+// width to a ticket regardless of how big N is.
+function overflowText(lane: Lane): string {
+  return `+${overflowOf(lane).toString()}`.padStart(4, " ");
+}
+
 function adjustLane(laneId: string) {
   const el = root.value?.querySelector<HTMLElement>(
     `[data-wrap="${laneId}"]`,
@@ -144,10 +152,9 @@ watch(lanes, () => scheduleMeasure(), { deep: true });
         </span>
         <span
           v-if="overflowOf(lane) > 0"
-          class="inline-flex w-[39px] justify-center rounded-md bg-slate-200 px-1.5 py-0.5 font-mono text-[11px] tabular-nums text-slate-600 dark:bg-slate-700 dark:text-slate-300"
+          class="rounded-md bg-slate-200 px-1.5 py-0.5 font-mono text-[11px] tabular-nums text-slate-600 dark:bg-slate-700 dark:text-slate-300"
+          >{{ overflowText(lane) }}</span
         >
-          +{{ overflowOf(lane) }}
-        </span>
         <span
           v-if="lane.chips.length === 0"
           class="font-mono text-[11px] text-slate-400 dark:text-slate-500"

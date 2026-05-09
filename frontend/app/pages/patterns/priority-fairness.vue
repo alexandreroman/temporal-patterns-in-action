@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { onBeforeUnmount, onMounted, reactive, ref } from "vue";
+import { computed, onBeforeUnmount, reactive, ref } from "vue";
+import type { EventEnvelope } from "~~/shared/events";
 import {
   AGENT_SLOTS,
+  buildEvent,
   HISTORY_LEN,
   LOG_CAP,
   NUM_AGENTS,
@@ -13,6 +15,7 @@ import {
   TENANTS,
   TICK_MS,
   nextTicketId,
+  tenantById,
   type Agent,
   type LogEntry,
   type PriorityKey,
@@ -24,13 +27,17 @@ import {
 useSeoMeta({ title: "Priority and Fairness" });
 
 /**
- * Client-side simulation of a multi-tenant helpdesk. Every TICK_MS we
- * advance in-flight tickets, free finished agents, then run a selection
- * algorithm to assign idle agents from the tenant queues. A separate
- * Temporal worker pool will replace this loop in a follow-up commit; the
- * UI semantics (priority + weighted fairness) match Temporal's `Priority`
- * struct so the visualization stays valid.
+ * Client-side simulation of a multi-tenant helpdesk. The page mirrors the
+ * other pattern pages: pick a scenario, hit Run, and a 250 ms tick loop drains
+ * the seeded queues using priority + weighted fairness selection. The tick
+ * loop also synthesizes EventEnvelope events so the shared CodeViewer +
+ * EventStream + StatusBar shells light up the same way they do for saga/batch.
+ *
+ * No backend yet: a Temporal worker pool will replace the loop in a follow-up
+ * commit; the UI semantics already match Temporal's `Priority` struct.
  */
+
+type Scenario = "fairness-on" | "fairness-off";
 
 interface SeedSpec {
   count: number;
@@ -44,6 +51,8 @@ const INITIAL_SEED: Record<TenantId, SeedSpec> = {
 };
 
 const ACME_DUMP_MIX = [2, 10, 78, 10] as const;
+const EVENTS_CAP = 200;
+const TERMINAL_TYPES = new Set(["progress.workflow.completed", "progress.workflow.failed"]);
 
 function freshAgents(): Agent[] {
   return AGENT_SLOTS.slice(0, NUM_AGENTS).map((slot) => ({
@@ -55,30 +64,44 @@ function freshAgents(): Agent[] {
   }));
 }
 
-function freshState(): SimState {
-  resetTicketIds();
-  const queues: Record<TenantId, Ticket[]> = {
-    acme: seedQueue("acme", INITIAL_SEED.acme.count, INITIAL_SEED.acme.mix),
-    brick: seedQueue("brick", INITIAL_SEED.brick.count, INITIAL_SEED.brick.mix),
-    solo: seedQueue("solo", INITIAL_SEED.solo.count, INITIAL_SEED.solo.mix),
-  };
+function emptyQueues(): Record<TenantId, Ticket[]> {
+  return { acme: [], brick: [], solo: [] };
+}
+
+function freshState(fairnessOn: boolean): SimState {
   return {
-    queues,
+    queues: emptyQueues(),
     resolved: { acme: 0, brick: 0, solo: 0 },
     inflight: { acme: 0, brick: 0, solo: 0 },
     agents: freshAgents(),
     log: [],
     history: [],
     startTime: Date.now(),
-    fairnessOn: true,
+    fairnessOn,
   };
 }
 
-const state = reactive<SimState>(freshState());
-// Mirror fairnessOn into a top-level ref for ergonomic template binding.
-const fairnessOn = ref(state.fairnessOn);
+const form = reactive({
+  scenario: "fairness-on" as Scenario,
+});
+
+const state = reactive<SimState>(freshState(true));
+const events = ref<EventEnvelope[]>([]);
+const workflowId = ref<string | null>(null);
 
 let timer: ReturnType<typeof setInterval> | null = null;
+
+const running = computed(() => {
+  if (workflowId.value === null) return false;
+  return !events.value.some((e) => TERMINAL_TYPES.has(e.type));
+});
+
+function pushEvent(type: string, data: Record<string, unknown>): void {
+  if (!workflowId.value) return;
+  const env = buildEvent(workflowId.value, type, data);
+  events.value.push(env);
+  if (events.value.length > EVENTS_CAP) events.value.shift();
+}
 
 /**
  * Pick the next ticket for an idle agent. Returns the chosen tenantId or
@@ -142,6 +165,15 @@ function assignIdleAgents(): void {
     agent.progress = 0;
     agent.duration = randomDuration();
     state.inflight[tenantId] += 1;
+    pushEvent("helpdesk.ticket.assigned", {
+      tenantId,
+      priorityKey: ticket.priorityKey,
+      ticketId: ticket.id,
+      agent: agent.slot,
+      fairnessKey: tenantId,
+      fairnessWeight: tenantById(tenantId).weight,
+      queueDepth: queue.length,
+    });
   }
 }
 
@@ -166,6 +198,12 @@ function tick(): void {
         priorityKey,
       };
       state.log.unshift(entry);
+      pushEvent("helpdesk.ticket.resolved", {
+        tenantId,
+        priorityKey,
+        ticketId,
+        agent: agent.slot,
+      });
       agent.ticket = null;
       agent.tenantId = null;
       agent.progress = 0;
@@ -179,29 +217,37 @@ function tick(): void {
 
   state.history.push({ acme: delta.acme, brick: delta.brick, solo: delta.solo });
   if (state.history.length > HISTORY_LEN) state.history.shift();
+
+  if (allDrained()) {
+    pushEvent("progress.workflow.completed", {});
+    stopTimer();
+  }
 }
 
-function dumpAcme(): void {
-  const tickets = seedQueue("acme", 80, ACME_DUMP_MIX);
-  state.queues.acme.push(...tickets);
+function allDrained(): boolean {
+  for (const tenant of TENANTS) {
+    if ((state.queues[tenant.id]?.length ?? 0) > 0) return false;
+  }
+  return state.agents.every((a) => a.ticket === null);
 }
 
-function injectIncident(): void {
-  const tenantId = pickRandomTenant();
-  state.queues[tenantId].unshift({
-    id: nextTicketId(),
-    tenantId,
-    priorityKey: 1,
-  });
+function stopTimer(): void {
+  if (timer !== null) {
+    clearInterval(timer);
+    timer = null;
+  }
 }
 
-function toggleFairness(): void {
-  state.fairnessOn = !state.fairnessOn;
-  fairnessOn.value = state.fairnessOn;
-}
-
-function reset(): void {
-  const next = freshState();
+function run(): void {
+  stopTimer();
+  resetTicketIds();
+  const fairnessOn = form.scenario === "fairness-on";
+  const next = freshState(fairnessOn);
+  next.queues = {
+    acme: seedQueue("acme", INITIAL_SEED.acme.count, INITIAL_SEED.acme.mix),
+    brick: seedQueue("brick", INITIAL_SEED.brick.count, INITIAL_SEED.brick.mix),
+    solo: seedQueue("solo", INITIAL_SEED.solo.count, INITIAL_SEED.solo.mix),
+  };
   state.queues = next.queues;
   state.resolved = next.resolved;
   state.inflight = next.inflight;
@@ -210,19 +256,30 @@ function reset(): void {
   state.history = next.history;
   state.startTime = next.startTime;
   state.fairnessOn = next.fairnessOn;
-  fairnessOn.value = state.fairnessOn;
+
+  events.value.length = 0;
+  workflowId.value = `priority-fairness-${randomSuffix()}`;
+
+  pushEvent("progress.workflow.started", { fairnessOn });
+  timer = setInterval(tick, TICK_MS);
 }
 
-onMounted(() => {
-  timer = setInterval(tick, TICK_MS);
-});
+function dumpAcme(): void {
+  if (!running.value) return;
+  const tickets = seedQueue("acme", 80, ACME_DUMP_MIX);
+  state.queues.acme.push(...tickets);
+  pushEvent("helpdesk.dump.executed", { tenantId: "acme", count: tickets.length });
+}
 
-onBeforeUnmount(() => {
-  if (timer !== null) {
-    clearInterval(timer);
-    timer = null;
-  }
-});
+function injectIncident(): void {
+  if (!running.value) return;
+  const tenantId = pickRandomTenant();
+  const ticketId = nextTicketId();
+  state.queues[tenantId].unshift({ id: ticketId, tenantId, priorityKey: 1 });
+  pushEvent("helpdesk.incident.injected", { tenantId, priorityKey: 1, ticketId });
+}
+
+onBeforeUnmount(stopTimer);
 </script>
 
 <template>
@@ -247,36 +304,37 @@ onBeforeUnmount(() => {
         </div>
       </div>
       <div class="flex flex-wrap items-center gap-2">
+        <select
+          v-model="form.scenario"
+          :disabled="running"
+          class="rounded-md border border-slate-700 bg-slate-800 px-2 py-1 text-xs text-slate-200 disabled:opacity-50"
+        >
+          <option value="fairness-on">Fairness on (proportional sharing)</option>
+          <option value="fairness-off">Fairness off (Acme starves)</option>
+        </select>
         <button
           type="button"
-          class="cursor-pointer rounded-md bg-slate-700 px-3 py-1.5 text-xs font-medium text-slate-100 transition-colors hover:bg-slate-600"
+          :disabled="!running"
+          class="cursor-pointer rounded-md bg-slate-700 px-3 py-1.5 text-xs font-medium text-slate-100 transition-colors hover:bg-slate-600 disabled:cursor-not-allowed disabled:opacity-50"
           @click="dumpAcme"
         >
           Acme dumps 80
         </button>
         <button
           type="button"
-          class="cursor-pointer rounded-md bg-slate-700 px-3 py-1.5 text-xs font-medium text-slate-100 transition-colors hover:bg-slate-600"
+          :disabled="!running"
+          class="cursor-pointer rounded-md bg-slate-700 px-3 py-1.5 text-xs font-medium text-slate-100 transition-colors hover:bg-slate-600 disabled:cursor-not-allowed disabled:opacity-50"
           @click="injectIncident"
         >
           + P0 incident
         </button>
         <button
           type="button"
-          class="cursor-pointer rounded-md px-3 py-1.5 text-xs font-medium text-white transition-colors"
-          :class="
-            fairnessOn ? 'bg-emerald-600 hover:bg-emerald-500' : 'bg-slate-700 hover:bg-slate-600'
-          "
-          @click="toggleFairness"
+          :disabled="running"
+          class="cursor-pointer rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
+          @click="run"
         >
-          Fairness: {{ fairnessOn ? "ON" : "OFF" }}
-        </button>
-        <button
-          type="button"
-          class="cursor-pointer rounded-md bg-slate-700 px-3 py-1.5 text-xs font-medium text-slate-100 transition-colors hover:bg-slate-600"
-          @click="reset"
-        >
-          Reset
+          {{ running ? "Running…" : "Run scenario" }}
         </button>
       </div>
     </div>
@@ -321,9 +379,17 @@ onBeforeUnmount(() => {
       </div>
     </div>
 
-    <!-- Notes -->
-    <div class="mt-3">
-      <PriorityFairnessNotes />
+    <!-- Status bar -->
+    <PriorityFairnessStatusBar :events="events" class="mt-6" />
+
+    <!-- Code + event stream -->
+    <div class="mt-4 flex flex-col gap-3 lg:flex-row">
+      <div class="min-w-0 lg:w-[560px] lg:shrink-0">
+        <PriorityFairnessCodeViewer :events="events" />
+      </div>
+      <div class="min-w-0 flex-1">
+        <PriorityFairnessEventStream :events="events" />
+      </div>
     </div>
   </section>
 </template>

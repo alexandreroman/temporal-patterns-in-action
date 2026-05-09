@@ -3,6 +3,7 @@
  * The simulation is purely client-side; this module owns the constants,
  * narrow types, and small functions that the page and child components share.
  */
+import type { EventEnvelope } from "~~/shared/events";
 
 export type TenantId = "acme" | "brick" | "solo";
 
@@ -159,6 +160,28 @@ export function tenantById(id: TenantId): Tenant {
   const found = TENANTS.find((t) => t.id === id);
   if (!found) throw new Error(`unknown tenant ${id}`);
   return found;
+}
+
+// Module-level counter so envelope IDs stay unique across runs in this tab.
+let envelopeCounter = 0;
+
+/**
+ * Synthesize an EventEnvelope locally — the simulation has no backend, but
+ * we shape its outputs the same way the workers do so the EventStream and
+ * CodeViewer wrappers can reuse the generic pattern shells.
+ */
+export function buildEvent<T>(workflowId: string, type: string, data: T): EventEnvelope<T> {
+  envelopeCounter += 1;
+  return {
+    specversion: "1.0",
+    id: `pf-${envelopeCounter}`,
+    source: "ui-sim",
+    type,
+    workflowId,
+    runId: workflowId,
+    time: new Date().toISOString(),
+    data,
+  };
 }
 
 /**

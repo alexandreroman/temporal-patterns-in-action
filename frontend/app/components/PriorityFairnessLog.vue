@@ -13,9 +13,6 @@ const props = defineProps<{
   startTime: number;
 }>();
 
-const totalCount = computed(() => props.log.length);
-const displayedCount = useCountTween(() => totalCount.value);
-
 interface Row {
   key: string;
   time: string;
@@ -59,7 +56,7 @@ const rows = computed<Row[]>(() =>
         resolution log <span class="text-slate-400 dark:text-slate-500">&middot; newest first</span>
       </div>
       <div class="font-mono text-[11px] tabular-nums text-slate-500 dark:text-slate-400">
-        {{ displayedCount }}
+        {{ log.length }}
       </div>
     </div>
 

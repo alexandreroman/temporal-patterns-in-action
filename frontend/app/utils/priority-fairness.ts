@@ -17,9 +17,9 @@ export interface Tenant {
 }
 
 export const TENANTS = [
-  { id: "acme", name: "Acme Corp", tier: "Enterprise", weight: 10, color: "#9C5BD9" },
-  { id: "brick", name: "BrickLab", tier: "Pro", weight: 3, color: "#1A8870" },
-  { id: "solo", name: "SoloDev", tier: "Free", weight: 1, color: "#C5803A" },
+  { id: "acme", name: "Acme Corp", tier: "Mission Critical", weight: 10, color: "#9C5BD9" },
+  { id: "brick", name: "BrickLab", tier: "Enterprise", weight: 3, color: "#1A8870" },
+  { id: "solo", name: "SoloDev", tier: "Business", weight: 1, color: "#C5803A" },
 ] as const satisfies readonly Tenant[];
 
 export type PriorityKey = 1 | 2 | 3 | 4;

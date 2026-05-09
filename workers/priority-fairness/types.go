@@ -31,7 +31,7 @@ const (
 type PriorityKey int
 
 // TenantWeight is the fairness weight used as FairnessWeight on the activity.
-// Mirrors the contract tier in the UI: Enterprise / Pro / Free.
+// Mirrors the contract tier in the UI: Mission Critical / Enterprise / Business.
 var TenantWeight = map[Tenant]float32{
 	TenantAcme:  10,
 	TenantBrick: 3,

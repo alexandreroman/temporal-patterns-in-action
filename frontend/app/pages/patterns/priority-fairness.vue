@@ -82,7 +82,7 @@ function freshState(fairnessOn: boolean): SimState {
 }
 
 const form = reactive({
-  scenario: "fairness-on" as Scenario,
+  scenario: "fairness-off" as Scenario,
 });
 
 const state = reactive<SimState>(freshState(true));
@@ -337,6 +337,11 @@ onBeforeUnmount(stopTimer);
           {{ running ? "Running…" : "Run scenario" }}
         </button>
       </div>
+    </div>
+
+    <!-- Architecture diagram -->
+    <div class="mt-2">
+      <PriorityFairnessArchitecture :events="events" />
     </div>
 
     <!-- Throughput chart -->

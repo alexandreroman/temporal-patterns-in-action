@@ -172,7 +172,7 @@ function latestRelevantType(events: EventEnvelope[]): string | null {
       case "helpdesk.ticket.resolved":
       case "helpdesk.dump.executed":
       case "helpdesk.incident.injected":
-      case "progress.workflow.started":
+      case "helpdesk.run.seeded":
       case "progress.workflow.completed":
       case "progress.workflow.failed":
         return env.type;
@@ -195,7 +195,7 @@ const currentHighlight = computed<[number, number] | null>(() => {
       return src.ranges["priority-build"];
     case "helpdesk.ticket.resolved":
       return src.ranges["execute-activity"];
-    case "progress.workflow.started":
+    case "helpdesk.run.seeded":
       return src.ranges["activity-options"];
     default:
       return null;

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { computed, reactive, ref } from "vue";
-import type { EventEnvelope } from "~~/shared/events";
 import type {
   PriorityFairnessSignalRequest,
   PriorityFairnessSignalResponse,
@@ -32,23 +31,6 @@ const running = computed(() => {
   return !events.value.some((e) => TERMINAL_TYPES.has(e.type));
 });
 
-function pushSyntheticStarted(id: string, fairnessOn: boolean): void {
-  // The shared StatusBar / EventStream / CodeViewer shells read fairnessOn
-  // from progress.workflow.started — synthesise it locally so they keep
-  // lighting up the moment the run begins, before any worker event arrives.
-  const env: EventEnvelope = {
-    specversion: "1.0",
-    id: `ui-started-${id}`,
-    source: "ui",
-    type: "progress.workflow.started",
-    workflowId: id,
-    runId: id,
-    time: new Date().toISOString(),
-    data: { fairnessOn },
-  };
-  events.value = [...events.value, env];
-}
-
 async function start(): Promise<void> {
   finalError.value = null;
   starting.value = true;
@@ -57,7 +39,6 @@ async function start(): Promise<void> {
   workflowId.value = id;
   try {
     await waitForOpen();
-    pushSyntheticStarted(id, fairnessOn);
     await $fetch<PriorityFairnessStartResponse>("/api/priority-fairness/start", {
       method: "POST",
       body: { workflowId: id, fairnessOn } satisfies PriorityFairnessStartRequest,

@@ -24,7 +24,7 @@ const derived = computed<Derived>(() => {
 
   for (const env of props.events) {
     const data = env.data as Record<string, unknown>;
-    if (env.type === "progress.workflow.started") {
+    if (env.type === "helpdesk.run.seeded") {
       fairnessOn = data.fairnessOn !== false;
     } else if (env.type === "helpdesk.ticket.resolved") {
       resolved += 1;

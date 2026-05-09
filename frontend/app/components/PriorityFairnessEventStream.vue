@@ -53,7 +53,8 @@ function eventLabel(env: EventEnvelope): string {
               0,
             )
           : 0;
-      return `Run seeded — ${total} tickets queued`;
+      const fairness = data.fairnessOn === false ? "OFF" : "ON";
+      return `Run seeded — ${total} tickets queued, fairness ${fairness}`;
     }
     default:
       return env.type;

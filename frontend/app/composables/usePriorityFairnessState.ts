@@ -106,7 +106,7 @@ function deriveState(events: readonly EventEnvelope[]): SimState {
     }
   }
 
-  state.history = buildHistory(state.startTime, resolutions);
+  state.history = buildHistory(state.startTime, resolutions, Date.now());
   return state;
 }
 
@@ -186,10 +186,15 @@ function applyResolved(
 function buildHistory(
   startTime: number,
   resolutions: readonly { time: number; tenantId: TenantId }[],
+  now: number,
 ): HistorySample[] {
-  if (resolutions.length === 0) return [];
-  const lastTime = resolutions[resolutions.length - 1]?.time ?? startTime;
-  const lastBucket = Math.max(0, Math.floor((lastTime - startTime) / TICK_MS));
+  // Anchor the rightmost bucket on either the latest resolution or "now"
+  // (whichever is later) so the chart's leading zone is populated even
+  // before the first resolution lands.
+  const latestEventTime =
+    resolutions.length > 0 ? (resolutions[resolutions.length - 1]?.time ?? startTime) : startTime;
+  const refTime = Math.max(latestEventTime, now);
+  const lastBucket = Math.max(0, Math.floor((refTime - startTime) / TICK_MS));
   const firstBucket = Math.max(0, lastBucket - HISTORY_LEN + 1);
 
   const samples: HistorySample[] = [];
@@ -202,6 +207,10 @@ function buildHistory(
     const sample = samples[idx];
     if (sample) sample[r.tenantId] += 1;
   }
+
+  // Left-pad to exactly HISTORY_LEN so the chart's geometry stays anchored
+  // even when the run is younger than the full window.
+  while (samples.length < HISTORY_LEN) samples.unshift({ acme: 0, brick: 0, solo: 0 });
 
   return samples.slice(-HISTORY_LEN);
 }

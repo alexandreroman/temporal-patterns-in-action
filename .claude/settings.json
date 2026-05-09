@@ -1,7 +1,4 @@
 {
-  "enabledPlugins": {
-    "skillbox@skillbox": true
-  },
   "permissions": {
     "allow": [
       "Bash(go *)",
@@ -22,5 +19,6 @@
       "WebFetch(domain:temporal.io)",
       "Skill(skillbox:*)"
     ]
-  }
+  },
+  "enabledPlugins": {}
 }

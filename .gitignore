@@ -19,3 +19,6 @@ tmp/
 # Claude Code local runtime state
 .claude/scheduled_tasks.lock
 .claude/worktrees/
+
+# cmux feature worktrees
+.worktrees/

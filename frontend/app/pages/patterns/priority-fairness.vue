@@ -31,6 +31,8 @@ const running = computed(() => {
   return !events.value.some((e) => TERMINAL_TYPES.has(e.type));
 });
 
+const fairnessOn = computed(() => form.scenario === "fairness-on");
+
 async function start(): Promise<void> {
   finalError.value = null;
   starting.value = true;
@@ -175,7 +177,7 @@ async function injectIncident(): Promise<void> {
     <!-- Code + event stream -->
     <div class="mt-4 flex flex-col gap-3 lg:flex-row">
       <div class="min-w-0 lg:w-[560px] lg:shrink-0">
-        <PriorityFairnessCodeViewer :events="events" />
+        <PriorityFairnessCodeViewer :events="events" :fairness-on="fairnessOn" />
       </div>
       <div class="min-w-0 flex-1">
         <PriorityFairnessEventStream :events="events" />

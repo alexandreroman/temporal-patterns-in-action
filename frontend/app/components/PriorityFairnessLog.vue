@@ -47,7 +47,7 @@ const rows = computed<Row[]>(() =>
 
 <template>
   <div
-    class="flex flex-col rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900"
+    class="flex h-full flex-col rounded-xl border border-slate-200 bg-white dark:border-slate-700 dark:bg-slate-900"
   >
     <div
       class="flex items-center justify-between gap-3 border-b border-slate-200 px-3 py-2 dark:border-slate-700"
@@ -60,7 +60,7 @@ const rows = computed<Row[]>(() =>
       </div>
     </div>
 
-    <div class="max-h-[380px] overflow-y-auto px-3 py-2">
+    <div class="min-h-0 flex-1 overflow-y-auto px-3 py-2">
       <p
         v-if="rows.length === 0"
         class="py-6 text-center text-[11px] text-slate-400 dark:text-slate-500"

@@ -177,7 +177,12 @@ function applyResolved(state: SimState, data: ResolvedPayload, time: number): vo
 
   for (let i = state.ticketHistory.length - 1; i >= 0; i--) {
     const span = state.ticketHistory[i];
-    if (span && span.endTime === null && span.ticketId === data.ticketId && span.agent === data.agent) {
+    if (
+      span &&
+      span.endTime === null &&
+      span.ticketId === data.ticketId &&
+      span.agent === data.agent
+    ) {
       span.endTime = time;
       break;
     }

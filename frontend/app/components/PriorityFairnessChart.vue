@@ -100,7 +100,9 @@ const lanes = computed<Lane[]>(() => {
   return AGENT_SLOTS.map((slot) => ({ slot, blocks: bySlot.get(slot) ?? [] }));
 });
 
-const inFlightCount = computed(() => props.spans.reduce((n, s) => (s.endTime === null ? n + 1 : n), 0));
+const inFlightCount = computed(() =>
+  props.spans.reduce((n, s) => (s.endTime === null ? n + 1 : n), 0),
+);
 
 const FLASH_MS = 700;
 const flashDump = ref(false);
@@ -143,9 +145,7 @@ onBeforeUnmount(() => {
     <div class="flex items-center justify-between gap-3">
       <div class="text-xs font-medium text-slate-700 dark:text-slate-300">
         Resolved per agent
-        <span class="text-slate-400 dark:text-slate-500">
-          &middot; last 20 s, color = tenant
-        </span>
+        <span class="text-slate-400 dark:text-slate-500"> &middot; last 20 s, color = tenant </span>
       </div>
       <div class="font-mono text-[10px] uppercase tracking-wide text-slate-500 dark:text-slate-400">
         in flight {{ inFlightCount }}

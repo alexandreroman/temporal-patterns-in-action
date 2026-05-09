@@ -1,10 +1,6 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from "vue";
-import {
-  priorityLevel,
-  type SimState,
-  type Tenant,
-} from "~/utils/priority-fairness";
+import { priorityLevel, type SimState, type Tenant } from "~/utils/priority-fairness";
 
 /**
  * Three tenant lanes — each panel has a colored left border, header summary,
@@ -65,9 +61,7 @@ function overflowText(lane: Lane): string {
 }
 
 function adjustLane(laneId: string) {
-  const el = root.value?.querySelector<HTMLElement>(
-    `[data-wrap="${laneId}"]`,
-  );
+  const el = root.value?.querySelector<HTMLElement>(`[data-wrap="${laneId}"]`);
   if (!el) return;
   if (el.scrollHeight <= el.clientHeight + 1) return;
   const children = Array.from(el.children) as HTMLElement[];

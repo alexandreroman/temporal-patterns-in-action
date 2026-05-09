@@ -26,8 +26,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: "dump-acme"): void;
-  (e: "inject-incident"): void;
+  (e: "dump-acme" | "inject-incident"): void;
 }>();
 
 interface Block {

@@ -75,7 +75,7 @@ function adjustLane(laneId: string) {
   let firstHidden = children.length;
   for (let i = 0; i < children.length; i++) {
     const c = children[i];
-    if (c.offsetTop + c.offsetHeight > limit + 1) {
+    if (c && c.offsetTop + c.offsetHeight > limit + 1) {
       firstHidden = i;
       break;
     }

@@ -1,9 +1,9 @@
 /**
  * Domain model and pure helpers for the Priority and Fairness pattern UI.
- * The simulation is purely client-side; this module owns the constants,
- * narrow types, and small functions that the page and child components share.
+ * The page consumes live SSE events from the Temporal worker; this module
+ * owns the constants, narrow types, and small functions that the page and
+ * its child components share.
  */
-import type { EventEnvelope } from "~~/shared/events";
 
 export type TenantId = "acme" | "brick" | "solo";
 
@@ -44,8 +44,6 @@ export const TICK_MS = 250;
 export const HISTORY_LEN = 80; // 20 s × 4 ticks/s
 export const LOG_CAP = 80;
 export const TICKET_HISTORY_CAP = 256;
-export const TICKET_DUR_MIN = 4; // ticks
-export const TICKET_DUR_MAX = 6;
 
 export type AgentSlot = "a1" | "a2" | "a3" | "a4";
 export const AGENT_SLOTS: readonly AgentSlot[] = ["a1", "a2", "a3", "a4"];
@@ -65,18 +63,12 @@ export interface Agent {
 }
 
 export interface LogEntry {
-  /** Milliseconds since the simulation's startTime — formatted as MM:SS.d. */
+  /** Milliseconds since the run's startTime — formatted as MM:SS.d. */
   time: number;
   ticket: string;
   tenantId: TenantId;
   agent: AgentSlot;
   priorityKey: PriorityKey;
-}
-
-export interface HistorySample {
-  acme: number;
-  brick: number;
-  solo: number;
 }
 
 export interface TicketSpan {
@@ -93,75 +85,10 @@ export interface TicketSpan {
 export interface SimState {
   queues: Record<TenantId, Ticket[]>;
   resolved: Record<TenantId, number>;
-  inflight: Record<TenantId, number>;
   agents: Agent[];
   log: LogEntry[];
-  history: HistorySample[];
   ticketHistory: TicketSpan[];
   startTime: number;
-  fairnessOn: boolean;
-}
-
-const PRIORITY_KEYS: readonly PriorityKey[] = [1, 2, 3, 4];
-
-// Module-level counter so ticket IDs stay unique across queue refills.
-// Resets when `resetTicketIds()` is called from the page on Reset.
-let ticketCounter = 0;
-
-export function resetTicketIds(): void {
-  ticketCounter = 0;
-}
-
-export function nextTicketId(): string {
-  ticketCounter = (ticketCounter + 1) % 10_000;
-  return ticketCounter.toString().padStart(4, "0");
-}
-
-/**
- * Pick a priority key from a 4-bucket percentage distribution. The mix is
- * not required to sum to exactly 100 — we sample within its actual total.
- */
-export function pickFromMix(mix: readonly number[]): PriorityKey {
-  const total = mix.reduce((s, n) => s + n, 0);
-  let r = Math.random() * total;
-  for (let i = 0; i < PRIORITY_KEYS.length; i++) {
-    r -= mix[i] ?? 0;
-    if (r <= 0) return PRIORITY_KEYS[i] ?? 4;
-  }
-  return PRIORITY_KEYS[PRIORITY_KEYS.length - 1] ?? 4;
-}
-
-export function randomDuration(): number {
-  const span = TICKET_DUR_MAX - TICKET_DUR_MIN + 1;
-  return TICKET_DUR_MIN + Math.floor(Math.random() * span);
-}
-
-export function pickRandomTenant(): TenantId {
-  const idx = Math.floor(Math.random() * TENANTS.length);
-  return (TENANTS[idx]?.id ?? "acme") as TenantId;
-}
-
-/**
- * Build `count` tickets for a tenant using the given priority mix. The
- * resulting array is ordered as it should be appended to the tenant's queue:
- * higher-priority tickets are NOT pre-sorted, since the dispatcher already
- * picks by priority across queue heads. We do, however, sort within the
- * batch so that priority bursts (e.g. the +80 dump) feel realistic — newest
- * first by priority, then arrival.
- */
-export function seedQueue(tenantId: TenantId, count: number, mix: readonly number[]): Ticket[] {
-  const tickets: Ticket[] = [];
-  for (let i = 0; i < count; i++) {
-    tickets.push({
-      id: nextTicketId(),
-      tenantId,
-      priorityKey: pickFromMix(mix),
-    });
-  }
-  // Sort the seeded batch by priority so the lane visually shows the most
-  // urgent items at the head — the dispatcher's algorithm is independent.
-  tickets.sort((a, b) => a.priorityKey - b.priorityKey);
-  return tickets;
 }
 
 export function priorityLevel(key: PriorityKey): PriorityLevel {
@@ -172,28 +99,6 @@ export function tenantById(id: TenantId): Tenant {
   const found = TENANTS.find((t) => t.id === id);
   if (!found) throw new Error(`unknown tenant ${id}`);
   return found;
-}
-
-// Module-level counter so envelope IDs stay unique across runs in this tab.
-let envelopeCounter = 0;
-
-/**
- * Synthesize an EventEnvelope locally — the simulation has no backend, but
- * we shape its outputs the same way the workers do so the EventStream and
- * CodeViewer wrappers can reuse the generic pattern shells.
- */
-export function buildEvent<T>(workflowId: string, type: string, data: T): EventEnvelope<T> {
-  envelopeCounter += 1;
-  return {
-    specversion: "1.0",
-    id: `pf-${envelopeCounter}`,
-    source: "ui-sim",
-    type,
-    workflowId,
-    runId: workflowId,
-    time: new Date().toISOString(),
-    data,
-  };
 }
 
 /**

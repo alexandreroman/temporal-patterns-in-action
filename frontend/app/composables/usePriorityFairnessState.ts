@@ -2,15 +2,11 @@ import { computed, type ComputedRef, type Ref } from "vue";
 import type { EventEnvelope } from "~~/shared/events";
 import {
   AGENT_SLOTS,
-  HISTORY_LEN,
   LOG_CAP,
   NUM_AGENTS,
-  TICK_MS,
   TICKET_HISTORY_CAP,
   type Agent,
   type AgentSlot,
-  type HistorySample,
-  type LogEntry,
   type PriorityKey,
   type SimState,
   type TenantId,
@@ -44,18 +40,14 @@ function freshState(): SimState {
   return {
     queues: emptyQueues(),
     resolved: { acme: 0, brick: 0, solo: 0 },
-    inflight: { acme: 0, brick: 0, solo: 0 },
     agents: freshAgents(),
     log: [],
-    history: [],
     ticketHistory: [],
     startTime: Date.now(),
-    fairnessOn: true,
   };
 }
 
 interface SeededPayload {
-  fairnessOn?: boolean;
   tenants?: Partial<Record<TenantId, Ticket[]>>;
 }
 
@@ -85,7 +77,6 @@ interface ResolvedPayload {
 
 function deriveState(events: readonly EventEnvelope[]): SimState {
   const state = freshState();
-  const resolutions: Array<{ time: number; tenantId: TenantId }> = [];
 
   for (const env of events) {
     const time = new Date(env.time).getTime();
@@ -103,12 +94,11 @@ function deriveState(events: readonly EventEnvelope[]): SimState {
         applyAssigned(state, env.data as AssignedPayload, time);
         break;
       case "helpdesk.ticket.resolved":
-        applyResolved(state, env.data as ResolvedPayload, time, resolutions);
+        applyResolved(state, env.data as ResolvedPayload, time);
         break;
     }
   }
 
-  state.history = buildHistory(state.startTime, resolutions, Date.now());
   if (state.ticketHistory.length > TICKET_HISTORY_CAP) {
     state.ticketHistory.splice(0, state.ticketHistory.length - TICKET_HISTORY_CAP);
   }
@@ -116,7 +106,6 @@ function deriveState(events: readonly EventEnvelope[]): SimState {
 }
 
 function applySeed(state: SimState, data: SeededPayload, time: number): void {
-  state.fairnessOn = data.fairnessOn !== false;
   state.startTime = Number.isFinite(time) ? time : Date.now();
   state.queues = {
     acme: [...(data.tenants?.acme ?? [])],
@@ -157,7 +146,6 @@ function applyAssigned(state: SimState, data: AssignedPayload, time: number): vo
   // simply represents "agent occupied" rather than ticket completion %.
   agent.duration = 1;
   agent.progress = 1;
-  state.inflight[data.tenantId] += 1;
   state.ticketHistory.push({
     ticketId: data.ticketId,
     agent: data.agent,
@@ -168,12 +156,7 @@ function applyAssigned(state: SimState, data: AssignedPayload, time: number): vo
   });
 }
 
-function applyResolved(
-  state: SimState,
-  data: ResolvedPayload,
-  time: number,
-  resolutions: Array<{ time: number; tenantId: TenantId }>,
-): void {
+function applyResolved(state: SimState, data: ResolvedPayload, time: number): void {
   if (!data.tenantId || !data.agent || !data.ticketId) return;
   const agent = state.agents.find((a) => a.slot === data.agent);
   if (agent) {
@@ -182,18 +165,15 @@ function applyResolved(
     agent.progress = 0;
     agent.duration = 0;
   }
-  state.inflight[data.tenantId] = Math.max(0, state.inflight[data.tenantId] - 1);
   state.resolved[data.tenantId] += 1;
-  const entry: LogEntry = {
+  state.log.unshift({
     time,
     ticket: data.ticketId,
     tenantId: data.tenantId,
     agent: data.agent,
     priorityKey: (data.priorityKey ?? 4) as PriorityKey,
-  };
-  state.log.unshift(entry);
+  });
   if (state.log.length > LOG_CAP) state.log.length = LOG_CAP;
-  resolutions.push({ time, tenantId: data.tenantId });
 
   for (let i = state.ticketHistory.length - 1; i >= 0; i--) {
     const span = state.ticketHistory[i];
@@ -202,36 +182,4 @@ function applyResolved(
       break;
     }
   }
-}
-
-function buildHistory(
-  startTime: number,
-  resolutions: readonly { time: number; tenantId: TenantId }[],
-  now: number,
-): HistorySample[] {
-  // Anchor the rightmost bucket on either the latest resolution or "now"
-  // (whichever is later) so the chart's leading zone is populated even
-  // before the first resolution lands.
-  const latestEventTime =
-    resolutions.length > 0 ? (resolutions[resolutions.length - 1]?.time ?? startTime) : startTime;
-  const refTime = Math.max(latestEventTime, now);
-  const lastBucket = Math.max(0, Math.floor((refTime - startTime) / TICK_MS));
-  const firstBucket = Math.max(0, lastBucket - HISTORY_LEN + 1);
-
-  const samples: HistorySample[] = [];
-  for (let b = firstBucket; b <= lastBucket; b++) samples.push({ acme: 0, brick: 0, solo: 0 });
-
-  for (const r of resolutions) {
-    const bucket = Math.floor((r.time - startTime) / TICK_MS);
-    const idx = bucket - firstBucket;
-    if (idx < 0 || idx >= samples.length) continue;
-    const sample = samples[idx];
-    if (sample) sample[r.tenantId] += 1;
-  }
-
-  // Left-pad to exactly HISTORY_LEN so the chart's geometry stays anchored
-  // even when the run is younger than the full window.
-  while (samples.length < HISTORY_LEN) samples.unshift({ acme: 0, brick: 0, solo: 0 });
-
-  return samples.slice(-HISTORY_LEN);
 }

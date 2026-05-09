@@ -53,13 +53,14 @@ func (a *Activities) AnnounceDumpExecuted(ctx context.Context, in AnnounceDumpIn
 }
 
 // AnnounceIncidentInjected publishes one helpdesk.incident.injected business
-// event for the P0 ticket the workflow just queued.
+// event for the P0 ticket the workflow just queued. ticketId is kept at the
+// top level so the generic event-stream label can render it without reaching
+// into ticket.id.
 func (a *Activities) AnnounceIncidentInjected(ctx context.Context, in AnnounceIncidentInput) error {
 	events.PublishBusiness(ctx, a.Publisher, Pattern, TypeIncidentInjected, map[string]any{
-		"tenantId":    string(in.TenantID),
-		"ticket":      in.Ticket,
-		"ticketId":    in.Ticket.ID,
-		"priorityKey": int(in.Ticket.Priority),
+		"tenantId": string(in.TenantID),
+		"ticket":   in.Ticket,
+		"ticketId": in.Ticket.ID,
 	})
 	return nil
 }
@@ -74,12 +75,10 @@ func (a *Activities) ResolveTicket(ctx context.Context, t Ticket) error {
 	defer pool.Release(agent)
 
 	events.PublishBusiness(ctx, a.Publisher, Pattern, TypeTicketAssigned, map[string]any{
-		"tenantId":       string(t.Tenant),
-		"priorityKey":    int(t.Priority),
-		"ticketId":       t.ID,
-		"agent":          agent,
-		"fairnessKey":    string(t.Tenant),
-		"fairnessWeight": TenantWeight[t.Tenant],
+		"tenantId":    string(t.Tenant),
+		"priorityKey": int(t.Priority),
+		"ticketId":    t.ID,
+		"agent":       agent,
 	})
 
 	dur := time.Duration(2000+rand.IntN(1000)) * time.Millisecond

@@ -77,14 +77,14 @@ const rows = computed<Row[]>(() =>
             {{ row.priorityLabel }}
           </span>
           <span
-            class="inline-block w-[60px] truncate rounded-md px-1.5 py-0.5 text-center text-white"
+            class="min-w-0 flex-1 truncate rounded-md px-1.5 py-0.5 text-white"
             :style="{ backgroundColor: row.tenantColor }"
             :title="row.tenantName"
           >
             {{ row.tenantName }}
           </span>
           <span class="tabular-nums text-slate-700 dark:text-slate-200">{{ row.ticketId }}</span>
-          <span class="ml-auto tabular-nums text-slate-500 dark:text-slate-400">
+          <span class="tabular-nums text-slate-500 dark:text-slate-400">
             {{ row.agent }}
           </span>
         </li>

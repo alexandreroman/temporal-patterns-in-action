@@ -101,6 +101,39 @@ const lanes = computed<Lane[]>(() => {
 });
 
 const inFlightCount = computed(() => props.spans.reduce((n, s) => (s.endTime === null ? n + 1 : n), 0));
+
+const FLASH_MS = 700;
+const flashDump = ref(false);
+const flashIncident = ref(false);
+let dumpTimer: ReturnType<typeof setTimeout> | null = null;
+let incidentTimer: ReturnType<typeof setTimeout> | null = null;
+
+function clickDump(): void {
+  if (!props.running) return;
+  emit("dump-acme");
+  flashDump.value = true;
+  if (dumpTimer) clearTimeout(dumpTimer);
+  dumpTimer = setTimeout(() => {
+    flashDump.value = false;
+    dumpTimer = null;
+  }, FLASH_MS);
+}
+
+function clickIncident(): void {
+  if (!props.running) return;
+  emit("inject-incident");
+  flashIncident.value = true;
+  if (incidentTimer) clearTimeout(incidentTimer);
+  incidentTimer = setTimeout(() => {
+    flashIncident.value = false;
+    incidentTimer = null;
+  }, FLASH_MS);
+}
+
+onBeforeUnmount(() => {
+  if (dumpTimer) clearTimeout(dumpTimer);
+  if (incidentTimer) clearTimeout(incidentTimer);
+});
 </script>
 
 <template>
@@ -169,18 +202,48 @@ const inFlightCount = computed(() => props.spans.reduce((n, s) => (s.endTime ===
         <button
           type="button"
           :disabled="!props.running"
-          class="cursor-pointer rounded-md bg-slate-700 px-3 py-1.5 text-xs font-medium text-slate-100 transition-colors hover:bg-slate-600 disabled:cursor-not-allowed disabled:opacity-50"
-          @click="emit('dump-acme')"
+          :class="[
+            'rounded-md px-3 py-1.5 text-xs font-medium text-slate-100',
+            'transition-all duration-150 ease-out',
+            'enabled:cursor-pointer enabled:active:scale-95',
+            'disabled:cursor-not-allowed disabled:opacity-40 disabled:grayscale',
+            flashDump
+              ? 'bg-emerald-600 ring-2 ring-emerald-300/70 ring-offset-2 ring-offset-white dark:ring-offset-slate-900'
+              : 'bg-slate-700 enabled:hover:bg-slate-600',
+          ]"
+          @click="clickDump"
         >
-          Acme dumps 80
+          <span class="grid">
+            <span class="col-start-1 row-start-1" :class="flashDump ? 'invisible' : ''">
+              Acme dumps 80
+            </span>
+            <span class="col-start-1 row-start-1" :class="flashDump ? '' : 'invisible'">
+              Dumped ✓
+            </span>
+          </span>
         </button>
         <button
           type="button"
           :disabled="!props.running"
-          class="cursor-pointer rounded-md bg-slate-700 px-3 py-1.5 text-xs font-medium text-slate-100 transition-colors hover:bg-slate-600 disabled:cursor-not-allowed disabled:opacity-50"
-          @click="emit('inject-incident')"
+          :class="[
+            'rounded-md px-3 py-1.5 text-xs font-medium text-slate-100',
+            'transition-all duration-150 ease-out',
+            'enabled:cursor-pointer enabled:active:scale-95',
+            'disabled:cursor-not-allowed disabled:opacity-40 disabled:grayscale',
+            flashIncident
+              ? 'bg-rose-600 ring-2 ring-rose-300/70 ring-offset-2 ring-offset-white dark:ring-offset-slate-900'
+              : 'bg-slate-700 enabled:hover:bg-slate-600',
+          ]"
+          @click="clickIncident"
         >
-          + P0 incident
+          <span class="grid">
+            <span class="col-start-1 row-start-1" :class="flashIncident ? 'invisible' : ''">
+              + P0 incident
+            </span>
+            <span class="col-start-1 row-start-1" :class="flashIncident ? '' : 'invisible'">
+              Incident sent ✓
+            </span>
+          </span>
         </button>
       </div>
     </div>

@@ -33,3 +33,16 @@ whichever option reads as "all succeed" / "happy
 path" / "clean". Existing pages already follow
 this (saga, batch, agent, encryption); keep it
 consistent for future patterns.
+
+**Exception — Priority and Fairness:** the
+`priority-fairness` page deliberately defaults
+to `"fairness-off"`. The booth narrative for
+that pattern *starts from the broken state*
+(Acme starves the other tenants) so the
+presenter can demonstrate the problem first,
+then flip the scenario to `"fairness-on"` to
+show how Temporal's `FairnessKey` /
+`FairnessWeight` solve it. The user confirmed
+this exception explicitly on 2026-05-08; the
+general rule still holds for every other
+pattern.

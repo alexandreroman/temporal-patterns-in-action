@@ -43,6 +43,7 @@ export const NUM_AGENTS = 4;
 export const TICK_MS = 250;
 export const HISTORY_LEN = 80; // 20 s × 4 ticks/s
 export const LOG_CAP = 80;
+export const TICKET_HISTORY_CAP = 256;
 export const TICKET_DUR_MIN = 4; // ticks
 export const TICKET_DUR_MAX = 6;
 
@@ -78,6 +79,17 @@ export interface HistorySample {
   solo: number;
 }
 
+export interface TicketSpan {
+  ticketId: string;
+  agent: AgentSlot;
+  tenantId: TenantId;
+  priorityKey: PriorityKey;
+  /** ms epoch — assignment time. */
+  startTime: number;
+  /** ms epoch — resolution time, or null while still in-flight. */
+  endTime: number | null;
+}
+
 export interface SimState {
   queues: Record<TenantId, Ticket[]>;
   resolved: Record<TenantId, number>;
@@ -85,6 +97,7 @@ export interface SimState {
   agents: Agent[];
   log: LogEntry[];
   history: HistorySample[];
+  ticketHistory: TicketSpan[];
   startTime: number;
   fairnessOn: boolean;
 }

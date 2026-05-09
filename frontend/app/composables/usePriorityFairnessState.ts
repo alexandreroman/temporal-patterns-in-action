@@ -6,6 +6,7 @@ import {
   LOG_CAP,
   NUM_AGENTS,
   TICK_MS,
+  TICKET_HISTORY_CAP,
   type Agent,
   type AgentSlot,
   type HistorySample,
@@ -47,6 +48,7 @@ function freshState(): SimState {
     agents: freshAgents(),
     log: [],
     history: [],
+    ticketHistory: [],
     startTime: Date.now(),
     fairnessOn: true,
   };
@@ -98,7 +100,7 @@ function deriveState(events: readonly EventEnvelope[]): SimState {
         applyIncident(state, env.data as IncidentPayload);
         break;
       case "helpdesk.ticket.assigned":
-        applyAssigned(state, env.data as AssignedPayload);
+        applyAssigned(state, env.data as AssignedPayload, time);
         break;
       case "helpdesk.ticket.resolved":
         applyResolved(state, env.data as ResolvedPayload, time, resolutions);
@@ -107,6 +109,9 @@ function deriveState(events: readonly EventEnvelope[]): SimState {
   }
 
   state.history = buildHistory(state.startTime, resolutions, Date.now());
+  if (state.ticketHistory.length > TICKET_HISTORY_CAP) {
+    state.ticketHistory.splice(0, state.ticketHistory.length - TICKET_HISTORY_CAP);
+  }
   return state;
 }
 
@@ -130,7 +135,7 @@ function applyIncident(state: SimState, data: IncidentPayload): void {
   state.queues[data.tenantId].unshift(data.ticket);
 }
 
-function applyAssigned(state: SimState, data: AssignedPayload): void {
+function applyAssigned(state: SimState, data: AssignedPayload, time: number): void {
   if (!data.tenantId || !data.agent || !data.ticketId) return;
   const queue = state.queues[data.tenantId];
   const idx = queue.findIndex((t) => t.id === data.ticketId);
@@ -153,6 +158,14 @@ function applyAssigned(state: SimState, data: AssignedPayload): void {
   agent.duration = 1;
   agent.progress = 1;
   state.inflight[data.tenantId] += 1;
+  state.ticketHistory.push({
+    ticketId: data.ticketId,
+    agent: data.agent,
+    tenantId: data.tenantId,
+    priorityKey: (data.priorityKey ?? 4) as PriorityKey,
+    startTime: time,
+    endTime: null,
+  });
 }
 
 function applyResolved(
@@ -181,6 +194,14 @@ function applyResolved(
   state.log.unshift(entry);
   if (state.log.length > LOG_CAP) state.log.length = LOG_CAP;
   resolutions.push({ time, tenantId: data.tenantId });
+
+  for (let i = state.ticketHistory.length - 1; i >= 0; i--) {
+    const span = state.ticketHistory[i];
+    if (span && span.endTime === null && span.ticketId === data.ticketId && span.agent === data.agent) {
+      span.endTime = time;
+      break;
+    }
+  }
 }
 
 function buildHistory(

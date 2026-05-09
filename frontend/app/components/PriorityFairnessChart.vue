@@ -1,112 +1,87 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref } from "vue";
 import {
+  AGENT_SLOTS,
   HISTORY_LEN,
-  type HistorySample,
+  TICK_MS,
+  priorityLevel,
+  tenantById,
+  type AgentSlot,
   type Tenant,
-  type TenantId,
+  type TicketSpan,
 } from "~/utils/priority-fairness";
 
 /**
- * Throughput chart — three smooth lines (one per tenant) plotting
- * resolutions per second over the rolling HISTORY_LEN window. Uses a fixed
- * SVG viewBox + preserveAspectRatio="none" so the lines stretch to fill the
- * container; vector-effect="non-scaling-stroke" keeps stroke widths
- * consistent regardless of horizontal scale.
+ * Resolution swim-lane — one horizontal lane per agent. Ticket spans render
+ * as colored blocks (color = tenant) flowing right-to-left over the last
+ * 20 s; in-flight blocks extend to "now" and advance smoothly via rAF.
  */
 
-const VIEW_W = 800;
-const VIEW_H = 130;
-const PAD_X = 4;
-const PAD_TOP = 8;
-const PAD_BOTTOM = 18;
-const RES_PER_SEC_WINDOW = 4; // 1 second @ 250 ms ticks
+const WINDOW_MS = HISTORY_LEN * TICK_MS;
 
 const props = defineProps<{
-  history: HistorySample[];
+  spans: TicketSpan[];
   tenants: readonly Tenant[];
 }>();
 
-interface Series {
-  id: TenantId;
-  name: string;
+interface Block {
+  key: string;
+  leftPct: number;
+  widthPct: number;
   color: string;
-  weight: number;
-  points: string;
+  inFlight: boolean;
+  title: string;
 }
 
-const yMax = computed(() => {
-  let max = 4;
-  for (const series of seriesPoints.value) {
-    for (const v of series.values) if (v > max) max = v;
-  }
-  return max;
+interface Lane {
+  slot: AgentSlot;
+  blocks: Block[];
+}
+
+const now = ref(Date.now());
+let raf = 0;
+function tick(): void {
+  now.value = Date.now();
+  raf = requestAnimationFrame(tick);
+}
+onMounted(() => {
+  raf = requestAnimationFrame(tick);
 });
+onBeforeUnmount(() => cancelAnimationFrame(raf));
 
-interface RawSeries {
-  id: TenantId;
-  name: string;
-  color: string;
-  weight: number;
-  values: number[];
-}
+const lanes = computed<Lane[]>(() => {
+  const windowEnd = now.value;
+  const windowStart = windowEnd - WINDOW_MS;
+  const bySlot = new Map<AgentSlot, Block[]>();
+  for (const slot of AGENT_SLOTS) bySlot.set(slot, []);
 
-const seriesPoints = computed<RawSeries[]>(() => {
-  const samples = props.history;
-  const len = samples.length;
-  return props.tenants.map((tenant) => {
-    const values: number[] = [];
-    for (let i = 0; i < len; i++) {
-      // Sum the deltas over the last RES_PER_SEC_WINDOW samples to get a
-      // rolling resolutions-per-second rate.
-      let acc = 0;
-      const start = Math.max(0, i - RES_PER_SEC_WINDOW + 1);
-      for (let j = start; j <= i; j++) {
-        acc += samples[j]?.[tenant.id] ?? 0;
-      }
-      values.push(acc);
-    }
-    return {
-      id: tenant.id,
-      name: tenant.name,
+  const ordered = [...props.spans].sort((a, b) => a.startTime - b.startTime);
+  for (const span of ordered) {
+    if (span.endTime !== null && span.endTime < windowStart) continue;
+    const bucket = bySlot.get(span.agent);
+    if (!bucket) continue;
+    const left = Math.max(span.startTime, windowStart);
+    const rightRaw = span.endTime ?? windowEnd;
+    const right = Math.min(rightRaw, windowEnd);
+    if (right <= left) continue;
+    const leftPct = ((left - windowStart) / WINDOW_MS) * 100;
+    const widthPct = Math.max(((right - left) / WINDOW_MS) * 100, 0.5);
+    const tenant = tenantById(span.tenantId);
+    const label = priorityLevel(span.priorityKey).label;
+    bucket.push({
+      key: `${span.ticketId}-${span.startTime}`,
+      leftPct,
+      widthPct,
       color: tenant.color,
-      weight: tenant.weight,
-      values,
-    };
-  });
+      inFlight: span.endTime === null,
+      title: `${span.ticketId} · ${tenant.name} · ${label}`,
+    });
+  }
+
+  return AGENT_SLOTS.map((slot) => ({ slot, blocks: bySlot.get(slot) ?? [] }));
 });
 
-const series = computed<Series[]>(() => {
-  const max = yMax.value;
-  const innerW = VIEW_W - PAD_X * 2;
-  const innerH = VIEW_H - PAD_TOP - PAD_BOTTOM;
-  // The X axis spans the full HISTORY_LEN even when fewer samples exist;
-  // partial history grows from the left. This keeps the chart anchored.
-  const stepX = innerW / Math.max(1, HISTORY_LEN - 1);
-
-  return seriesPoints.value.map((raw) => {
-    const points = raw.values
-      .map((v, i) => {
-        const x = PAD_X + i * stepX;
-        const y = PAD_TOP + innerH - (v / max) * innerH;
-        return `${x.toFixed(1)},${y.toFixed(1)}`;
-      })
-      .join(" ");
-    return {
-      id: raw.id,
-      name: raw.name,
-      color: raw.color,
-      weight: raw.weight,
-      points,
-    };
-  });
-});
-
-// Two horizontal gridlines: midpoint and top of the inner area.
-const gridlines = computed(() => {
-  const innerH = VIEW_H - PAD_TOP - PAD_BOTTOM;
-  return [PAD_TOP + innerH, PAD_TOP + innerH * 0.5, PAD_TOP];
-});
+const inFlightCount = computed(() => props.spans.reduce((n, s) => (s.endTime === null ? n + 1 : n), 0));
 </script>
 
 <template>
@@ -115,54 +90,56 @@ const gridlines = computed(() => {
   >
     <div class="flex items-center justify-between gap-3">
       <div class="text-xs font-medium text-slate-700 dark:text-slate-300">
-        Throughput
+        Resolved per agent
         <span class="text-slate-400 dark:text-slate-500">
-          &middot; resolutions/sec, last 20 s
+          &middot; last 20 s, color = tenant
         </span>
       </div>
       <div class="font-mono text-[10px] uppercase tracking-wide text-slate-500 dark:text-slate-400">
-        max {{ yMax }}
+        in flight {{ inFlightCount }}
       </div>
     </div>
 
-    <svg
-      :viewBox="`0 0 ${VIEW_W} ${VIEW_H}`"
-      preserveAspectRatio="none"
-      class="mt-2 block h-[130px] w-full"
-      role="img"
-      aria-label="Throughput chart per tenant"
+    <div class="mt-2 flex flex-col gap-1.5">
+      <div v-for="lane in lanes" :key="lane.slot" class="flex items-center gap-2">
+        <span
+          class="w-7 shrink-0 font-mono text-[10px] uppercase tracking-wide text-slate-500 dark:text-slate-400"
+        >
+          {{ lane.slot }}
+        </span>
+        <div
+          class="relative h-4 flex-1 overflow-hidden rounded-md bg-slate-100 dark:bg-slate-800/60"
+        >
+          <div
+            v-for="block in lane.blocks"
+            :key="block.key"
+            class="absolute top-0 bottom-0 rounded-sm"
+            :class="block.inFlight ? 'opacity-90' : ''"
+            :style="{
+              left: `${block.leftPct}%`,
+              width: `${block.widthPct}%`,
+              backgroundColor: block.color,
+              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18)',
+              borderRight: block.inFlight ? '1px dashed rgba(255,255,255,0.45)' : undefined,
+            }"
+            :title="block.title"
+          />
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="mt-1 flex justify-between font-mono text-[10px] text-slate-400 dark:text-slate-500"
+      style="padding-left: calc(1.75rem + 0.5rem)"
     >
-      <line
-        v-for="(y, idx) in gridlines"
-        :key="idx"
-        :x1="PAD_X"
-        :x2="VIEW_W - PAD_X"
-        :y1="y"
-        :y2="y"
-        stroke="currentColor"
-        stroke-width="1"
-        stroke-dasharray="2 4"
-        vector-effect="non-scaling-stroke"
-        class="text-slate-300 dark:text-slate-700"
-      />
-      <polyline
-        v-for="s in series"
-        :key="s.id"
-        :points="s.points"
-        fill="none"
-        :stroke="s.color"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        vector-effect="non-scaling-stroke"
-      />
-    </svg>
+      <span>&minus;20 s</span>
+      <span>now</span>
+    </div>
 
     <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px]">
-      <div v-for="s in series" :key="s.id" class="flex items-center gap-1.5">
-        <span class="inline-block h-2 w-2 rounded-full" :style="{ backgroundColor: s.color }" />
-        <span class="text-slate-700 dark:text-slate-200">{{ s.name }}</span>
-        <span class="font-mono text-slate-500 dark:text-slate-400">weight={{ s.weight }}</span>
+      <div v-for="tenant in props.tenants" :key="tenant.id" class="flex items-center gap-1.5">
+        <span class="inline-block h-2 w-2 rounded-full" :style="{ backgroundColor: tenant.color }" />
+        <span class="text-slate-700 dark:text-slate-200">{{ tenant.name }}</span>
       </div>
     </div>
   </div>

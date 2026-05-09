@@ -140,9 +140,9 @@ async function injectIncident(): Promise<void> {
       <PriorityFairnessArchitecture :events="events" />
     </div>
 
-    <!-- Throughput chart -->
+    <!-- Resolution timeline -->
     <div class="mt-3">
-      <PriorityFairnessChart :history="state.history" :tenants="TENANTS" />
+      <PriorityFairnessChart :spans="state.ticketHistory" :tenants="TENANTS" />
     </div>
 
     <!-- Two-column body -->

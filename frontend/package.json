@@ -21,7 +21,7 @@
   },
   "dependencies": {
     "@nats-io/transport-node": "~3.4.0",
-    "@temporalio/client": "~1.17.0",
+    "@temporalio/client": "~1.15.0",
     "nuxt": "~4.4.0",
     "shiki": "~4.0.2",
     "vue": "~3.5.0",

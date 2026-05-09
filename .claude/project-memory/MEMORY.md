@@ -27,3 +27,4 @@
 - [Realistic animated token counters](references/feedback_token_counters.md) — emit non-round tokens per step from the worker and animate the UI with `useCountTween`; mirror `AgentStatePanel.vue`.
 - [Stable Vue keys for placeholder items](references/feedback_stable_keys_for_placeholder_messages.md) — optimistic placeholder and event-driven row in a `<TransitionGroup>` must share one `:key`, or `.msg-flash` makes both linger during the swap.
 - [Nuxt SSR browser globals](references/feedback_nuxt_ssr_browser_globals.md) — wrap rAF/window/etc. in onMounted or `import.meta.client`; `watch(immediate:true)` is NOT an SSR guard. Smoke with `curl` after frontend edits.
+- [@temporalio/client 1.16+ breaks Nuxt SSR](references/project_temporalio_client_116_ssr_regression.md) — pin to `~1.15.0`; 1.16+ emits extension-less ESM imports that Node rejects, dev page stuck on 503 loader.

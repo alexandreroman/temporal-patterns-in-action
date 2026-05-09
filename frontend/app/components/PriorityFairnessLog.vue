@@ -4,8 +4,9 @@ import { formatLogTime, priorityLevel, tenantById, type LogEntry } from "~/utils
 
 /**
  * Resolution log — newest first, monospace. Each row shows the relative
- * timestamp (MM:SS.d), the priority chip, a tenant-colored pill, the ticket
- * ID, and the agent slot that resolved it.
+ * timestamp (MM:SS.d), the priority label chip, the ticket as a
+ * priority-colored chip (matching the queue chips), a tenant-colored pill,
+ * and the agent slot that resolved it.
  */
 
 const props = defineProps<{
@@ -77,13 +78,18 @@ const rows = computed<Row[]>(() =>
             {{ row.priorityLabel }}
           </span>
           <span
+            class="rounded-md px-1.5 py-0.5 tabular-nums"
+            :style="{ backgroundColor: row.priorityBg, color: row.priorityFg }"
+          >
+            {{ row.ticketId }}
+          </span>
+          <span
             class="min-w-0 flex-1 truncate rounded-md px-1.5 py-0.5 text-white"
             :style="{ backgroundColor: row.tenantColor }"
             :title="row.tenantName"
           >
             {{ row.tenantName }}
           </span>
-          <span class="tabular-nums text-slate-700 dark:text-slate-200">{{ row.ticketId }}</span>
           <span class="tabular-nums text-slate-500 dark:text-slate-400">
             {{ row.agent }}
           </span>

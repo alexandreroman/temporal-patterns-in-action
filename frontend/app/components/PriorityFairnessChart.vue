@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from "vue";
+import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import {
   AGENT_SLOTS,
   HISTORY_LEN,
@@ -45,20 +45,24 @@ function tick(): void {
   now.value = Date.now();
   raf = requestAnimationFrame(tick);
 }
-watch(
-  () => props.running,
-  (isRunning) => {
-    if (isRunning) {
-      now.value = Date.now();
-      raf = requestAnimationFrame(tick);
-    } else {
-      cancelAnimationFrame(raf);
-      raf = 0;
-    }
-  },
-  { immediate: true },
-);
-onBeforeUnmount(() => cancelAnimationFrame(raf));
+onMounted(() => {
+  watch(
+    () => props.running,
+    (isRunning) => {
+      if (isRunning) {
+        now.value = Date.now();
+        raf = requestAnimationFrame(tick);
+      } else if (raf) {
+        cancelAnimationFrame(raf);
+        raf = 0;
+      }
+    },
+    { immediate: true },
+  );
+});
+onBeforeUnmount(() => {
+  if (raf) cancelAnimationFrame(raf);
+});
 
 const lanes = computed<Lane[]>(() => {
   const windowEnd = now.value;

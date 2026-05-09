@@ -6,10 +6,18 @@ import IconEncryption from "~/components/IconEncryption.vue";
 import IconMultiAgent from "~/components/IconMultiAgent.vue";
 import IconEntity from "~/components/IconEntity.vue";
 import IconAgent from "~/components/IconAgent.vue";
+import IconPriorityFairness from "~/components/IconPriorityFairness.vue";
 
 useSeoMeta({ title: "Patterns" });
 
-type PatternIcon = "saga" | "batch" | "encryption" | "agent" | "multi-agent" | "entity";
+type PatternIcon =
+  | "saga"
+  | "batch"
+  | "encryption"
+  | "agent"
+  | "multi-agent"
+  | "entity"
+  | "priority-fairness";
 
 const ICONS: Record<PatternIcon, Component> = {
   saga: IconSaga,
@@ -18,6 +26,7 @@ const ICONS: Record<PatternIcon, Component> = {
   "multi-agent": IconMultiAgent,
   entity: IconEntity,
   agent: IconAgent,
+  "priority-fairness": IconPriorityFairness,
 };
 
 const patterns: {
@@ -67,6 +76,13 @@ const patterns: {
     description:
       "Deep-research orchestrator fanning out to 3 research agents — parent workflow, child workflows, partial-failure tolerance on fan-in.",
     icon: "multi-agent",
+  },
+  {
+    slug: "priority-fairness",
+    title: "Priority and Fairness",
+    description:
+      "Multi-tenant helpdesk showing how priority and weighted fairness arbitrate a shared worker pool.",
+    icon: "priority-fairness",
   },
 ];
 </script>

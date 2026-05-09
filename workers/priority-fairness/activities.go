@@ -67,7 +67,8 @@ func (a *Activities) AnnounceIncidentInjected(ctx context.Context, in AnnounceIn
 
 // ResolveTicket simulates an agent processing a ticket. It acquires a slot
 // from the pool, publishes helpdesk.ticket.assigned with the agent id, sleeps
-// for a random 2.0-3.0s duration to mimic resolution time, then publishes
+// for a priority-dependent duration to mimic resolution time (P0 incidents
+// take longer so the block stays visible in the swim-lane), then publishes
 // helpdesk.ticket.resolved.
 func (a *Activities) ResolveTicket(ctx context.Context, t Ticket) error {
 	pool := a.slotPoolHandle()
@@ -81,7 +82,7 @@ func (a *Activities) ResolveTicket(ctx context.Context, t Ticket) error {
 		"agent":       agent,
 	})
 
-	dur := time.Duration(2000+rand.IntN(1000)) * time.Millisecond
+	dur := resolutionDuration(t.Priority)
 	time.Sleep(dur)
 
 	events.PublishBusiness(ctx, a.Publisher, Pattern, TypeTicketResolved, map[string]any{
@@ -91,6 +92,16 @@ func (a *Activities) ResolveTicket(ctx context.Context, t Ticket) error {
 		"agent":       agent,
 	})
 	return nil
+}
+
+// resolutionDuration returns the simulated handling time for a ticket. P0
+// incidents get a 4.5-6.0s window so the rare incident block is unmistakable
+// in the 20s swim-lane; P1..P3 keep the original 2.0-3.0s range.
+func resolutionDuration(p PriorityKey) time.Duration {
+	if p == 1 {
+		return time.Duration(4500+rand.IntN(1500)) * time.Millisecond
+	}
+	return time.Duration(2000+rand.IntN(1000)) * time.Millisecond
 }
 
 // slotPool tracks MaxConcurrentActivities in-process activity slots so we can

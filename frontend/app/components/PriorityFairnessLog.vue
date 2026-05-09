@@ -53,7 +53,7 @@ const rows = computed<Row[]>(() =>
       class="flex items-center justify-between gap-3 border-b border-slate-200 px-3 py-2 dark:border-slate-700"
     >
       <div class="text-xs font-medium text-slate-700 dark:text-slate-300">
-        resolution log <span class="text-slate-400 dark:text-slate-500">&middot; newest first</span>
+        Resolution log <span class="text-slate-400 dark:text-slate-500">&middot; newest first</span>
       </div>
       <div class="font-mono text-[11px] tabular-nums text-slate-500 dark:text-slate-400">
         {{ log.length }}

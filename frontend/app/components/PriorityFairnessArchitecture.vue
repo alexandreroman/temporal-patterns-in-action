@@ -75,5 +75,6 @@ const arch = computed<ArchState>(() => {
     :service-labels="['Agent a1', 'Agent a2', 'Agent a3', 'Agent a4']"
     worker-label="Helpdesk dispatcher"
     label="Priority and Fairness architecture diagram"
+    caption="4 agents · 3 tenants · 4 priority levels"
   />
 </template>

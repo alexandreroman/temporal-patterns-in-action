@@ -90,14 +90,9 @@ async function injectIncident(): Promise<void> {
         >
           <IconPriorityFairness class="h-5 w-5" />
         </span>
-        <div class="flex flex-col">
-          <h1 class="text-2xl font-semibold tracking-tight text-slate-100">
-            Priority and Fairness &mdash; Multi-Tenant Helpdesk
-          </h1>
-          <p class="text-xs text-slate-400">
-            4 agents &middot; 3 tenants &middot; 4 priority levels
-          </p>
-        </div>
+        <h1 class="text-2xl font-semibold tracking-tight text-slate-100">
+          Priority and Fairness &mdash; Multi-Tenant Helpdesk
+        </h1>
       </div>
       <div class="flex flex-wrap items-center gap-2">
         <select

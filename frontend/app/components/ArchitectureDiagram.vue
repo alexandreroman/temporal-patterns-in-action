@@ -7,6 +7,7 @@ defineProps<{
   workerLabel: string;
   label: string;
   codec?: string;
+  caption?: string;
 }>();
 
 const nodeFill: Record<NodeState, string> = {
@@ -274,6 +275,17 @@ const edgeAnim: Record<EdgeState, string> = {
         {{ serviceLabels[3] }}
       </text>
     </g>
+
+    <!-- Bottom-left caption -->
+    <text
+      v-if="caption"
+      x="10"
+      y="194"
+      text-anchor="start"
+      class="fill-slate-500 dark:fill-slate-400 text-[11px]"
+    >
+      {{ caption }}
+    </text>
 
     <!-- Edges -->
     <line

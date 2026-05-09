@@ -25,6 +25,11 @@ const props = defineProps<{
   running: boolean;
 }>();
 
+const emit = defineEmits<{
+  (e: "dump-acme"): void;
+  (e: "inject-incident"): void;
+}>();
+
 interface Block {
   key: string;
   leftPct: number;
@@ -151,10 +156,33 @@ const inFlightCount = computed(() => props.spans.reduce((n, s) => (s.endTime ===
       <span>now</span>
     </div>
 
-    <div class="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px]">
-      <div v-for="tenant in props.tenants" :key="tenant.id" class="flex items-center gap-1.5">
-        <span class="inline-block h-2 w-2 rounded-full" :style="{ backgroundColor: tenant.color }" />
-        <span class="text-slate-700 dark:text-slate-200">{{ tenant.name }}</span>
+    <div class="mt-2 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-[11px]">
+      <div class="flex flex-wrap items-center gap-x-4 gap-y-1">
+        <div v-for="tenant in props.tenants" :key="tenant.id" class="flex items-center gap-1.5">
+          <span
+            class="inline-block h-2 w-2 rounded-full"
+            :style="{ backgroundColor: tenant.color }"
+          />
+          <span class="text-slate-700 dark:text-slate-200">{{ tenant.name }}</span>
+        </div>
+      </div>
+      <div class="flex flex-wrap items-center gap-2">
+        <button
+          type="button"
+          :disabled="!props.running"
+          class="cursor-pointer rounded-md bg-slate-700 px-3 py-1.5 text-xs font-medium text-slate-100 transition-colors hover:bg-slate-600 disabled:cursor-not-allowed disabled:opacity-50"
+          @click="emit('dump-acme')"
+        >
+          Acme dumps 80
+        </button>
+        <button
+          type="button"
+          :disabled="!props.running"
+          class="cursor-pointer rounded-md bg-slate-700 px-3 py-1.5 text-xs font-medium text-slate-100 transition-colors hover:bg-slate-600 disabled:cursor-not-allowed disabled:opacity-50"
+          @click="emit('inject-incident')"
+        >
+          + P0 incident
+        </button>
       </div>
     </div>
   </div>

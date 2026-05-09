@@ -110,22 +110,6 @@ async function injectIncident(): Promise<void> {
         </select>
         <button
           type="button"
-          :disabled="!running"
-          class="cursor-pointer rounded-md bg-slate-700 px-3 py-1.5 text-xs font-medium text-slate-100 transition-colors hover:bg-slate-600 disabled:cursor-not-allowed disabled:opacity-50"
-          @click="dumpAcme"
-        >
-          Acme dumps 80
-        </button>
-        <button
-          type="button"
-          :disabled="!running"
-          class="cursor-pointer rounded-md bg-slate-700 px-3 py-1.5 text-xs font-medium text-slate-100 transition-colors hover:bg-slate-600 disabled:cursor-not-allowed disabled:opacity-50"
-          @click="injectIncident"
-        >
-          + P0 incident
-        </button>
-        <button
-          type="button"
           :disabled="running"
           class="cursor-pointer rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
           @click="start"
@@ -142,7 +126,13 @@ async function injectIncident(): Promise<void> {
 
     <!-- Resolution timeline -->
     <div class="mt-3">
-      <PriorityFairnessChart :spans="state.ticketHistory" :tenants="TENANTS" :running="running" />
+      <PriorityFairnessChart
+        :spans="state.ticketHistory"
+        :tenants="TENANTS"
+        :running="running"
+        @dump-acme="dumpAcme"
+        @inject-incident="injectIncident"
+      />
     </div>
 
     <!-- Two-column body -->

@@ -1,7 +1,19 @@
 services:
   temporal:
     image: temporalio/temporal:latest
-    command: server start-dev --ip 0.0.0.0 --ui-port 8233
+    command:
+      - server
+      - start-dev
+      - --ip
+      - 0.0.0.0
+      - --ui-port
+      - "8233"
+      - --dynamic-config-value
+      - matching.useNewMatcher=true
+      - --dynamic-config-value
+      - matching.enableFairness=true
+      - --dynamic-config-value
+      - matching.enableMigration=true
     ports:
       - "7233:7233" # gRPC — workers & clients
       - "8233:8233" # Web UI — http://localhost:8233
@@ -187,6 +199,31 @@ services:
     build:
       context: ./workers
       dockerfile: entity/Dockerfile
+    environment:
+      TEMPORAL_ADDRESS: temporal:7233
+      NATS_URL: nats://nats:4222
+      HEALTH_PORT: 8080
+    depends_on:
+      temporal:
+        condition: service_healthy
+      nats:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "/usr/local/bin/worker", "-healthcheck"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+    restart: unless-stopped
+
+  worker-priority-fairness:
+    build:
+      context: ./workers
+      dockerfile: priority-fairness/Dockerfile
     environment:
       TEMPORAL_ADDRESS: temporal:7233
       NATS_URL: nats://nats:4222

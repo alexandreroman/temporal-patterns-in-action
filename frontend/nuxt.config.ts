@@ -1,22 +1,16 @@
 import tailwindcss from "@tailwindcss/vite";
 
-if (process.platform === "darwin" && !process.env.CHOKIDAR_USEPOLLING) {
-  process.env.CHOKIDAR_USEPOLLING = "true";
-}
-
 export default defineNuxtConfig({
   compatibilityDate: "2026-04-01",
-  devtools: { enabled: true },
+  // Disabled: the in-browser devtools panel adds thousands of file
+  // watchers, which on macOS exhausts kqueue ("EMFILE: too many open
+  // files, watch") or burns 100% CPU when polling is forced. HMR
+  // works without it.
+  devtools: { enabled: false },
   modules: ["@nuxt/eslint"],
   css: ["~/assets/css/main.css"],
   vite: {
     plugins: [tailwindcss()],
-    server: {
-      watch: {
-        usePolling: process.platform === "darwin",
-        interval: 300,
-      },
-    },
   },
   typescript: {
     strict: true,

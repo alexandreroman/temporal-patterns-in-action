@@ -10,7 +10,7 @@ const props = defineProps<{
 
 const lang = useCodeLang();
 
-type RangeKey = "priority-build" | "activity-options" | "execute-activity";
+type RangeKey = "priority-build" | "execute-activity";
 
 interface PrioritySource extends CodeSource {
   ranges: Record<RangeKey, [number, number]>;
@@ -52,7 +52,6 @@ const SOURCES: Record<CodeLang, PrioritySource> = {
     ],
     ranges: {
       "priority-build": [8, 14],
-      "activity-options": [16, 19],
       "execute-activity": [22, 22],
     },
   },
@@ -87,7 +86,6 @@ const SOURCES: Record<CodeLang, PrioritySource> = {
     ],
     ranges: {
       "priority-build": [9, 15],
-      "activity-options": [17, 20],
       "execute-activity": [23, 23],
     },
   },
@@ -121,8 +119,9 @@ const SOURCES: Record<CodeLang, PrioritySource> = {
     ],
     ranges: {
       "priority-build": [11, 17],
-      "activity-options": [19, 23],
-      "execute-activity": [19, 19],
+      // Python passes priority/timeout as kwargs to execute_activity, so the
+      // whole call is the launch site — span the full multi-line call.
+      "execute-activity": [19, 23],
     },
   },
   typescript: {
@@ -157,7 +156,6 @@ const SOURCES: Record<CodeLang, PrioritySource> = {
     ],
     ranges: {
       "priority-build": [11, 17],
-      "activity-options": [19, 22],
       "execute-activity": [24, 24],
     },
   },
@@ -189,14 +187,19 @@ const currentHighlight = computed<[number, number] | null>(() => {
   if (!latest) return null;
 
   switch (latest) {
-    case "helpdesk.ticket.assigned":
+    // Announcement activities (run.seeded, dump.executed, incident.injected)
+    // fire BEFORE the priority-attached activities are dispatched — they map
+    // to the per-ticket Priority construction the workflow is about to do.
+    case "helpdesk.run.seeded":
     case "helpdesk.dump.executed":
     case "helpdesk.incident.injected":
       return src.ranges["priority-build"];
+    // ticket.assigned / ticket.resolved are emitted from inside ResolveTicket
+    // itself — the priority-attached activity is running and then returns, so
+    // both anchor the highlight on workflow.ExecuteActivity(...).
+    case "helpdesk.ticket.assigned":
     case "helpdesk.ticket.resolved":
       return src.ranges["execute-activity"];
-    case "helpdesk.run.seeded":
-      return src.ranges["activity-options"];
     default:
       return null;
   }

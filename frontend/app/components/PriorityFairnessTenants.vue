@@ -67,7 +67,7 @@ const lanes = computed<Lane[]>(() =>
         </div>
       </div>
 
-      <div class="mt-2 flex min-h-[26px] flex-wrap gap-1">
+      <div class="mt-2 flex min-h-[48px] flex-wrap content-start items-start gap-1">
         <span
           v-for="t in lane.visible"
           :key="t.id"

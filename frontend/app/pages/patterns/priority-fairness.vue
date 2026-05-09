@@ -350,8 +350,12 @@ onBeforeUnmount(stopTimer);
         <PriorityFairnessTenants :tenants="TENANTS" :state="state" />
         <PriorityFairnessWorkers :agents="state.agents" />
       </div>
-      <div>
-        <PriorityFairnessLog :log="state.log" :start-time="state.startTime" />
+      <div class="lg:relative">
+        <PriorityFairnessLog
+          class="max-lg:max-h-[380px] lg:absolute lg:inset-0"
+          :log="state.log"
+          :start-time="state.startTime"
+        />
       </div>
     </div>
 

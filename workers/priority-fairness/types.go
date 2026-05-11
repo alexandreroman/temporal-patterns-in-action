@@ -7,7 +7,8 @@ const TaskQueue = "patterns-priority-fairness"
 
 // Signal names accepted by HelpdeskRunWorkflow.
 const (
-	SignalInjectP0 = "inject-p0-incident"
+	SignalInjectP0    = "inject-p0-incident"
+	SignalTicketDone  = "ticket-done"
 )
 
 // MaxConcurrentActivities caps the worker's activity slot count. With 4 slots
@@ -49,17 +50,6 @@ type HelpdeskInput struct {
 	FairnessOn bool `json:"fairnessOn"`
 }
 
-// ResolveTicketActivityInput is the input to the ResolveTicket activity. It
-// carries the parent workflow's id and run id so the activity can publish its
-// business events onto the parent's NATS subject (the only subject the
-// frontend SSE endpoint subscribes to). Without this the events would land on
-// the child's subject and the UI would never see them.
-type ResolveTicketActivityInput struct {
-	Ticket           Ticket `json:"ticket"`
-	ParentWorkflowID string `json:"parentWorkflowId"`
-	ParentRunID      string `json:"parentRunId"`
-}
-
 // AnnounceSeedInput is the input to the announce-run-seeded activity, which
 // publishes the initial per-tenant queues to the UI. The map keys are
 // stringified tenant ids so the JSON payload matches the frontend types
@@ -73,4 +63,40 @@ type AnnounceSeedInput struct {
 type AnnounceIncidentInput struct {
 	TenantID Tenant `json:"tenant"`
 	Ticket   Ticket `json:"ticket"`
+}
+
+// ResolveTicketWorkflowInput is the input to ResolveTicketWorkflow. The
+// per-ticket Priority is set on the workflow's StartWorkflowOptions, not in
+// this struct, but the workflow still needs the parent's id+runID so the
+// ResolveTicket activity can publish business events onto the parent's NATS
+// subject (the only one the frontend SSE endpoint subscribes to).
+type ResolveTicketWorkflowInput struct {
+	Ticket           Ticket `json:"ticket"`
+	ParentWorkflowID string `json:"parentWorkflowId"`
+	ParentRunID      string `json:"parentRunId"`
+}
+
+// ResolveTicketActivityInput is the input to the ResolveTicket activity. It
+// carries the parent workflow's id and run id so the activity (running inside
+// the top-level ResolveTicketWorkflow) can publish its business events onto
+// the parent's NATS subject — the activity's own activity-context workflow id
+// is the per-ticket workflow's id, not the helpdesk run's.
+type ResolveTicketActivityInput struct {
+	Ticket           Ticket `json:"ticket"`
+	ParentWorkflowID string `json:"parentWorkflowId"`
+	ParentRunID      string `json:"parentRunId"`
+}
+
+// StartResolveTicketInput is the input to the StartResolveTicket local
+// activity. The activity uses the Temporal client to start a new top-level
+// ResolveTicketWorkflow with these StartWorkflowOptions fields — Priority
+// is what the matching service uses to order the ResolveTicket activity
+// the workflow then schedules.
+type StartResolveTicketInput struct {
+	WorkflowID       string      `json:"workflowId"`
+	Ticket           Ticket      `json:"ticket"`
+	ParentWorkflowID string      `json:"parentWorkflowId"`
+	ParentRunID      string      `json:"parentRunId"`
+	PriorityKey      PriorityKey `json:"priorityKey"`
+	FairnessOn       bool        `json:"fairnessOn"`
 }

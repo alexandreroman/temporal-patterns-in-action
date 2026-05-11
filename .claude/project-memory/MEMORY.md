@@ -29,3 +29,5 @@
 - [Nuxt SSR browser globals](references/feedback_nuxt_ssr_browser_globals.md) — wrap rAF/window/etc. in onMounted or `import.meta.client`; `watch(immediate:true)` is NOT an SSR guard. Smoke with `curl` after frontend edits.
 - [@temporalio/client 1.16+ breaks Nuxt SSR](references/project_temporalio_client_116_ssr_regression.md) — pin to `~1.15.0`; 1.16+ emits extension-less ESM imports that Node rejects, dev page stuck on 503 loader.
 - [Announce activities → ExecuteLocalActivity](references/feedback_announce_use_local_activity.md) — parent has no Priority, so regular announces inherit key 3 and block high-priority dispatch behind the backlog.
+- [Priority pattern: top-level workflow per ticket](references/feedback_priority_top_level_workflow.md) — each ticket runs as its own top-level workflow started via local activity + client.ExecuteWorkflow; never a ChildWorkflow.
+- [priority-fairness dials its own client](references/feedback_pf_local_client_dial.md) — don't widen events.RunWorker; dial the client locally in priority-fairness/cmd/worker/main.go.

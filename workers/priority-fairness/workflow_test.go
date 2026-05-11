@@ -4,7 +4,9 @@ import (
 	"context"
 	"sync"
 	"testing"
+	"time"
 
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.temporal.io/sdk/testsuite"
 
@@ -35,11 +37,28 @@ func (p *recordingPublisher) snapshot() []string {
 	return out
 }
 
+// stubStartResolveTicket mocks the StartResolveTicket local activity so the
+// test does not need a live Temporal client. For every dispatched ticket the
+// mock immediately schedules a SignalTicketDone callback on the test env,
+// driving the parent's drain loop without actually running per-ticket
+// workflows.
+func stubStartResolveTicket(env *testsuite.TestWorkflowEnvironment, a *Activities) {
+	env.OnActivity(a.StartResolveTicket, mock.Anything, mock.Anything).Return(
+		func(_ context.Context, in StartResolveTicketInput) error {
+			env.RegisterDelayedCallback(func() {
+				env.SignalWorkflow(SignalTicketDone, in.Ticket.ID)
+			}, time.Millisecond)
+			return nil
+		},
+	)
+}
+
 func TestHelpdeskRunWorkflow_HappyPath(t *testing.T) {
 	suite := &testsuite.WorkflowTestSuite{}
 	env := suite.NewTestWorkflowEnvironment()
-	env.RegisterActivity(&Activities{Publisher: events.NopPublisher{}})
-	env.RegisterWorkflow(ResolveTicketWorkflow)
+	a := &Activities{Publisher: events.NopPublisher{}}
+	env.RegisterActivity(a)
+	stubStartResolveTicket(env, a)
 
 	env.ExecuteWorkflow(HelpdeskRunWorkflow, HelpdeskInput{FairnessOn: true})
 
@@ -54,8 +73,9 @@ func TestHelpdeskRunWorkflow_PublishesSeedEvent(t *testing.T) {
 	env := suite.NewTestWorkflowEnvironment()
 
 	pub := &recordingPublisher{}
-	env.RegisterActivity(&Activities{Publisher: pub})
-	env.RegisterWorkflow(ResolveTicketWorkflow)
+	a := &Activities{Publisher: pub}
+	env.RegisterActivity(a)
+	stubStartResolveTicket(env, a)
 
 	env.ExecuteWorkflow(HelpdeskRunWorkflow, HelpdeskInput{FairnessOn: false})
 

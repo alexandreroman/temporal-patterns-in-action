@@ -6,13 +6,18 @@ import (
 	"sync"
 	"time"
 
+	"go.temporal.io/sdk/client"
+	"go.temporal.io/sdk/temporal"
+
 	"github.com/alexandreroman/temporal-patterns-in-action/workers/events"
 )
 
-// Activities groups the helpdesk pattern activities. The Publisher is wired
-// from the worker's main; tests pass a NopPublisher.
+// Activities groups the helpdesk pattern activities. The Publisher and
+// Client are wired from the worker's main; tests pass a NopPublisher and
+// usually mock StartResolveTicket so the nil Client never gets dialled.
 type Activities struct {
 	Publisher events.Publisher
+	Client    client.Client
 
 	once sync.Once
 	pool *slotPool
@@ -53,14 +58,40 @@ func (a *Activities) AnnounceIncidentInjected(ctx context.Context, in AnnounceIn
 	return nil
 }
 
+// StartResolveTicket is a local activity that hands a single ticket off to
+// the Temporal client, creating a brand-new top-level ResolveTicketWorkflow
+// (not a ChildWorkflow). The per-ticket temporal.Priority is built here and
+// pinned on StartWorkflowOptions; the ResolveTicket activity inside the new
+// workflow inherits that Priority via SDK semantics, so the matching service
+// sees per-task Priority on every schedule. Returns as soon as the workflow
+// is created — completion comes back later as a SignalTicketDone signal.
+func (a *Activities) StartResolveTicket(ctx context.Context, in StartResolveTicketInput) error {
+	p := temporal.Priority{PriorityKey: int(in.PriorityKey)}
+	if in.FairnessOn {
+		p.FairnessKey = string(in.Ticket.Tenant)
+		p.FairnessWeight = TenantWeight[in.Ticket.Tenant]
+	}
+	_, err := a.Client.ExecuteWorkflow(ctx, client.StartWorkflowOptions{
+		ID:        in.WorkflowID,
+		TaskQueue: TaskQueue,
+		Priority:  p,
+	}, ResolveTicketWorkflow, ResolveTicketWorkflowInput{
+		Ticket:           in.Ticket,
+		ParentWorkflowID: in.ParentWorkflowID,
+		ParentRunID:      in.ParentRunID,
+	})
+	return err
+}
+
 // ResolveTicket simulates an agent processing a ticket. It acquires a slot
 // from the pool, publishes helpdesk.ticket.assigned with the agent id, sleeps
 // for a priority-dependent duration to mimic resolution time (P0 incidents
 // take longer so the block stays visible in the swim-lane), then publishes
-// helpdesk.ticket.resolved. Business events are published with the parent
-// workflow's id (carried in the input) so they land on the NATS subject the
-// frontend SSE endpoint subscribes to — the child's own id is invisible to
-// the UI.
+// helpdesk.ticket.resolved. The activity runs inside the per-ticket
+// ResolveTicketWorkflow, so its activity-context workflow id is the
+// per-ticket workflow's — we publish business events with the helpdesk
+// run's id (carried in the input) so they land on the NATS subject the
+// frontend SSE endpoint subscribes to.
 func (a *Activities) ResolveTicket(ctx context.Context, in ResolveTicketActivityInput) error {
 	t := in.Ticket
 	pool := a.slotPoolHandle()

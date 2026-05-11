@@ -53,11 +53,11 @@ async function start(): Promise<void> {
   }
 }
 
-async function dumpAcme(): Promise<void> {
+async function burstAll(): Promise<void> {
   const id = workflowId.value;
   if (!id || !running.value) return;
   try {
-    await $fetch<PriorityFairnessSignalResponse>("/api/priority-fairness/dump", {
+    await $fetch<PriorityFairnessSignalResponse>("/api/priority-fairness/burst", {
       method: "POST",
       body: { workflowId: id } satisfies PriorityFairnessSignalRequest,
     });
@@ -127,7 +127,7 @@ async function injectIncident(): Promise<void> {
         :spans="state.ticketHistory"
         :tenants="TENANTS"
         :running="running"
-        @dump-acme="dumpAcme"
+        @burst-all="burstAll"
         @inject-incident="injectIncident"
       />
     </div>

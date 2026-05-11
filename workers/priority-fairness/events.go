@@ -13,6 +13,6 @@ const (
 	TypeRunSeeded        = "helpdesk.run.seeded"
 	TypeTicketAssigned   = "helpdesk.ticket.assigned"
 	TypeTicketResolved   = "helpdesk.ticket.resolved"
-	TypeDumpExecuted     = "helpdesk.dump.executed"
+	TypeBurstExecuted    = "helpdesk.burst.executed"
 	TypeIncidentInjected = "helpdesk.incident.injected"
 )

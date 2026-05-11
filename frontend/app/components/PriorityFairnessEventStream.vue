@@ -38,9 +38,9 @@ function eventLabel(env: EventEnvelope): string {
       return `${tenant} assigned ${ticketId} (${prio}) → ${agent}`;
     case "helpdesk.ticket.resolved":
       return `${tenant} resolved ${ticketId} (${prio}) by ${agent}`;
-    case "helpdesk.dump.executed": {
-      const count = typeof data.count === "number" ? data.count : 0;
-      return `${tenant} flood — ${count} tickets queued`;
+    case "helpdesk.burst.executed": {
+      const total = typeof data.total === "number" ? data.total : 0;
+      return `Surge — ${total} tickets across all tenants`;
     }
     case "helpdesk.incident.injected":
       return `P0 incident injected for ${tenant} (${ticketId})`;
@@ -69,7 +69,7 @@ function dotColor(env: EventEnvelope): DotColor {
     case "helpdesk.ticket.resolved":
     case "progress.workflow.completed":
       return "green";
-    case "helpdesk.dump.executed":
+    case "helpdesk.burst.executed":
       return "amber";
     case "helpdesk.incident.injected":
     case "progress.workflow.failed":

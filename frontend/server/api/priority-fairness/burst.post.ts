@@ -9,7 +9,7 @@ export default defineEventHandler(async (event): Promise<PriorityFairnessSignalR
   const client = await getTemporalClient();
   const handle = client.workflow.getHandle(body.workflowId);
 
-  await handle.signal(PRIORITY_FAIRNESS_SIGNAL_DUMP, {});
+  await handle.signal(PRIORITY_FAIRNESS_SIGNAL_BURST, {});
 
   return { workflowId: body.workflowId };
 });

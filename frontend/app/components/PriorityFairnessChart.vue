@@ -26,7 +26,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: "dump-acme" | "inject-incident"): void;
+  (e: "burst-all" | "inject-incident"): void;
 }>();
 
 interface Block {
@@ -125,19 +125,19 @@ const inFlightCount = computed(() =>
 );
 
 const FLASH_MS = 700;
-const flashDump = ref(false);
+const flashBurst = ref(false);
 const flashIncident = ref(false);
-let dumpTimer: ReturnType<typeof setTimeout> | null = null;
+let burstTimer: ReturnType<typeof setTimeout> | null = null;
 let incidentTimer: ReturnType<typeof setTimeout> | null = null;
 
-function clickDump(): void {
+function clickBurst(): void {
   if (!props.running) return;
-  emit("dump-acme");
-  flashDump.value = true;
-  if (dumpTimer) clearTimeout(dumpTimer);
-  dumpTimer = setTimeout(() => {
-    flashDump.value = false;
-    dumpTimer = null;
+  emit("burst-all");
+  flashBurst.value = true;
+  if (burstTimer) clearTimeout(burstTimer);
+  burstTimer = setTimeout(() => {
+    flashBurst.value = false;
+    burstTimer = null;
   }, FLASH_MS);
 }
 
@@ -153,7 +153,7 @@ function clickIncident(): void {
 }
 
 onBeforeUnmount(() => {
-  if (dumpTimer) clearTimeout(dumpTimer);
+  if (burstTimer) clearTimeout(burstTimer);
   if (incidentTimer) clearTimeout(incidentTimer);
 });
 </script>
@@ -236,18 +236,18 @@ onBeforeUnmount(() => {
             'transition-all duration-150 ease-out',
             'enabled:cursor-pointer enabled:active:scale-95',
             'disabled:cursor-not-allowed disabled:opacity-40 disabled:grayscale',
-            flashDump
+            flashBurst
               ? 'bg-emerald-600 ring-2 ring-emerald-300/70 ring-offset-2 ring-offset-white dark:ring-offset-slate-900'
               : 'bg-slate-700 enabled:hover:bg-slate-600',
           ]"
-          @click="clickDump"
+          @click="clickBurst"
         >
           <span class="grid">
-            <span class="col-start-1 row-start-1" :class="flashDump ? 'invisible' : ''">
-              Mission Critical dumps 80
+            <span class="col-start-1 row-start-1" :class="flashBurst ? 'invisible' : ''">
+              Surge all tenants (+45)
             </span>
-            <span class="col-start-1 row-start-1" :class="flashDump ? '' : 'invisible'">
-              Dumped ✓
+            <span class="col-start-1 row-start-1" :class="flashBurst ? '' : 'invisible'">
+              Surge sent ✓
             </span>
           </span>
         </button>

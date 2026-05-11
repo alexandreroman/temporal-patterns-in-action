@@ -51,9 +51,9 @@ interface SeededPayload {
   tenants?: Partial<Record<TenantId, Ticket[]>>;
 }
 
-interface DumpPayload {
-  tenantId?: TenantId;
-  tickets?: Ticket[];
+interface BurstPayload {
+  tenants?: Partial<Record<TenantId, Ticket[]>>;
+  total?: number;
 }
 
 interface IncidentPayload {
@@ -84,8 +84,8 @@ function deriveState(events: readonly EventEnvelope[]): SimState {
       case "helpdesk.run.seeded":
         applySeed(state, env.data as SeededPayload, time);
         break;
-      case "helpdesk.dump.executed":
-        applyDump(state, env.data as DumpPayload);
+      case "helpdesk.burst.executed":
+        applyBurst(state, env.data as BurstPayload);
         break;
       case "helpdesk.incident.injected":
         applyIncident(state, env.data as IncidentPayload);
@@ -114,9 +114,13 @@ function applySeed(state: SimState, data: SeededPayload, time: number): void {
   };
 }
 
-function applyDump(state: SimState, data: DumpPayload): void {
-  if (!data.tenantId || !data.tickets) return;
-  state.queues[data.tenantId].push(...data.tickets);
+function applyBurst(state: SimState, data: BurstPayload): void {
+  if (!data.tenants) return;
+  for (const [tenantId, tickets] of Object.entries(data.tenants)) {
+    if (!tickets) continue;
+    const id = tenantId as TenantId;
+    if (state.queues[id]) state.queues[id].push(...tickets);
+  }
 }
 
 function applyIncident(state: SimState, data: IncidentPayload): void {

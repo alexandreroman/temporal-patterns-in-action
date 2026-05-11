@@ -41,13 +41,20 @@ func (a *Activities) AnnounceRunSeeded(ctx context.Context, in AnnounceSeedInput
 	return nil
 }
 
-// AnnounceDumpExecuted publishes one helpdesk.dump.executed business event so
-// the UI can append the dumped tickets to the affected tenant's queue.
-func (a *Activities) AnnounceDumpExecuted(ctx context.Context, in AnnounceDumpInput) error {
-	events.PublishBusiness(ctx, a.Publisher, Pattern, TypeDumpExecuted, map[string]any{
-		"tenantId": string(in.TenantID),
-		"tickets":  in.Tickets,
-		"count":    len(in.Tickets),
+// AnnounceBurstExecuted publishes one helpdesk.burst.executed business event
+// so the UI can append the burst tickets to every tenant's queue at once. The
+// total counts the tickets across all tenants — the event-stream label uses it
+// to summarise the surge in a single line.
+func (a *Activities) AnnounceBurstExecuted(ctx context.Context, in AnnounceBurstInput) error {
+	total := 0
+	tenants := make(map[string][]Ticket, len(in.Tenants))
+	for tenant, tickets := range in.Tenants {
+		tenants[string(tenant)] = tickets
+		total += len(tickets)
+	}
+	events.PublishBusiness(ctx, a.Publisher, Pattern, TypeBurstExecuted, map[string]any{
+		"tenants": tenants,
+		"total":   total,
 	})
 	return nil
 }

@@ -38,8 +38,6 @@ interface Block {
   title: string;
   /** P0 blocks get a persistent red ring + diagonal hashure so they pop against the tenant fill. */
   isP0: boolean;
-  /** True for the first ~2 s after a P0 span appears — drives the block-level zoom animation. */
-  justArrived: boolean;
 }
 
 interface Lane {
@@ -47,9 +45,10 @@ interface Lane {
   blocks: Block[];
   /** True for ~2 s after a P0 block lands in this lane — drives the lane background red flash. */
   p0Landing: boolean;
+  /** True while the lane contains any P0 block — keeps overflow visible so the 4 s pulse animation isn't clipped mid-cycle. */
+  hasP0: boolean;
 }
 
-const P0_FLASH_MS = 2000;
 const P0_LANE_FLASH_MS = 2000;
 const P0_RING_COLOR = "#E8513C"; // matches PRIORITIES[0].bg
 
@@ -107,7 +106,6 @@ const lanes = computed<Lane[]>(() => {
       inFlight: span.endTime === null,
       title: `${span.ticketId} · ${tenant.name} · ${label}`,
       isP0,
-      justArrived: isP0 && ageMs < P0_FLASH_MS,
     });
     if (isP0 && ageMs < P0_LANE_FLASH_MS) {
       bucket.p0Landing = true;
@@ -116,7 +114,12 @@ const lanes = computed<Lane[]>(() => {
 
   return AGENT_SLOTS.map((slot) => {
     const b = bySlot.get(slot) ?? { blocks: [], p0Landing: false };
-    return { slot, blocks: b.blocks, p0Landing: b.p0Landing };
+    return {
+      slot,
+      blocks: b.blocks,
+      p0Landing: b.p0Landing,
+      hasP0: b.blocks.some((block) => block.isP0),
+    };
   });
 });
 
@@ -181,7 +184,10 @@ onBeforeUnmount(() => {
         </span>
         <div
           class="relative h-4 flex-1 rounded-md bg-slate-100 dark:bg-slate-800/60"
-          :class="lane.p0Landing ? 'pf-p0-lane-flash overflow-visible' : 'overflow-hidden'"
+          :class="[
+            lane.p0Landing ? 'pf-p0-lane-flash' : '',
+            lane.hasP0 ? 'overflow-visible' : 'overflow-hidden',
+          ]"
         >
           <div
             v-for="block in lane.blocks"
@@ -189,7 +195,7 @@ onBeforeUnmount(() => {
             class="absolute top-0 bottom-0 rounded-sm"
             :class="[
               block.inFlight ? 'opacity-90' : '',
-              block.justArrived ? 'pf-p0-flash' : '',
+              block.isP0 ? 'pf-p0-pulse' : '',
             ]"
             :style="{
               left: `${block.leftPct}%`,
@@ -280,22 +286,18 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
-@keyframes pf-p0-flash {
-  0% {
-    filter: brightness(1.7) saturate(1.4);
-    transform: scale(1.3);
+@keyframes pf-p0-pulse {
+  0%, 100% {
+    filter: brightness(1) saturate(1);
+    transform: scale(1, 1);
   }
   50% {
     filter: brightness(1.35) saturate(1.2);
-    transform: scale(1.2);
-  }
-  100% {
-    filter: brightness(1) saturate(1);
-    transform: scale(1);
+    transform: scale(1.18, 1.32);
   }
 }
-.pf-p0-flash {
-  animation: pf-p0-flash 2000ms ease-out;
+.pf-p0-pulse {
+  animation: pf-p0-pulse 1400ms ease-in-out 3;
   transform-origin: center;
   z-index: 1;
 }

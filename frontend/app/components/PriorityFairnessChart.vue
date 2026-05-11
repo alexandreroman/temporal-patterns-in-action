@@ -172,7 +172,7 @@ onBeforeUnmount(() => {
           class="relative h-4 flex-1 rounded-md bg-slate-100 dark:bg-slate-800/60"
           :class="[
             lane.p0Landing ? 'pf-p0-lane-flash' : '',
-            lane.hasP0 ? 'overflow-visible' : 'overflow-hidden',
+            lane.hasP0 ? 'z-10 overflow-visible' : 'overflow-hidden',
           ]"
         >
           <div

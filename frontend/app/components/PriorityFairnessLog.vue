@@ -3,9 +3,11 @@ import { computed } from "vue";
 import { formatLogTime, priorityLevel, tenantById, type LogEntry } from "~/utils/priority-fairness";
 
 /**
- * Resolution log — newest first, monospace. Each row shows the relative
- * timestamp (MM:SS.d), the ticket as a priority-colored chip (matching the
- * queue chips), a tenant-colored pill, and the agent slot that resolved it.
+ * Activity log — newest first, monospace. Each row shows the relative
+ * dispatch timestamp (MM:SS.d), the ticket as a priority-colored chip
+ * (matching the queue chips), a tenant-colored pill, and the agent slot that
+ * picked the ticket up. Fired by the same event as the swim-lane chart so
+ * the two visualisations stay synchronised.
  */
 
 const props = defineProps<{
@@ -51,7 +53,7 @@ const rows = computed<Row[]>(() =>
       class="flex items-center justify-between gap-3 border-b border-slate-200 px-3 py-2 dark:border-slate-700"
     >
       <div class="text-xs font-medium text-slate-700 dark:text-slate-300">
-        Resolution log <span class="text-slate-400 dark:text-slate-500">&middot; newest first</span>
+        Activity log <span class="text-slate-400 dark:text-slate-500">&middot; newest first</span>
       </div>
       <div class="font-mono text-[11px] tabular-nums text-slate-500 dark:text-slate-400">
         {{ log.length }}
@@ -63,7 +65,7 @@ const rows = computed<Row[]>(() =>
         v-if="rows.length === 0"
         class="py-6 text-center text-[11px] text-slate-400 dark:text-slate-500"
       >
-        (no resolutions yet)
+        (no activity yet)
       </p>
       <ul v-else class="flex flex-col gap-1 font-mono text-[11px]">
         <li v-for="row in rows" :key="row.key" class="flex items-center gap-2">

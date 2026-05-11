@@ -36,22 +36,22 @@ interface Block {
   color: string;
   inFlight: boolean;
   title: string;
-  /** P0 blocks get a persistent red ring so they pop against the tenant fill. */
+  /** P0 blocks get a persistent red ring + diagonal hashure so they pop against the tenant fill. */
   isP0: boolean;
-  /** True for the first ~700 ms after a P0 span appears — drives the flash animation. */
+  /** True for the first ~2 s after a P0 span appears — drives the block-level zoom animation. */
   justArrived: boolean;
+}
+
+interface Lane {
+  slot: AgentSlot;
+  blocks: Block[];
+  /** True for ~2 s after a P0 block lands in this lane — drives the lane background red flash. */
+  p0Landing: boolean;
 }
 
 const P0_FLASH_MS = 2000;
 const P0_LANE_FLASH_MS = 2000;
 const P0_RING_COLOR = "#E8513C"; // matches PRIORITIES[0].bg
-
-interface Lane {
-  slot: AgentSlot;
-  blocks: Block[];
-  /** True for ~2 s after a P0 block lands in this lane — drives the lane-level red flash + zoom. */
-  p0Landing: boolean;
-}
 
 const now = ref(Date.now());
 let raf = 0;
@@ -318,3 +318,4 @@ onBeforeUnmount(() => {
   animation: pf-p0-lane-flash 2000ms ease-out;
 }
 </style>
+

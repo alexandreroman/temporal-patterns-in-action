@@ -56,11 +56,6 @@ interface BurstPayload {
   total?: number;
 }
 
-interface IncidentPayload {
-  tenantId?: TenantId;
-  ticket?: Ticket;
-}
-
 interface AssignedPayload {
   tenantId?: TenantId;
   ticketId?: string;
@@ -87,9 +82,11 @@ function deriveState(events: readonly EventEnvelope[]): SimState {
       case "helpdesk.burst.executed":
         applyBurst(state, env.data as BurstPayload);
         break;
-      case "helpdesk.incident.injected":
-        applyIncident(state, env.data as IncidentPayload);
-        break;
+      // helpdesk.incident.injected is intentionally not consumed here: a P0
+      // injection only takes effect in the UI when a worker actually picks
+      // the ticket up (via helpdesk.ticket.assigned), exactly like seed and
+      // burst tickets. The event remains useful for the event-stream log
+      // and code-viewer highlight.
       case "helpdesk.ticket.assigned":
         applyAssigned(state, env.data as AssignedPayload, time);
         break;
@@ -123,23 +120,15 @@ function applyBurst(state: SimState, data: BurstPayload): void {
   }
 }
 
-function applyIncident(state: SimState, data: IncidentPayload): void {
-  if (!data.tenantId || !data.ticket) return;
-  state.queues[data.tenantId].unshift(data.ticket);
-}
-
 function applyAssigned(state: SimState, data: AssignedPayload, time: number): void {
   if (!data.tenantId || !data.agent || !data.ticketId) return;
   const queue = state.queues[data.tenantId];
   const idx = queue.findIndex((t) => t.id === data.ticketId);
+  const priorityKey = (data.priorityKey ?? 4) as PriorityKey;
   const ticket: Ticket =
     idx >= 0
       ? (queue.splice(idx, 1)[0] as Ticket)
-      : {
-          id: data.ticketId,
-          tenantId: data.tenantId,
-          priorityKey: (data.priorityKey ?? 4) as PriorityKey,
-        };
+      : { id: data.ticketId, tenantId: data.tenantId, priorityKey };
 
   const agent = state.agents.find((a) => a.slot === data.agent);
   if (!agent) return;
@@ -154,10 +143,21 @@ function applyAssigned(state: SimState, data: AssignedPayload, time: number): vo
     ticketId: data.ticketId,
     agent: data.agent,
     tenantId: data.tenantId,
-    priorityKey: (data.priorityKey ?? 4) as PriorityKey,
+    priorityKey,
     startTime: time,
     endTime: null,
   });
+  // Log entry fires on assignment (the same event that pushes the swim-lane
+  // span) so the two visualisations stay synchronised — a row appears in the
+  // log at the exact moment its block lands in the chart.
+  state.log.unshift({
+    time,
+    ticket: data.ticketId,
+    tenantId: data.tenantId,
+    agent: data.agent,
+    priorityKey,
+  });
+  if (state.log.length > LOG_CAP) state.log.length = LOG_CAP;
 }
 
 function applyResolved(state: SimState, data: ResolvedPayload, time: number): void {
@@ -170,14 +170,6 @@ function applyResolved(state: SimState, data: ResolvedPayload, time: number): vo
     agent.duration = 0;
   }
   state.resolved[data.tenantId] += 1;
-  state.log.unshift({
-    time,
-    ticket: data.ticketId,
-    tenantId: data.tenantId,
-    agent: data.agent,
-    priorityKey: (data.priorityKey ?? 4) as PriorityKey,
-  });
-  if (state.log.length > LOG_CAP) state.log.length = LOG_CAP;
 
   for (let i = state.ticketHistory.length - 1; i >= 0; i--) {
     const span = state.ticketHistory[i];

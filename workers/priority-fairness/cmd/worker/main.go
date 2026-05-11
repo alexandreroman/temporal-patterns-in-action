@@ -20,8 +20,6 @@ func main() {
 		a := &pf.Activities{Publisher: pub}
 		w.RegisterActivityWithOptions(a.AnnounceRunSeeded,
 			activity.RegisterOptions{Name: "announce-run-seeded"})
-		w.RegisterActivityWithOptions(a.AnnounceBurstExecuted,
-			activity.RegisterOptions{Name: "announce-burst-executed"})
 		w.RegisterActivityWithOptions(a.AnnounceIncidentInjected,
 			activity.RegisterOptions{Name: "announce-incident-injected"})
 		w.RegisterActivityWithOptions(a.ResolveTicket,

@@ -7,17 +7,8 @@ const TaskQueue = "patterns-priority-fairness"
 
 // Signal names accepted by HelpdeskRunWorkflow.
 const (
-	SignalBurstAll = "burst-all-tenants"
 	SignalInjectP0 = "inject-p0-incident"
 )
-
-// BurstPerTenant is how many P2 tickets the burst-all-tenants signal appends
-// to *each* tenant's queue at once. Equal volume across tiers isolates the
-// fairness mechanism: with fairness off the matching service drains FIFO at
-// equal priority, so all tenants progress together; with fairness on the
-// 10/3/1 weights produce a clean proportional drain (Mission Critical first,
-// Business last), making the SLA-by-weight story visually unambiguous.
-const BurstPerTenant = 15
 
 // MaxConcurrentActivities caps the worker's activity slot count. With 4 slots
 // and many backlogged tickets, Temporal's task queue dispatches according to
@@ -76,13 +67,6 @@ type ResolveTicketActivityInput struct {
 type AnnounceSeedInput struct {
 	FairnessOn bool                `json:"fairnessOn"`
 	Tenants    map[Tenant][]Ticket `json:"tenants"`
-}
-
-// AnnounceBurstInput is the input to the announce-burst-executed activity.
-// Tenants maps each tenant id to the tickets the burst just appended to that
-// tenant's queue.
-type AnnounceBurstInput struct {
-	Tenants map[Tenant][]Ticket `json:"tenants"`
 }
 
 // AnnounceIncidentInput is the input to the announce-incident-injected activity.

@@ -53,19 +53,6 @@ async function start(): Promise<void> {
   }
 }
 
-async function burstAll(): Promise<void> {
-  const id = workflowId.value;
-  if (!id || !running.value) return;
-  try {
-    await $fetch<PriorityFairnessSignalResponse>("/api/priority-fairness/burst", {
-      method: "POST",
-      body: { workflowId: id } satisfies PriorityFairnessSignalRequest,
-    });
-  } catch (error) {
-    finalError.value = error instanceof Error ? error.message : String(error);
-  }
-}
-
 async function injectIncident(): Promise<void> {
   const id = workflowId.value;
   if (!id || !running.value) return;
@@ -127,7 +114,6 @@ async function injectIncident(): Promise<void> {
         :spans="state.ticketHistory"
         :tenants="TENANTS"
         :running="running"
-        @burst-all="burstAll"
         @inject-incident="injectIncident"
       />
     </div>

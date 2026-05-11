@@ -40,24 +40,6 @@ func (a *Activities) AnnounceRunSeeded(ctx context.Context, in AnnounceSeedInput
 	return nil
 }
 
-// AnnounceBurstExecuted publishes one helpdesk.burst.executed business event
-// so the UI can append the burst tickets to every tenant's queue at once. The
-// total counts the tickets across all tenants — the event-stream label uses it
-// to summarise the surge in a single line.
-func (a *Activities) AnnounceBurstExecuted(ctx context.Context, in AnnounceBurstInput) error {
-	total := 0
-	tenants := make(map[string][]Ticket, len(in.Tenants))
-	for tenant, tickets := range in.Tenants {
-		tenants[string(tenant)] = tickets
-		total += len(tickets)
-	}
-	events.PublishBusiness(ctx, a.Publisher, Pattern, TypeBurstExecuted, map[string]any{
-		"tenants": tenants,
-		"total":   total,
-	})
-	return nil
-}
-
 // AnnounceIncidentInjected publishes one helpdesk.incident.injected business
 // event for the P0 ticket the workflow just queued. ticketId is kept at the
 // top level so the generic event-stream label can render it without reaching

@@ -337,7 +337,6 @@ function latestRelevantType(events: EventEnvelope[]): string | null {
     switch (env.type) {
       case "helpdesk.ticket.assigned":
       case "helpdesk.ticket.resolved":
-      case "helpdesk.burst.executed":
       case "helpdesk.incident.injected":
       case "helpdesk.run.seeded":
       case "progress.workflow.completed":
@@ -356,11 +355,10 @@ const currentHighlight = computed<[number, number] | null>(() => {
   if (!latest) return null;
 
   switch (latest) {
-    // Announcement activities (run.seeded, burst.executed, incident.injected)
-    // fire BEFORE the priority-attached activities are dispatched — they map
-    // to the per-ticket Priority construction the workflow is about to do.
+    // Announcement activities (run.seeded, incident.injected) fire BEFORE the
+    // priority-attached activities are dispatched — they map to the per-ticket
+    // Priority construction the workflow is about to do.
     case "helpdesk.run.seeded":
-    case "helpdesk.burst.executed":
     case "helpdesk.incident.injected":
       return src.ranges["priority-build"];
     // ticket.assigned / ticket.resolved are emitted from inside ResolveTicket

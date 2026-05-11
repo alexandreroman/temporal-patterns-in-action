@@ -26,7 +26,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-  (e: "burst-all" | "inject-incident"): void;
+  (e: "inject-incident"): void;
 }>();
 
 interface Block {
@@ -128,21 +128,8 @@ const inFlightCount = computed(() =>
 );
 
 const FLASH_MS = 700;
-const flashBurst = ref(false);
 const flashIncident = ref(false);
-let burstTimer: ReturnType<typeof setTimeout> | null = null;
 let incidentTimer: ReturnType<typeof setTimeout> | null = null;
-
-function clickBurst(): void {
-  if (!props.running) return;
-  emit("burst-all");
-  flashBurst.value = true;
-  if (burstTimer) clearTimeout(burstTimer);
-  burstTimer = setTimeout(() => {
-    flashBurst.value = false;
-    burstTimer = null;
-  }, FLASH_MS);
-}
 
 function clickIncident(): void {
   if (!props.running) return;
@@ -156,7 +143,6 @@ function clickIncident(): void {
 }
 
 onBeforeUnmount(() => {
-  if (burstTimer) clearTimeout(burstTimer);
   if (incidentTimer) clearTimeout(incidentTimer);
 });
 </script>
@@ -234,29 +220,6 @@ onBeforeUnmount(() => {
         </div>
       </div>
       <div class="flex flex-wrap items-center gap-2">
-        <button
-          type="button"
-          :disabled="!props.running"
-          :class="[
-            'rounded-md px-3 py-1.5 text-xs font-medium text-slate-100',
-            'transition-all duration-150 ease-out',
-            'enabled:cursor-pointer enabled:active:scale-95',
-            'disabled:cursor-not-allowed disabled:opacity-40 disabled:grayscale',
-            flashBurst
-              ? 'bg-emerald-600 ring-2 ring-emerald-300/70 ring-offset-2 ring-offset-white dark:ring-offset-slate-900'
-              : 'bg-slate-700 enabled:hover:bg-slate-600',
-          ]"
-          @click="clickBurst"
-        >
-          <span class="grid">
-            <span class="col-start-1 row-start-1" :class="flashBurst ? 'invisible' : ''">
-              Surge all tenants (+45)
-            </span>
-            <span class="col-start-1 row-start-1" :class="flashBurst ? '' : 'invisible'">
-              Surge sent ✓
-            </span>
-          </span>
-        </button>
         <button
           type="button"
           :disabled="!props.running"

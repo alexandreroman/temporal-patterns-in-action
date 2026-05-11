@@ -51,11 +51,6 @@ interface SeededPayload {
   tenants?: Partial<Record<TenantId, Ticket[]>>;
 }
 
-interface BurstPayload {
-  tenants?: Partial<Record<TenantId, Ticket[]>>;
-  total?: number;
-}
-
 interface AssignedPayload {
   tenant?: TenantId;
   ticketId?: string;
@@ -79,14 +74,11 @@ function deriveState(events: readonly EventEnvelope[]): SimState {
       case "helpdesk.run.seeded":
         applySeed(state, env.data as SeededPayload, time);
         break;
-      case "helpdesk.burst.executed":
-        applyBurst(state, env.data as BurstPayload);
-        break;
       // helpdesk.incident.injected is intentionally not consumed here: a P0
       // injection only takes effect in the UI when a worker actually picks
-      // the ticket up (via helpdesk.ticket.assigned), exactly like seed and
-      // burst tickets. The event remains useful for the event-stream log
-      // and code-viewer highlight.
+      // the ticket up (via helpdesk.ticket.assigned), exactly like seed
+      // tickets. The event remains useful for the event-stream log and
+      // code-viewer highlight.
       case "helpdesk.ticket.assigned":
         applyAssigned(state, env.data as AssignedPayload, time);
         break;
@@ -109,15 +101,6 @@ function applySeed(state: SimState, data: SeededPayload, time: number): void {
     enterprise: [...(data.tenants?.enterprise ?? [])],
     business: [...(data.tenants?.business ?? [])],
   };
-}
-
-function applyBurst(state: SimState, data: BurstPayload): void {
-  if (!data.tenants) return;
-  for (const [tenantId, tickets] of Object.entries(data.tenants)) {
-    if (!tickets) continue;
-    const id = tenantId as TenantId;
-    if (state.queues[id]) state.queues[id].push(...tickets);
-  }
 }
 
 function applyAssigned(state: SimState, data: AssignedPayload, time: number): void {

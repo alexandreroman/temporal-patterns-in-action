@@ -65,5 +65,4 @@ export const ENTITY_QUERY_GET_CART = "getCart";
 
 export const PRIORITY_FAIRNESS_TASK_QUEUE = "patterns-priority-fairness";
 export const PRIORITY_FAIRNESS_WORKFLOW_TYPE = "HelpdeskRunWorkflow";
-export const PRIORITY_FAIRNESS_SIGNAL_BURST = "burst-all-tenants";
 export const PRIORITY_FAIRNESS_SIGNAL_INCIDENT = "inject-p0-incident";

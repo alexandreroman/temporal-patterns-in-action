@@ -89,8 +89,8 @@ async function injectIncident(): Promise<void> {
           :disabled="running"
           class="rounded-md border border-slate-700 bg-slate-800 px-2 py-1 text-xs text-slate-200 disabled:opacity-50"
         >
-          <option value="fairness-off">Fairness off (Business waits at the back)</option>
-          <option value="fairness-on">Fairness on (proportional sharing)</option>
+          <option value="fairness-off">Fairness OFF</option>
+          <option value="fairness-on">Fairness ON</option>
         </select>
         <button
           type="button"

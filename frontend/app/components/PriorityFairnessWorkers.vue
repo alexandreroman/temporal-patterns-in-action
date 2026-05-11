@@ -71,35 +71,43 @@ const cards = computed<Card[]>(() =>
           {{ card.slot }}
         </span>
         <span
-          v-if="card.busy"
           class="rounded-md px-1.5 py-0.5 font-mono text-[10px] tabular-nums"
-          :style="{ backgroundColor: card.priorityBg, color: card.priorityFg }"
+          :class="{ invisible: !card.busy }"
+          :style="
+            card.busy ? { backgroundColor: card.priorityBg, color: card.priorityFg } : undefined
+          "
+          aria-hidden="true"
         >
-          {{ card.priorityLabel }}
+          {{ card.busy ? card.priorityLabel : "P0" }}
         </span>
       </div>
 
-      <div v-if="card.busy" class="flex flex-col gap-1">
+      <div class="flex flex-col gap-1">
         <div class="flex items-baseline justify-between gap-2">
-          <span class="font-mono text-[12px] tabular-nums text-slate-800 dark:text-slate-100">
+          <span
+            v-if="card.busy"
+            class="font-mono text-[12px] tabular-nums text-slate-800 dark:text-slate-100"
+          >
             {{ card.ticketId }}
           </span>
-          <span class="truncate text-[11px] text-slate-500 dark:text-slate-400">
-            {{ card.tenantName }}
+          <span v-else class="font-mono text-[12px] tabular-nums text-slate-400 dark:text-slate-500">
+            idle
+          </span>
+          <span
+            class="truncate text-[11px] text-slate-500 dark:text-slate-400"
+            :class="{ invisible: !card.busy }"
+            aria-hidden="true"
+          >
+            {{ card.busy ? card.tenantName : "—" }}
           </span>
         </div>
         <div class="h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
           <div
+            v-if="card.busy"
             class="h-full rounded-full transition-all duration-200 ease-linear"
             :style="{ width: `${card.pct}%`, backgroundColor: card.tenantColor }"
           />
         </div>
-      </div>
-      <div
-        v-else
-        class="flex h-[34px] items-center justify-center text-[11px] text-slate-400 dark:text-slate-500"
-      >
-        idle
       </div>
     </div>
   </div>

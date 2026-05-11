@@ -4,7 +4,6 @@ import (
 	"context"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -37,19 +36,17 @@ func (p *recordingPublisher) snapshot() []string {
 	return out
 }
 
-// stubStartResolveTicket mocks the StartResolveTicket local activity so the
-// test does not need a live Temporal client. For every dispatched ticket the
-// mock immediately schedules a SignalTicketDone callback on the test env,
-// driving the parent's drain loop without actually running per-ticket
-// workflows.
+// stubStartResolveTicket mocks the StartResolveTicket and WaitTicketDone
+// local activities so the test does not need a live Temporal client. Start
+// is a no-op; WaitTicketDone returns immediately so the waiter coroutine
+// spawned per dispatched ticket pushes onto doneCh and the drain loop
+// terminates without actually running per-ticket workflows.
 func stubStartResolveTicket(env *testsuite.TestWorkflowEnvironment, a *Activities) {
 	env.OnActivity(a.StartResolveTicket, mock.Anything, mock.Anything).Return(
-		func(_ context.Context, in StartResolveTicketInput) error {
-			env.RegisterDelayedCallback(func() {
-				env.SignalWorkflow(SignalTicketDone, in.Ticket.ID)
-			}, time.Millisecond)
-			return nil
-		},
+		func(context.Context, StartResolveTicketInput) error { return nil },
+	)
+	env.OnActivity(a.WaitTicketDone, mock.Anything, mock.Anything).Return(
+		func(context.Context, string) error { return nil },
 	)
 }
 

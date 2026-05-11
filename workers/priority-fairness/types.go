@@ -5,11 +5,10 @@ package priorityfairness
 // dispatch on every activity it schedules onto this queue.
 const TaskQueue = "patterns-priority-fairness"
 
-// Signal names accepted by HelpdeskRunWorkflow.
-const (
-	SignalInjectP0    = "inject-p0-incident"
-	SignalTicketDone  = "ticket-done"
-)
+// SignalInjectP0 is the only signal accepted by HelpdeskRunWorkflow: it
+// triggers dispatching an additional P0 ResolveTicketWorkflow while the run
+// is in flight.
+const SignalInjectP0 = "inject-p0-incident"
 
 // MaxConcurrentActivities caps the worker's activity slot count. With 4 slots
 // and many backlogged tickets, Temporal's task queue dispatches according to

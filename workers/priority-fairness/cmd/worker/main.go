@@ -45,6 +45,8 @@ func main() {
 			activity.RegisterOptions{Name: "announce-incident-injected"})
 		w.RegisterActivityWithOptions(a.StartResolveTicket,
 			activity.RegisterOptions{Name: "start-resolve-ticket"})
+		w.RegisterActivityWithOptions(a.WaitTicketDone,
+			activity.RegisterOptions{Name: "wait-ticket-done"})
 		w.RegisterActivityWithOptions(a.ResolveTicket,
 			activity.RegisterOptions{Name: "resolve-ticket"})
 	}, worker.Options{

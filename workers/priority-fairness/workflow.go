@@ -15,9 +15,13 @@
 // MaxConcurrentActivityExecutionSize=4 cap is what creates the visible
 // backlog: 120+ ResolveTicket activities land on the same task queue, the
 // matching service holds the backlog, and the per-activity Priority decides
-// which task fires next. Each ResolveTicketWorkflow signals SignalTicketDone
-// back to the helpdesk workflow on completion, so the parent can drain
-// without keeping ChildWorkflowFutures around.
+// which task fires next. For each dispatched ticket the parent spawns a
+// waiter coroutine that runs the WaitTicketDone local activity; that
+// activity long-polls client.GetWorkflow(...).Get(...) on the per-ticket
+// workflow id and returns when it closes, at which point the waiter pushes
+// the ticket id onto an in-workflow channel the drain loop reads. The
+// per-ticket workflow itself stays signal-free — its history is
+// Started → ResolveTicket → Completed, nothing else.
 //
 // Volume narrative: every tier carries the same seed count and the same
 // priority distribution — the only thing that differs is the FairnessKey
@@ -50,10 +54,11 @@ import (
 // HelpdeskRunWorkflow seeds a multi-tenant ticket backlog and dispatches one
 // top-level ResolveTicketWorkflow per ticket. It honours the
 // inject-p0-incident signal by dispatching an additional P0 workflow, and
-// waits for one SignalTicketDone per dispatched ticket before completing.
-// The per-ticket temporal.Priority is built here and handed off to a local
-// activity (StartResolveTicket) that uses the Temporal client to create the
-// new workflow with StartWorkflowOptions.Priority set; the ResolveTicket
+// waits — via one WaitTicketDone waiter coroutine per dispatched ticket —
+// for every per-ticket workflow to close before completing. The per-ticket
+// temporal.Priority is built here and handed off to a local activity
+// (StartResolveTicket) that uses the Temporal client to create the new
+// workflow with StartWorkflowOptions.Priority set; the ResolveTicket
 // activity inside the new workflow inherits that Priority via SDK semantics.
 func HelpdeskRunWorkflow(ctx workflow.Context, input HelpdeskInput) error {
 	// All of this workflow's own activity dispatches run as local
@@ -66,6 +71,15 @@ func HelpdeskRunWorkflow(ctx workflow.Context, input HelpdeskInput) error {
 	// SignalInjectP0 path below.
 	lctx := workflow.WithLocalActivityOptions(ctx, workflow.LocalActivityOptions{
 		StartToCloseTimeout: 5 * time.Second,
+	})
+
+	// WaitTicketDone gets its own context because the long poll covers the
+	// full lifetime of a per-ticket workflow — local activities don't
+	// heartbeat, so the single StartToCloseTimeout window must be wide
+	// enough to outlast even the slowest ticket (a P0 takes 3s of sleep,
+	// plus matching-service wait under load).
+	waitCtx := workflow.WithLocalActivityOptions(ctx, workflow.LocalActivityOptions{
+		StartToCloseTimeout: 10 * time.Minute,
 	})
 
 	info := workflow.GetInfo(ctx)
@@ -111,23 +125,37 @@ func HelpdeskRunWorkflow(ctx workflow.Context, input HelpdeskInput) error {
 		return err
 	}
 
+	// doneCh carries the id of each ticket whose ResolveTicketWorkflow has
+	// closed. It is buffered so a waiter goroutine never blocks on Send if
+	// the drain loop is momentarily parked on the P0 injection branch of
+	// the selector.
+	doneCh := workflow.NewBufferedChannel(ctx, 256)
+
 	// 3. Dispatch helper — start one top-level ResolveTicketWorkflow per
-	//    ticket via the StartResolveTicket local activity. The activity
-	//    runs in-process and calls Client.ExecuteWorkflow with a
-	//    StartWorkflowOptions that carries the per-ticket Priority +
+	//    ticket via the StartResolveTicket local activity, then spawn a
+	//    waiter coroutine that long-polls completion via WaitTicketDone.
+	//    The activity runs in-process and calls Client.ExecuteWorkflow with
+	//    a StartWorkflowOptions that carries the per-ticket Priority +
 	//    Fairness; the ResolveTicket activity inside the new workflow
 	//    inherits that Priority. We deliberately do NOT use
 	//    workflow.ExecuteChildWorkflow here — these are sibling top-level
 	//    workflows, not children of the helpdesk run.
 	dispatch := func(t Ticket) {
+		workflowID := fmt.Sprintf("%s-ticket-%s", parentID, t.ID)
 		_ = workflow.ExecuteLocalActivity(lctx, a.StartResolveTicket, StartResolveTicketInput{
-			WorkflowID:       fmt.Sprintf("%s-ticket-%s", parentID, t.ID),
+			WorkflowID:       workflowID,
 			Ticket:           t,
 			ParentWorkflowID: parentID,
 			ParentRunID:      parentRunID,
 			PriorityKey:      t.Priority,
 			FairnessOn:       input.FairnessOn,
 		}).Get(ctx, nil)
+
+		ticketID := t.ID
+		workflow.Go(ctx, func(gctx workflow.Context) {
+			_ = workflow.ExecuteLocalActivity(waitCtx, a.WaitTicketDone, workflowID).Get(gctx, nil)
+			doneCh.Send(gctx, ticketID)
+		})
 	}
 
 	// 4. Drop the full seed onto the matching service at t=0 — no arrival
@@ -149,11 +177,11 @@ func HelpdeskRunWorkflow(ctx workflow.Context, input HelpdeskInput) error {
 	}
 
 	incidentCh := workflow.GetSignalChannel(ctx, SignalInjectP0)
-	doneCh := workflow.GetSignalChannel(ctx, SignalTicketDone)
 
-	// 5. Drain loop: count SignalTicketDone receipts (one per dispatched
-	//    workflow) and listen for inject-p0 in parallel. Each P0 injection
-	//    bumps the expected count by one.
+	// 5. Drain loop: count doneCh receipts (one per closed
+	//    ResolveTicketWorkflow, pushed by its waiter coroutine) and listen
+	//    for inject-p0 in parallel. Each P0 injection bumps the expected
+	//    count by one and spawns its own waiter via dispatch.
 	completed := 0
 	for completed < expected {
 		sel := workflow.NewSelector(ctx)
@@ -183,30 +211,21 @@ func HelpdeskRunWorkflow(ctx workflow.Context, input HelpdeskInput) error {
 // ResolveTicketWorkflow resolves a single ticket as its own top-level
 // workflow. The Priority is set by the caller on StartWorkflowOptions and
 // inherited by the ResolveTicket activity via SDK semantics, so this
-// workflow body never sets a Priority of its own. On completion it signals
-// SignalTicketDone back to the helpdesk run so the parent's drain loop can
-// count.
+// workflow body never sets a Priority of its own. The history is
+// deliberately minimal — Started → ResolveTicket → Completed — and the
+// helpdesk run observes completion by long-polling this workflow's history
+// from a WaitTicketDone local activity.
 func ResolveTicketWorkflow(ctx workflow.Context, in ResolveTicketWorkflowInput) error {
 	actx := workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
 		StartToCloseTimeout: 10 * time.Second,
 	})
 
 	var a *Activities
-	if err := workflow.ExecuteActivity(actx, a.ResolveTicket, ResolveTicketActivityInput{
+	return workflow.ExecuteActivity(actx, a.ResolveTicket, ResolveTicketActivityInput{
 		Ticket:           in.Ticket,
 		ParentWorkflowID: in.ParentWorkflowID,
 		ParentRunID:      in.ParentRunID,
-	}).Get(ctx, nil); err != nil {
-		return err
-	}
-
-	// Signal completion back to the helpdesk run. Empty run id targets the
-	// current run of the parent workflow id. Best-effort: if the parent has
-	// already closed, the SignalExternalWorkflow future fails, but the
-	// per-ticket work is done so we still return success.
-	_ = workflow.SignalExternalWorkflow(ctx, in.ParentWorkflowID, "", SignalTicketDone, in.Ticket.ID).
-		Get(ctx, nil)
-	return nil
+	}).Get(ctx, nil)
 }
 
 // generateSeed returns a fresh per-tenant priority distribution. Every

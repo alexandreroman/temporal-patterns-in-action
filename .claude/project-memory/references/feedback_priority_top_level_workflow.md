@@ -24,12 +24,20 @@ workflow inherits Priority via SDK semantics,
 so the matching service still sees per-task
 Priority on every schedule.
 
-`ResolveTicketWorkflow` signals the parent
-back with `SignalTicketDone` on completion;
-`HelpdeskRunWorkflow`'s drain loop counts
-those signals (plus listens for
+`ResolveTicketWorkflow` itself stays
+signal-free — its history is exactly
+Started → ResolveTicket → Completed. For each
+dispatched ticket, `HelpdeskRunWorkflow` spawns
+a waiter coroutine (`workflow.Go`) that runs a
+`WaitTicketDone` local activity; that activity
+long-polls `client.GetWorkflow(...).Get(...)`
+on the per-ticket workflow id and returns when
+it closes, at which point the waiter pushes the
+ticket id onto an in-workflow buffered channel
+the drain loop reads (plus listens for
 `inject-p0-incident`) instead of holding
-ChildWorkflow futures.
+ChildWorkflow futures or relying on a signal-
+back from the per-ticket workflow.
 
 **Why:** the user asked twice in the same
 conversation. First: drop the ChildWorkflow
@@ -48,8 +56,10 @@ parent and not on children.
 `workers/priority-fairness/workflow.go` or
 its CodeViewer snippets, keep the
 parent → local-activity → `client.ExecuteWorkflow`
-→ top-level `ResolveTicketWorkflow` → signal-back
-chain intact. If a refactor seems to simplify
+→ top-level `ResolveTicketWorkflow` chain
+intact, with completion observed via the
+`WaitTicketDone` long-poll local activity (no
+signal-back). If a refactor seems to simplify
 by removing the per-ticket workflow or
 turning it into a child, stop and confirm
 with the user first.

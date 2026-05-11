@@ -64,7 +64,7 @@ func (a *Activities) AnnounceIncidentInjected(ctx context.Context, in AnnounceIn
 // pinned on StartWorkflowOptions; the ResolveTicket activity inside the new
 // workflow inherits that Priority via SDK semantics, so the matching service
 // sees per-task Priority on every schedule. Returns as soon as the workflow
-// is created — completion comes back later as a SignalTicketDone signal.
+// is created — completion is awaited later by WaitTicketDone.
 func (a *Activities) StartResolveTicket(ctx context.Context, in StartResolveTicketInput) error {
 	p := temporal.Priority{PriorityKey: int(in.PriorityKey)}
 	if in.FairnessOn {
@@ -81,6 +81,18 @@ func (a *Activities) StartResolveTicket(ctx context.Context, in StartResolveTick
 		ParentRunID:      in.ParentRunID,
 	})
 	return err
+}
+
+// WaitTicketDone blocks until the named ResolveTicketWorkflow closes. It is
+// invoked as a local activity by HelpdeskRunWorkflow so the dispatcher can
+// drain without the per-ticket workflows having to signal back. The wait is
+// a server-side long poll on workflow history (not visibility polling), so it
+// scales fine even with hundreds of in-flight tickets. On worker restart the
+// helpdesk workflow replays and re-issues this activity; if the ticket
+// workflow has already closed, the long poll returns immediately with the
+// recorded result and the drain loop catches up without manual recovery.
+func (a *Activities) WaitTicketDone(ctx context.Context, workflowID string) error {
+	return a.Client.GetWorkflow(ctx, workflowID, "").Get(ctx, nil)
 }
 
 // ResolveTicket simulates an agent processing a ticket. It acquires a slot

@@ -124,7 +124,7 @@ watch(lanes, () => scheduleMeasure(), { deep: true });
             {{ lane.tenant.name }}
           </span>
           <span class="text-[10px] uppercase tracking-wide text-slate-500 dark:text-slate-400">
-            {{ lane.tenant.tier }} &middot; weight {{ lane.tenant.weight }}
+            weight {{ lane.tenant.weight }}
           </span>
         </div>
         <div class="font-mono text-[11px] tabular-nums text-slate-500 dark:text-slate-400">

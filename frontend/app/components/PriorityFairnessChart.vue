@@ -215,7 +215,7 @@ onBeforeUnmount(() => {
         >
           <span class="grid">
             <span class="col-start-1 row-start-1" :class="flashDump ? 'invisible' : ''">
-              Acme dumps 80
+              Mission Critical dumps 80
             </span>
             <span class="col-start-1 row-start-1" :class="flashDump ? '' : 'invisible'">
               Dumped ✓

@@ -9,17 +9,17 @@ export type TenantId = "acme" | "brick" | "solo";
 
 export interface Tenant {
   id: TenantId;
+  /** Contract tier — displayed as the tenant's name in the UI. */
   name: string;
-  tier: string;
   weight: number;
   /** Hex string used for left border, progress bar, chart line, log pill. */
   color: string;
 }
 
 export const TENANTS = [
-  { id: "acme", name: "Acme Corp", tier: "Mission Critical", weight: 10, color: "#9C5BD9" },
-  { id: "brick", name: "BrickLab", tier: "Enterprise", weight: 3, color: "#1A8870" },
-  { id: "solo", name: "SoloDev", tier: "Business", weight: 1, color: "#C5803A" },
+  { id: "acme", name: "Mission Critical", weight: 10, color: "#9C5BD9" },
+  { id: "brick", name: "Enterprise", weight: 3, color: "#1A8870" },
+  { id: "solo", name: "Business", weight: 1, color: "#C5803A" },
 ] as const satisfies readonly Tenant[];
 
 export type PriorityKey = 1 | 2 | 3 | 4;

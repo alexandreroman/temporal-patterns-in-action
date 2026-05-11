@@ -168,7 +168,7 @@ const SOURCES_OFF: Record<CodeLang, PrioritySource> = {
     lines: [
       "// Workflow: pick a ticket, attach Priority to the activity.",
       "// Fairness disabled: only PriorityKey is set, so the matching service",
-      "// falls back to FIFO within each priority bucket — Acme can starve.",
+      "// falls back to FIFO within each priority bucket — the lowest-tier backlog drains last.",
       "func ResolveTicketWorkflow(ctx workflow.Context, ticket Ticket) error {",
       "    priority := temporal.Priority{",
       "        PriorityKey: int(ticket.Priority), // P0..P3 → 1..4",
@@ -193,7 +193,7 @@ const SOURCES_OFF: Record<CodeLang, PrioritySource> = {
     lines: [
       "// Workflow: pick a ticket, attach Priority to the activity.",
       "// Fairness disabled: only priorityKey is set, so the matching service",
-      "// falls back to FIFO within each priority bucket — Acme can starve.",
+      "// falls back to FIFO within each priority bucket — the lowest-tier backlog drains last.",
       "@WorkflowMethod",
       "public void resolveTicket(Ticket ticket) {",
       "    Priority priority = Priority.newBuilder()",
@@ -219,7 +219,7 @@ const SOURCES_OFF: Record<CodeLang, PrioritySource> = {
     lines: [
       "# Workflow: pick a ticket, attach Priority to the activity.",
       "# Fairness disabled: only priority_key is set, so the matching service",
-      "# falls back to FIFO within each priority bucket — Acme can starve.",
+      "# falls back to FIFO within each priority bucket — the lowest-tier backlog drains last.",
       "@workflow.defn",
       "class ResolveTicketWorkflow:",
       "    @workflow.run",
@@ -244,7 +244,7 @@ const SOURCES_OFF: Record<CodeLang, PrioritySource> = {
     lines: [
       "// Workflow: pick a ticket, attach Priority to the activity.",
       "// Fairness disabled: only priorityKey is set, so the matching service",
-      "// falls back to FIFO within each priority bucket — Acme can starve.",
+      "// falls back to FIFO within each priority bucket — the lowest-tier backlog drains last.",
       'import { proxyActivities } from "@temporalio/workflow";',
       'import type * as activities from "./activities";',
       "",

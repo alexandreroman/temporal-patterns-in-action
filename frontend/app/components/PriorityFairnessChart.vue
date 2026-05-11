@@ -36,11 +36,21 @@ interface Block {
   color: string;
   inFlight: boolean;
   title: string;
+  /** P0 blocks get a persistent red ring so they pop against the tenant fill. */
+  isP0: boolean;
+  /** True for the first ~700 ms after a P0 span appears — drives the flash animation. */
+  justArrived: boolean;
 }
+
+const P0_FLASH_MS = 2000;
+const P0_LANE_FLASH_MS = 2000;
+const P0_RING_COLOR = "#E8513C"; // matches PRIORITIES[0].bg
 
 interface Lane {
   slot: AgentSlot;
   blocks: Block[];
+  /** True for ~2 s after a P0 block lands in this lane — drives the lane-level red flash + zoom. */
+  p0Landing: boolean;
 }
 
 const now = ref(Date.now());
@@ -71,8 +81,8 @@ onBeforeUnmount(() => {
 const lanes = computed<Lane[]>(() => {
   const windowEnd = now.value;
   const windowStart = windowEnd - WINDOW_MS;
-  const bySlot = new Map<AgentSlot, Block[]>();
-  for (const slot of AGENT_SLOTS) bySlot.set(slot, []);
+  const bySlot = new Map<AgentSlot, { blocks: Block[]; p0Landing: boolean }>();
+  for (const slot of AGENT_SLOTS) bySlot.set(slot, { blocks: [], p0Landing: false });
 
   const ordered = [...props.spans].sort((a, b) => a.startTime - b.startTime);
   for (const span of ordered) {
@@ -87,17 +97,27 @@ const lanes = computed<Lane[]>(() => {
     const widthPct = Math.max(((right - left) / WINDOW_MS) * 100, 0.5);
     const tenant = tenantById(span.tenantId);
     const label = priorityLevel(span.priorityKey).label;
-    bucket.push({
+    const isP0 = span.priorityKey === 1;
+    const ageMs = windowEnd - span.startTime;
+    bucket.blocks.push({
       key: `${span.ticketId}-${span.startTime}`,
       leftPct,
       widthPct,
       color: tenant.color,
       inFlight: span.endTime === null,
       title: `${span.ticketId} · ${tenant.name} · ${label}`,
+      isP0,
+      justArrived: isP0 && ageMs < P0_FLASH_MS,
     });
+    if (isP0 && ageMs < P0_LANE_FLASH_MS) {
+      bucket.p0Landing = true;
+    }
   }
 
-  return AGENT_SLOTS.map((slot) => ({ slot, blocks: bySlot.get(slot) ?? [] }));
+  return AGENT_SLOTS.map((slot) => {
+    const b = bySlot.get(slot) ?? { blocks: [], p0Landing: false };
+    return { slot, blocks: b.blocks, p0Landing: b.p0Landing };
+  });
 });
 
 const inFlightCount = computed(() =>
@@ -160,18 +180,27 @@ onBeforeUnmount(() => {
           {{ lane.slot }}
         </span>
         <div
-          class="relative h-4 flex-1 overflow-hidden rounded-md bg-slate-100 dark:bg-slate-800/60"
+          class="relative h-4 flex-1 rounded-md bg-slate-100 dark:bg-slate-800/60"
+          :class="lane.p0Landing ? 'pf-p0-lane-flash overflow-visible' : 'overflow-hidden'"
         >
           <div
             v-for="block in lane.blocks"
             :key="block.key"
             class="absolute top-0 bottom-0 rounded-sm"
-            :class="block.inFlight ? 'opacity-90' : ''"
+            :class="[
+              block.inFlight ? 'opacity-90' : '',
+              block.justArrived ? 'pf-p0-flash' : '',
+            ]"
             :style="{
               left: `${block.leftPct}%`,
               width: `${block.widthPct}%`,
               backgroundColor: block.color,
-              boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18)',
+              backgroundImage: block.isP0
+                ? `repeating-linear-gradient(45deg, rgba(232,81,60,0.85) 0 4px, transparent 4px 8px)`
+                : undefined,
+              boxShadow: block.isP0
+                ? `inset 0 0 0 3px ${P0_RING_COLOR}, inset 0 1px 0 rgba(255,255,255,0.18)`
+                : 'inset 0 1px 0 rgba(255,255,255,0.18)',
               borderRight: block.inFlight ? '1px dashed rgba(255,255,255,0.45)' : undefined,
             }"
             :title="block.title"
@@ -249,3 +278,43 @@ onBeforeUnmount(() => {
     </div>
   </div>
 </template>
+
+<style scoped>
+@keyframes pf-p0-flash {
+  0% {
+    filter: brightness(1.7) saturate(1.4);
+    transform: scale(1.3);
+  }
+  50% {
+    filter: brightness(1.35) saturate(1.2);
+    transform: scale(1.2);
+  }
+  100% {
+    filter: brightness(1) saturate(1);
+    transform: scale(1);
+  }
+}
+.pf-p0-flash {
+  animation: pf-p0-flash 2000ms ease-out;
+  transform-origin: center;
+  z-index: 1;
+}
+
+@keyframes pf-p0-lane-flash {
+  0% {
+    background-color: rgba(232, 81, 60, 0.7);
+    box-shadow: 0 0 0 2px rgba(232, 81, 60, 0.6);
+  }
+  60% {
+    background-color: rgba(232, 81, 60, 0.45);
+    box-shadow: 0 0 0 1px rgba(232, 81, 60, 0.35);
+  }
+  100% {
+    background-color: rgba(232, 81, 60, 0);
+    box-shadow: 0 0 0 0 rgba(232, 81, 60, 0);
+  }
+}
+.pf-p0-lane-flash {
+  animation: pf-p0-lane-flash 2000ms ease-out;
+}
+</style>

@@ -5,7 +5,7 @@
  * its child components share.
  */
 
-export type TenantId = "acme" | "brick" | "solo";
+export type TenantId = "mission-critical" | "enterprise" | "business";
 
 export interface Tenant {
   id: TenantId;
@@ -17,9 +17,9 @@ export interface Tenant {
 }
 
 export const TENANTS = [
-  { id: "acme", name: "Mission Critical", weight: 10, color: "#9C5BD9" },
-  { id: "brick", name: "Enterprise", weight: 3, color: "#1A8870" },
-  { id: "solo", name: "Business", weight: 1, color: "#C5803A" },
+  { id: "mission-critical", name: "Mission Critical", weight: 10, color: "#9C5BD9" },
+  { id: "enterprise", name: "Enterprise", weight: 3, color: "#1A8870" },
+  { id: "business", name: "Business", weight: 1, color: "#C5803A" },
 ] as const satisfies readonly Tenant[];
 
 export type PriorityKey = 1 | 2 | 3 | 4;
@@ -50,14 +50,14 @@ export const AGENT_SLOTS: readonly AgentSlot[] = ["a1", "a2", "a3", "a4"];
 
 export interface Ticket {
   id: string; // 4-digit zero-padded
-  tenantId: TenantId;
-  priorityKey: PriorityKey;
+  tenant: TenantId;
+  priority: PriorityKey;
 }
 
 export interface Agent {
   slot: AgentSlot;
   ticket: Ticket | null;
-  tenantId: TenantId | null;
+  tenant: TenantId | null;
   progress: number;
   duration: number;
 }
@@ -66,16 +66,16 @@ export interface LogEntry {
   /** Milliseconds since the run's startTime — formatted as MM:SS.d. */
   time: number;
   ticket: string;
-  tenantId: TenantId;
+  tenant: TenantId;
   agent: AgentSlot;
-  priorityKey: PriorityKey;
+  priority: PriorityKey;
 }
 
 export interface TicketSpan {
   ticketId: string;
   agent: AgentSlot;
-  tenantId: TenantId;
-  priorityKey: PriorityKey;
+  tenant: TenantId;
+  priority: PriorityKey;
   /** ms epoch — assignment time. */
   startTime: number;
   /** ms epoch — resolution time, or null while still in-flight. */

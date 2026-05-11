@@ -64,7 +64,7 @@ func (a *Activities) AnnounceBurstExecuted(ctx context.Context, in AnnounceBurst
 // into ticket.id.
 func (a *Activities) AnnounceIncidentInjected(ctx context.Context, in AnnounceIncidentInput) error {
 	events.PublishBusiness(ctx, a.Publisher, Pattern, TypeIncidentInjected, map[string]any{
-		"tenantId": string(in.TenantID),
+		"tenant":   string(in.TenantID),
 		"ticket":   in.Ticket,
 		"ticketId": in.Ticket.ID,
 	})
@@ -87,10 +87,10 @@ func (a *Activities) ResolveTicket(ctx context.Context, in ResolveTicketActivity
 
 	events.PublishBusinessAs(ctx, a.Publisher, Pattern, in.ParentWorkflowID, in.ParentRunID,
 		TypeTicketAssigned, map[string]any{
-			"tenantId":    string(t.Tenant),
-			"priorityKey": int(t.Priority),
-			"ticketId":    t.ID,
-			"agent":       agent,
+			"tenant":   string(t.Tenant),
+			"priority": int(t.Priority),
+			"ticketId": t.ID,
+			"agent":    agent,
 		})
 
 	dur := resolutionDuration(t.Priority)
@@ -98,10 +98,10 @@ func (a *Activities) ResolveTicket(ctx context.Context, in ResolveTicketActivity
 
 	events.PublishBusinessAs(ctx, a.Publisher, Pattern, in.ParentWorkflowID, in.ParentRunID,
 		TypeTicketResolved, map[string]any{
-			"tenantId":    string(t.Tenant),
-			"priorityKey": int(t.Priority),
-			"ticketId":    t.ID,
-			"agent":       agent,
+			"tenant":   string(t.Tenant),
+			"priority": int(t.Priority),
+			"ticketId": t.ID,
+			"agent":    agent,
 		})
 	return nil
 }

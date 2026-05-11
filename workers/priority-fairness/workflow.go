@@ -81,7 +81,7 @@ func HelpdeskRunWorkflow(ctx workflow.Context, input HelpdeskInput) error {
 	}
 
 	seedTickets := map[Tenant][]Ticket{}
-	for _, tenant := range []Tenant{TenantAcme, TenantBrick, TenantSolo} {
+	for _, tenant := range []Tenant{TenantMissionCritical, TenantEnterprise, TenantBusiness} {
 		for _, p := range seedPriorities[tenant] {
 			seedTickets[tenant] = append(seedTickets[tenant], Ticket{
 				ID: nextID(), Tenant: tenant, Priority: p,
@@ -134,7 +134,7 @@ func HelpdeskRunWorkflow(ctx workflow.Context, input HelpdeskInput) error {
 	//    drain. Iterate tenants in a fixed slice order so replay is
 	//    deterministic.
 	pending := make([]workflow.Future, 0, 64)
-	for _, tenant := range []Tenant{TenantAcme, TenantBrick, TenantSolo} {
+	for _, tenant := range []Tenant{TenantMissionCritical, TenantEnterprise, TenantBusiness} {
 		for _, t := range seedTickets[tenant] {
 			pending = append(pending, dispatch(t))
 		}
@@ -175,7 +175,7 @@ func HelpdeskRunWorkflow(ctx workflow.Context, input HelpdeskInput) error {
 				return generateBurst()
 			}).Get(&burstPriorities)
 			burst := make(map[Tenant][]Ticket, 3)
-			for _, tenant := range []Tenant{TenantAcme, TenantBrick, TenantSolo} {
+			for _, tenant := range []Tenant{TenantMissionCritical, TenantEnterprise, TenantBusiness} {
 				prios := burstPriorities[tenant]
 				tickets := make([]Ticket, 0, len(prios))
 				for _, p := range prios {
@@ -192,7 +192,7 @@ func HelpdeskRunWorkflow(ctx workflow.Context, input HelpdeskInput) error {
 			// the whole point of the symmetric-surge scenario. Iterate
 			// the tenants in a fixed slice order — ranging over the map
 			// directly would be non-deterministic on replay.
-			for _, tenant := range []Tenant{TenantAcme, TenantBrick, TenantSolo} {
+			for _, tenant := range []Tenant{TenantMissionCritical, TenantEnterprise, TenantBusiness} {
 				for _, t := range burst[tenant] {
 					pending = append(pending, dispatch(t))
 				}
@@ -256,9 +256,9 @@ func generateSeed() map[Tenant][]PriorityKey {
 	const perTier = 20
 	mix := []int{0, 50, 40, 10}
 	return map[Tenant][]PriorityKey{
-		TenantAcme:  pickFromMix(perTier, mix),
-		TenantBrick: pickFromMix(perTier, mix),
-		TenantSolo:  pickFromMix(perTier, mix),
+		TenantMissionCritical: pickFromMix(perTier, mix),
+		TenantEnterprise:      pickFromMix(perTier, mix),
+		TenantBusiness:        pickFromMix(perTier, mix),
 	}
 }
 
@@ -267,7 +267,7 @@ func generateSeed() map[Tenant][]PriorityKey {
 // from inject-p0-incident. Called only from inside workflow.SideEffect.
 func generateBurst() map[Tenant][]PriorityKey {
 	out := make(map[Tenant][]PriorityKey, 3)
-	for _, tenant := range []Tenant{TenantAcme, TenantBrick, TenantSolo} {
+	for _, tenant := range []Tenant{TenantMissionCritical, TenantEnterprise, TenantBusiness} {
 		// pickFromMix buckets are P0..P3; weight 0 on P0 zeroes out P0,
 		// equal weight on P1/P2/P3 yields the uniform draw.
 		out[tenant] = pickFromMix(BurstPerTenant, []int{0, 1, 1, 1})
@@ -278,7 +278,7 @@ func generateBurst() map[Tenant][]PriorityKey {
 // generateRandomTenant picks one of the three tenants uniformly. Called only
 // from inside workflow.SideEffect.
 func generateRandomTenant() Tenant {
-	tenants := []Tenant{TenantAcme, TenantBrick, TenantSolo}
+	tenants := []Tenant{TenantMissionCritical, TenantEnterprise, TenantBusiness}
 	return tenants[rand.IntN(len(tenants))]
 }
 

@@ -8,7 +8,7 @@ defineProps<{
 }>();
 
 function tenantName(id: unknown): string {
-  if (id === "acme" || id === "brick" || id === "solo") {
+  if (id === "mission-critical" || id === "enterprise" || id === "business") {
     return tenantById(id as TenantId).name;
   }
   return String(id ?? "?");
@@ -22,10 +22,10 @@ function priorityLabel(key: unknown): string {
 
 function eventLabel(env: EventEnvelope): string {
   const data = env.data as Record<string, unknown>;
-  const tenant = tenantName(data.tenantId);
+  const tenant = tenantName(data.tenant);
   const ticketId = data.ticketId ? String(data.ticketId) : "";
   const agent = data.agent ? String(data.agent) : "";
-  const prio = priorityLabel(data.priorityKey);
+  const prio = priorityLabel(data.priority);
 
   switch (env.type) {
     case "progress.workflow.started":

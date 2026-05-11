@@ -30,9 +30,9 @@ type Tenant string
 
 // Tenant identifiers — must match the frontend's TenantId union.
 const (
-	TenantAcme  Tenant = "acme"
-	TenantBrick Tenant = "brick"
-	TenantSolo  Tenant = "solo"
+	TenantMissionCritical Tenant = "mission-critical"
+	TenantEnterprise      Tenant = "enterprise"
+	TenantBusiness        Tenant = "business"
 )
 
 // PriorityKey is 1..4 — lower = higher priority. P0=1 .. P3=4.
@@ -41,16 +41,16 @@ type PriorityKey int
 // TenantWeight is the fairness weight used as FairnessWeight on the activity.
 // Mirrors the contract tier in the UI: Mission Critical / Enterprise / Business.
 var TenantWeight = map[Tenant]float32{
-	TenantAcme:  10,
-	TenantBrick: 3,
-	TenantSolo:  1,
+	TenantMissionCritical: 10,
+	TenantEnterprise:      3,
+	TenantBusiness:        1,
 }
 
 // Ticket is a single helpdesk ticket queued behind a tenant.
 type Ticket struct {
 	ID       string      `json:"id"`
-	Tenant   Tenant      `json:"tenantId"`
-	Priority PriorityKey `json:"priorityKey"`
+	Tenant   Tenant      `json:"tenant"`
+	Priority PriorityKey `json:"priority"`
 }
 
 // HelpdeskInput is the input to HelpdeskRunWorkflow.
@@ -87,6 +87,6 @@ type AnnounceBurstInput struct {
 
 // AnnounceIncidentInput is the input to the announce-incident-injected activity.
 type AnnounceIncidentInput struct {
-	TenantID Tenant `json:"tenantId"`
+	TenantID Tenant `json:"tenant"`
 	Ticket   Ticket `json:"ticket"`
 }

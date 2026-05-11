@@ -28,8 +28,8 @@ interface Row {
 
 const rows = computed<Row[]>(() =>
   props.log.map((entry, idx) => {
-    const lvl = priorityLevel(entry.priorityKey);
-    const tenant = tenantById(entry.tenantId);
+    const lvl = priorityLevel(entry.priority);
+    const tenant = tenantById(entry.tenant);
     return {
       // Use index plus ticket so identical tickets across resets keep distinct keys.
       key: `${idx}-${entry.ticket}`,

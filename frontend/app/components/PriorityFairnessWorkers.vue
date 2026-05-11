@@ -26,7 +26,7 @@ interface Card {
 
 const cards = computed<Card[]>(() =>
   props.agents.map((agent) => {
-    if (!agent.ticket || !agent.tenantId) {
+    if (!agent.ticket || !agent.tenant) {
       return {
         slot: agent.slot,
         busy: false,
@@ -39,8 +39,8 @@ const cards = computed<Card[]>(() =>
         pct: 0,
       };
     }
-    const tenant = tenantById(agent.tenantId);
-    const lvl = priorityLevel(agent.ticket.priorityKey);
+    const tenant = tenantById(agent.tenant);
+    const lvl = priorityLevel(agent.ticket.priority);
     const pct = agent.duration === 0 ? 0 : Math.min(100, (agent.progress / agent.duration) * 100);
     return {
       slot: agent.slot,

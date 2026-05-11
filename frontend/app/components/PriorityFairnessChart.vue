@@ -95,9 +95,9 @@ const lanes = computed<Lane[]>(() => {
     if (right <= left) continue;
     const leftPct = ((left - windowStart) / WINDOW_MS) * 100;
     const widthPct = Math.max(((right - left) / WINDOW_MS) * 100, 0.5);
-    const tenant = tenantById(span.tenantId);
-    const label = priorityLevel(span.priorityKey).label;
-    const isP0 = span.priorityKey === 1;
+    const tenant = tenantById(span.tenant);
+    const label = priorityLevel(span.priority).label;
+    const isP0 = span.priority === 1;
     const ageMs = windowEnd - span.startTime;
     bucket.blocks.push({
       key: `${span.ticketId}-${span.startTime}`,

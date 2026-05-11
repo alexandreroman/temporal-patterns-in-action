@@ -25,7 +25,7 @@ const lanes = computed<Lane[]>(() =>
   props.tenants.map((tenant) => {
     const queue = props.state.queues[tenant.id] ?? [];
     const chips = queue.map((t) => {
-      const lvl = priorityLevel(t.priorityKey);
+      const lvl = priorityLevel(t.priority);
       return { id: t.id, bg: lvl.bg, fg: lvl.fg };
     });
     return {

@@ -26,20 +26,20 @@ function freshAgents(): Agent[] {
   return AGENT_SLOTS.slice(0, NUM_AGENTS).map((slot) => ({
     slot,
     ticket: null,
-    tenantId: null,
+    tenant: null,
     progress: 0,
     duration: 0,
   }));
 }
 
 function emptyQueues(): Record<TenantId, Ticket[]> {
-  return { acme: [], brick: [], solo: [] };
+  return { "mission-critical": [], enterprise: [], business: [] };
 }
 
 function freshState(): SimState {
   return {
     queues: emptyQueues(),
-    resolved: { acme: 0, brick: 0, solo: 0 },
+    resolved: { "mission-critical": 0, enterprise: 0, business: 0 },
     agents: freshAgents(),
     log: [],
     ticketHistory: [],
@@ -57,16 +57,16 @@ interface BurstPayload {
 }
 
 interface AssignedPayload {
-  tenantId?: TenantId;
+  tenant?: TenantId;
   ticketId?: string;
-  priorityKey?: PriorityKey;
+  priority?: PriorityKey;
   agent?: AgentSlot;
 }
 
 interface ResolvedPayload {
-  tenantId?: TenantId;
+  tenant?: TenantId;
   ticketId?: string;
-  priorityKey?: PriorityKey;
+  priority?: PriorityKey;
   agent?: AgentSlot;
 }
 
@@ -105,9 +105,9 @@ function deriveState(events: readonly EventEnvelope[]): SimState {
 function applySeed(state: SimState, data: SeededPayload, time: number): void {
   state.startTime = Number.isFinite(time) ? time : Date.now();
   state.queues = {
-    acme: [...(data.tenants?.acme ?? [])],
-    brick: [...(data.tenants?.brick ?? [])],
-    solo: [...(data.tenants?.solo ?? [])],
+    "mission-critical": [...(data.tenants?.["mission-critical"] ?? [])],
+    enterprise: [...(data.tenants?.enterprise ?? [])],
+    business: [...(data.tenants?.business ?? [])],
   };
 }
 
@@ -121,19 +121,19 @@ function applyBurst(state: SimState, data: BurstPayload): void {
 }
 
 function applyAssigned(state: SimState, data: AssignedPayload, time: number): void {
-  if (!data.tenantId || !data.agent || !data.ticketId) return;
-  const queue = state.queues[data.tenantId];
+  if (!data.tenant || !data.agent || !data.ticketId) return;
+  const queue = state.queues[data.tenant];
   const idx = queue.findIndex((t) => t.id === data.ticketId);
-  const priorityKey = (data.priorityKey ?? 4) as PriorityKey;
+  const priority = (data.priority ?? 4) as PriorityKey;
   const ticket: Ticket =
     idx >= 0
       ? (queue.splice(idx, 1)[0] as Ticket)
-      : { id: data.ticketId, tenantId: data.tenantId, priorityKey };
+      : { id: data.ticketId, tenant: data.tenant, priority };
 
   const agent = state.agents.find((a) => a.slot === data.agent);
   if (!agent) return;
   agent.ticket = ticket;
-  agent.tenantId = data.tenantId;
+  agent.tenant = data.tenant;
   // duration=1, progress=1 keeps the worker card's bar fully filled while
   // busy — we don't have sub-second progress from the backend, so the bar
   // simply represents "agent occupied" rather than ticket completion %.
@@ -142,8 +142,8 @@ function applyAssigned(state: SimState, data: AssignedPayload, time: number): vo
   state.ticketHistory.push({
     ticketId: data.ticketId,
     agent: data.agent,
-    tenantId: data.tenantId,
-    priorityKey,
+    tenant: data.tenant,
+    priority,
     startTime: time,
     endTime: null,
   });
@@ -153,23 +153,23 @@ function applyAssigned(state: SimState, data: AssignedPayload, time: number): vo
   state.log.unshift({
     time,
     ticket: data.ticketId,
-    tenantId: data.tenantId,
+    tenant: data.tenant,
     agent: data.agent,
-    priorityKey,
+    priority,
   });
   if (state.log.length > LOG_CAP) state.log.length = LOG_CAP;
 }
 
 function applyResolved(state: SimState, data: ResolvedPayload, time: number): void {
-  if (!data.tenantId || !data.agent || !data.ticketId) return;
+  if (!data.tenant || !data.agent || !data.ticketId) return;
   const agent = state.agents.find((a) => a.slot === data.agent);
   if (agent) {
     agent.ticket = null;
-    agent.tenantId = null;
+    agent.tenant = null;
     agent.progress = 0;
     agent.duration = 0;
   }
-  state.resolved[data.tenantId] += 1;
+  state.resolved[data.tenant] += 1;
 
   for (let i = state.ticketHistory.length - 1; i >= 0; i--) {
     const span = state.ticketHistory[i];

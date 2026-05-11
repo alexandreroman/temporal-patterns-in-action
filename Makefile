@@ -51,6 +51,11 @@ check: ## Run all checks across modules
 	$(MAKE) -C frontend check
 	$(MAKE) -C workers check
 
+.PHONY: setup
+setup: ## Install the versioned git hooks (one-time, per clone)
+	git config core.hooksPath .githooks
+	@echo "git hooks: core.hooksPath -> .githooks"
+
 ##@ Helpers
 
 .PHONY: help

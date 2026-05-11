@@ -67,6 +67,11 @@ make worker-saga  # also: worker-batch, worker-agent
 Run all checks (lint, build, tests) across modules with
 `make check`. Stop the infra with `make infra-down`.
 
+After cloning, run `make setup` once to enable the versioned
+git hooks in [`.githooks`](.githooks/) — `pre-push` runs `make
+check` so CI failures are caught before they reach GitHub.
+Use `git push --no-verify` to bypass for WIP branches.
+
 ## Architecture
 
 ```mermaid

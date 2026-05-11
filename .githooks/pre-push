@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Runs the same checks as CI before any push.
+# Bypass with `git push --no-verify` for WIP branches.
+set -euo pipefail
+
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT"
+
+echo "pre-push: running 'make check' (golangci-lint, prettier, eslint, typecheck)…"
+make check

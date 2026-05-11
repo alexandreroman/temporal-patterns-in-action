@@ -36,7 +36,7 @@ interface Block {
   color: string;
   inFlight: boolean;
   title: string;
-  /** P0 blocks get a persistent red ring + diagonal hashure so they pop against the tenant fill. */
+  /** P0 blocks get a red outer glow so they pop against the tenant fill. */
   isP0: boolean;
 }
 
@@ -50,7 +50,7 @@ interface Lane {
 }
 
 const P0_LANE_FLASH_MS = 2000;
-const P0_RING_COLOR = "#E8513C"; // matches PRIORITIES[0].bg
+const P0_GLOW_COLOR = "232, 81, 60"; // RGB of PRIORITIES[0].bg (#E8513C)
 
 const now = ref(Date.now());
 let raf = 0;
@@ -187,11 +187,8 @@ onBeforeUnmount(() => {
               left: `${block.leftPct}%`,
               width: `${block.widthPct}%`,
               backgroundColor: block.color,
-              backgroundImage: block.isP0
-                ? `repeating-linear-gradient(45deg, rgba(232,81,60,0.85) 0 4px, transparent 4px 8px)`
-                : undefined,
               boxShadow: block.isP0
-                ? `inset 0 0 0 3px ${P0_RING_COLOR}, inset 0 1px 0 rgba(255,255,255,0.18)`
+                ? `0 0 16px 5px rgba(${P0_GLOW_COLOR}, 0.8), 0 0 6px 3px rgba(${P0_GLOW_COLOR}, 0.95), inset 0 1px 0 rgba(255,255,255,0.18)`
                 : 'inset 0 1px 0 rgba(255,255,255,0.18)',
               borderRight: block.inFlight ? '1px dashed rgba(255,255,255,0.45)' : undefined,
             }"

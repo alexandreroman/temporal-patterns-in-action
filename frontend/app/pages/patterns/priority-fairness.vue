@@ -149,9 +149,9 @@ async function injectIncident(): Promise<void> {
 
     <!-- Legend bar -->
     <div
-      class="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-900"
+      class="mt-3 flex flex-wrap items-center justify-center gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2 dark:border-slate-700 dark:bg-slate-900"
     >
-      <div class="flex flex-wrap items-center gap-3">
+      <div class="flex flex-wrap items-center justify-center gap-3">
         <span
           v-for="p in PRIORITIES"
           :key="p.key"
@@ -165,9 +165,6 @@ async function injectIncident(): Promise<void> {
           </span>
           <span class="text-slate-500 dark:text-slate-400">{{ p.meaning }}</span>
         </span>
-      </div>
-      <div class="font-mono text-[11px] text-slate-500 dark:text-slate-400">
-        fairnessKey = tenant &middot; weight = contract tier
       </div>
     </div>
 

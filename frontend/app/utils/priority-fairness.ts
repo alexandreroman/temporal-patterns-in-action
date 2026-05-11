@@ -42,7 +42,6 @@ export const PRIORITIES = [
 export const NUM_AGENTS = 4;
 export const TICK_MS = 250;
 export const HISTORY_LEN = 80; // 20 s × 4 ticks/s
-export const LOG_CAP = 80;
 export const TICKET_HISTORY_CAP = 256;
 
 export type AgentSlot = "A1" | "A2" | "A3" | "A4";

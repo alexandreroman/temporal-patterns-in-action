@@ -2,7 +2,6 @@ import { computed, type ComputedRef, type Ref } from "vue";
 import type { EventEnvelope } from "~~/shared/events";
 import {
   AGENT_SLOTS,
-  LOG_CAP,
   NUM_AGENTS,
   TICKET_HISTORY_CAP,
   type Agent,
@@ -140,7 +139,6 @@ function applyAssigned(state: SimState, data: AssignedPayload, time: number): vo
     agent: data.agent,
     priority,
   });
-  if (state.log.length > LOG_CAP) state.log.length = LOG_CAP;
 }
 
 function applyResolved(state: SimState, data: ResolvedPayload, time: number): void {

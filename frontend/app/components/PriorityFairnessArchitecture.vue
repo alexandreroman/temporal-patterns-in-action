@@ -5,16 +5,16 @@ import type { ArchState, EdgeKey, NodeKey } from "~/types/architecture";
 
 /**
  * Priority and Fairness architecture: UI -> Temporal -> Helpdesk dispatcher ->
- * (Agent a1 | Agent a2 | Agent a3 | Agent a4). Each `helpdesk.ticket.assigned`
+ * (Agent A1 | Agent A2 | Agent A3 | Agent A4). Each `helpdesk.ticket.assigned`
  * event lights up the slot of the receiving agent; `helpdesk.ticket.resolved`
  * flashes it ok and the next assignment flips it back to active.
  */
 
 const AGENT_TO_SLOT: Record<string, { node: NodeKey; edge: EdgeKey }> = {
-  a1: { node: "s1", edge: "wk_s1" },
-  a2: { node: "s2", edge: "wk_s2" },
-  a3: { node: "s3", edge: "wk_s3" },
-  a4: { node: "s4", edge: "wk_s4" },
+  A1: { node: "s1", edge: "wk_s1" },
+  A2: { node: "s2", edge: "wk_s2" },
+  A3: { node: "s3", edge: "wk_s3" },
+  A4: { node: "s4", edge: "wk_s4" },
 };
 
 const props = defineProps<{
@@ -72,7 +72,7 @@ const arch = computed<ArchState>(() => {
 <template>
   <ArchitectureDiagram
     :arch="arch"
-    :service-labels="['Agent a1', 'Agent a2', 'Agent a3', 'Agent a4']"
+    :service-labels="['Agent A1', 'Agent A2', 'Agent A3', 'Agent A4']"
     worker-label="Helpdesk dispatcher"
     label="Priority and Fairness architecture diagram"
   />

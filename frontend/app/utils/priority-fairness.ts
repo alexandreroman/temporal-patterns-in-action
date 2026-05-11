@@ -45,8 +45,8 @@ export const HISTORY_LEN = 80; // 20 s × 4 ticks/s
 export const LOG_CAP = 80;
 export const TICKET_HISTORY_CAP = 256;
 
-export type AgentSlot = "a1" | "a2" | "a3" | "a4";
-export const AGENT_SLOTS: readonly AgentSlot[] = ["a1", "a2", "a3", "a4"];
+export type AgentSlot = "A1" | "A2" | "A3" | "A4";
+export const AGENT_SLOTS: readonly AgentSlot[] = ["A1", "A2", "A3", "A4"];
 
 export interface Ticket {
   id: string; // 4-digit zero-padded

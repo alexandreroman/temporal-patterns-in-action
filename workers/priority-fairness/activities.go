@@ -20,7 +20,7 @@ type Activities struct {
 
 // slotPoolHandle returns the activity's process-local slot pool. The pool
 // tracks the worker's MaxConcurrentActivities slots so each
-// `helpdesk.ticket.assigned` event carries a stable a1..a4 agent id for the
+// `helpdesk.ticket.assigned` event carries a stable A1..A4 agent id for the
 // UI cards. The pool is allocated lazily on first call so tests can
 // construct an Activities with just the Publisher field. Kept unexported so
 // Temporal's reflection-based RegisterActivity doesn't try to register it as
@@ -103,7 +103,7 @@ func resolutionDuration(p PriorityKey) time.Duration {
 }
 
 // slotPool tracks MaxConcurrentActivities in-process activity slots so we can
-// assign each running ticket a stable a1..a4 agent id for the UI. The pool is
+// assign each running ticket a stable A1..A4 agent id for the UI. The pool is
 // mu-locked; the agent id maps to the worker pool's logical slot, not
 // Temporal's matching slot.
 type slotPool struct {
@@ -113,7 +113,7 @@ type slotPool struct {
 
 func newSlotPool() *slotPool { return &slotPool{} }
 
-// Acquire returns the next free slot id ("a1".."aN") or "a?" if the pool is
+// Acquire returns the next free slot id ("A1".."AN") or "A?" if the pool is
 // exhausted (shouldn't happen with MaxConcurrentActivityExecutionSize set to
 // MaxConcurrentActivities).
 func (p *slotPool) Acquire() string {
@@ -122,10 +122,10 @@ func (p *slotPool) Acquire() string {
 	for i := 0; i < MaxConcurrentActivities; i++ {
 		if !p.busy[i] {
 			p.busy[i] = true
-			return fmt.Sprintf("a%d", i+1)
+			return fmt.Sprintf("A%d", i+1)
 		}
 	}
-	return "a?"
+	return "A?"
 }
 
 // Release frees a previously-acquired slot. Unknown slot ids are ignored.
@@ -133,7 +133,7 @@ func (p *slotPool) Release(slot string) {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	var i int
-	if _, err := fmt.Sscanf(slot, "a%d", &i); err != nil {
+	if _, err := fmt.Sscanf(slot, "A%d", &i); err != nil {
 		return
 	}
 	if i >= 1 && i <= MaxConcurrentActivities {

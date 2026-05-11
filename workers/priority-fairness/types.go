@@ -1,7 +1,5 @@
 package priorityfairness
 
-import "time"
-
 // TaskQueue is the Temporal task queue used by the priority-fairness pattern
 // worker. The worker opts into Temporal's task-queue Priority and Fairness
 // dispatch on every activity it schedules onto this queue.
@@ -25,17 +23,6 @@ const BurstPerTenant = 15
 // and many backlogged tickets, Temporal's task queue dispatches according to
 // the Priority + Fairness on each activity.
 const MaxConcurrentActivities = 4
-
-// ArrivalInterval is how often each tenant releases one seed ticket onto the
-// task queue. The high-tier tenants (Mission Critical) get fewer but slower
-// arrivals; the low-tier tenant (Business) drips many tickets fast. Combined
-// with MaxConcurrentActivities=4 and ~2.5 s per resolution, this guarantees
-// the matching service always has a backlog to sort by priority + fairness.
-var ArrivalInterval = map[Tenant]time.Duration{
-	TenantAcme:  1500 * time.Millisecond,
-	TenantBrick: 1000 * time.Millisecond,
-	TenantSolo:  500 * time.Millisecond,
-}
 
 // Tenant is one of the three multi-tenant helpdesk customers. Tenant ids are
 // stable strings shared with the frontend.

@@ -1,23 +1,37 @@
 // Package priorityfairness implements the Priority and Fairness pattern: a
-// multi-tenant helpdesk dispatcher. The workflow seeds 52 tickets across 3
-// tenants (Acme=5, Brick=12, Solo=35), then releases them onto the task queue
-// at per-tenant arrival rates so the matching service always has a backlog
-// to sort by Priority + Fairness. Two signals — burst-all-tenants and
-// inject-p0-incident — append more tickets while the run is in flight. The
-// per-activity Priority is what makes high-priority and weighted-fairness
-// dispatch visible: with the worker's MaxConcurrentActivityExecutionSize=4
-// cap and arrivals outpacing consumption, the matching service decides the
-// order in which the queued tasks fire.
+// multi-tenant helpdesk dispatcher. The workflow seeds 60 tickets evenly
+// across 3 tiers (Mission Critical=20, Enterprise=20, Business=20) with
+// the same priority mix, then drops the entire pile onto the task queue
+// at t=0 so the matching service has 60 tasks queued behind 4 slots to
+// sort by Priority + Fairness. Two signals — burst-all-tenants and
+// inject-p0-incident — append more tickets while the run is in flight.
+// The per-activity Priority is what makes high-priority and
+// weighted-fairness dispatch visible: with the worker's
+// MaxConcurrentActivityExecutionSize=4 cap and a 56-ticket backlog from
+// the start, the matching service decides the order in which the queued
+// tasks fire.
 //
-// Volume narrative: Solo (lowest weight, weight=1) carries the largest seed
-// backlog so fairness has something visible to do — without fairness Solo
-// starves behind the bigger-weight tenants; with fairness Solo gets a
-// proportional slot share from the start. P0 incidents do NOT appear in the
-// seed or in the burst-all-tenants signal: P0 is reserved for the explicit
-// inject-p0-incident signal so the demo's "rare urgent ticket" story stays
-// crisp. The burst-all-tenants signal appends BurstPerTenant P2 tickets to
-// every tenant simultaneously so the proportional 10/3/1 dispatch ratio is
-// unambiguous in the swim-lane.
+// Volume narrative: every tier carries the same seed count and the same
+// priority distribution — the only thing that differs is the FairnessKey
+// and FairnessWeight. With fairness off the matching service drains FIFO
+// inside each priority bucket and the three tiers finish together; with
+// fairness on the 10/3/1 weights split the slots, so Mission Critical
+// drains first, Enterprise second, Business last. That contrast is the
+// whole point of the demo. P0 incidents do NOT appear in the seed or in
+// the burst-all-tenants signal: P0 is reserved for the explicit
+// inject-p0-incident signal so the demo's "rare urgent ticket" story
+// stays crisp. The burst-all-tenants signal appends BurstPerTenant P2
+// tickets to every tenant simultaneously so the proportional 10/3/1
+// dispatch ratio is unambiguous in the swim-lane.
+//
+// Design note: an earlier version released tickets through per-tenant
+// arrival timers so the queue would fill gradually. Empirically that
+// produced no backlog at all — Temporal timers round up to the server's
+// matcher tick (≈1 s), which knocked sub-second per-tenant arrivals down
+// to one ticket per tier per second and let consumption keep pace with
+// arrivals. Without a backlog the matching service has nothing to
+// reorder and fairness becomes invisible. Dispatching the full seed at
+// t=0 sidesteps the timer-precision floor.
 package priorityfairness
 
 import (
@@ -95,47 +109,32 @@ func HelpdeskRunWorkflow(ctx workflow.Context, input HelpdeskInput) error {
 		return workflow.ExecuteActivity(cctx, a.ResolveTicket, t)
 	}
 
-	// 4. Per-tenant arrival drivers. Each tenant releases its seed tickets
-	//    one at a time at ArrivalInterval[tenant]. The first arrival fires
-	//    after one interval (not at t=0), so the matching service has time
-	//    to receive several tickets before the first slot frees — the
-	//    backlog is what makes priority + fairness ordering observable.
-	type arrival struct {
-		tenant Tenant
-		queue  []Ticket
-		timer  workflow.Future // nil once this tenant has drained its seed
-	}
-	arrivals := make([]*arrival, 0, 3)
+	// 4. Drop the full seed onto the matching service at t=0 — no arrival
+	//    staggering. Temporal timers round up to the server's matcher tick
+	//    (≈1 s), so sub-second per-tenant arrival rates can't build a real
+	//    backlog: tasks get dispatched roughly as fast as they're scheduled
+	//    and the matching service never sees enough queued work for
+	//    fairness to reorder. Dispatching all 60 seed tickets at once
+	//    gives the matching service the full pile from the start, which
+	//    is what lets the 10/3/1 weights produce a visibly proportional
+	//    drain. Iterate tenants in a fixed slice order so replay is
+	//    deterministic.
+	pending := make([]workflow.Future, 0, 64)
 	for _, tenant := range []Tenant{TenantAcme, TenantBrick, TenantSolo} {
-		q := seedTickets[tenant]
-		if len(q) == 0 {
-			continue
+		for _, t := range seedTickets[tenant] {
+			pending = append(pending, dispatch(t))
 		}
-		arrivals = append(arrivals, &arrival{
-			tenant: tenant,
-			queue:  q,
-			timer:  workflow.NewTimer(ctx, ArrivalInterval[tenant]),
-		})
 	}
 
 	burstCh := workflow.GetSignalChannel(ctx, SignalBurstAll)
 	incidentCh := workflow.GetSignalChannel(ctx, SignalInjectP0)
 
-	// 5. Drain loop: race future completions, arrival timers, and signals.
-	//    Loop exits when every dispatched activity has completed AND every
-	//    tenant has drained its seed (no more arrival timers pending).
-	pending := make([]workflow.Future, 0, 64)
+	// 5. Drain loop: race future completions and signals. Loop exits when
+	//    every dispatched activity has completed.
 	handled := make(map[int]bool)
 	completed := 0
 	for {
-		pendingArrivals := false
-		for _, ar := range arrivals {
-			if ar.timer != nil {
-				pendingArrivals = true
-				break
-			}
-		}
-		if completed == len(pending) && !pendingArrivals {
+		if completed == len(pending) {
 			break
 		}
 
@@ -148,26 +147,6 @@ func HelpdeskRunWorkflow(ctx workflow.Context, input HelpdeskInput) error {
 			sel.AddFuture(f, func(workflow.Future) {
 				handled[idx] = true
 				completed++
-			})
-		}
-		for _, ar := range arrivals {
-			if ar.timer == nil {
-				continue
-			}
-			a := ar
-			sel.AddFuture(ar.timer, func(workflow.Future) {
-				if len(a.queue) == 0 {
-					a.timer = nil
-					return
-				}
-				t := a.queue[0]
-				a.queue = a.queue[1:]
-				pending = append(pending, dispatch(t))
-				if len(a.queue) > 0 {
-					a.timer = workflow.NewTimer(ctx, ArrivalInterval[a.tenant])
-				} else {
-					a.timer = nil
-				}
 			})
 		}
 		sel.AddReceive(burstCh, func(c workflow.ReceiveChannel, _ bool) {
@@ -223,16 +202,20 @@ func HelpdeskRunWorkflow(ctx workflow.Context, input HelpdeskInput) error {
 	return nil
 }
 
-// generateSeed returns a fresh per-tenant priority distribution. Volumes are
-// inverted relative to tenant weight so fairness has something visible to do:
-// Acme (weight 10) carries few tickets, Solo (weight 1) carries the largest
-// backlog. Mixes use 0 % P0 by design — P0 incidents are only ever generated
-// by the inject-p0-incident signal. Called only from inside workflow.SideEffect.
+// generateSeed returns a fresh per-tenant priority distribution. Every
+// tier gets the same count and the same priority mix so the FairnessKey /
+// FairnessWeight is the only thing that distinguishes them: with fairness
+// off they drain together, with fairness on the 10/3/1 weights split the
+// slots and Mission Critical finishes first. Mixes use 0 % P0 by design —
+// P0 incidents are only ever generated by the inject-p0-incident signal.
+// Called only from inside workflow.SideEffect.
 func generateSeed() map[Tenant][]PriorityKey {
+	const perTier = 20
+	mix := []int{0, 50, 40, 10}
 	return map[Tenant][]PriorityKey{
-		TenantAcme:  pickFromMix(5, []int{0, 25, 55, 20}),
-		TenantBrick: pickFromMix(12, []int{0, 33, 50, 17}),
-		TenantSolo:  pickFromMix(35, []int{0, 40, 50, 10}),
+		TenantAcme:  pickFromMix(perTier, mix),
+		TenantBrick: pickFromMix(perTier, mix),
+		TenantSolo:  pickFromMix(perTier, mix),
 	}
 }
 

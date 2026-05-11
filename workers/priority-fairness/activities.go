@@ -102,16 +102,18 @@ func (a *Activities) ResolveTicket(ctx context.Context, t Ticket) error {
 }
 
 // resolutionDuration returns the simulated handling time for a ticket. P0
-// incidents get a 4.5-6.0s window so the rare incident block is unmistakable
-// in the 20s swim-lane; P1..P3 use a 2.0-3.0s range so an injected P0 has a
-// visible wait (~0.5-1.5 s) before a slot frees — the swim-lane addition
-// stays consistent with the resolution-log delay rather than appearing
-// instantly the moment the user clicks "+ P0 incident".
+// incidents get a 2.5-3.5s window so the rare incident block stays
+// unmistakable in the 20s swim-lane; P1..P3 use a 0.8-1.5s range — fast
+// enough that the 60-ticket demo wraps inside the chart history while
+// keeping consumption (≈3.5 tickets/s) below arrival (6 tickets/s) so a
+// backlog grows for fairness to reorder. An injected P0 still gets a
+// visible ~0.3-1.2s wait before a slot frees, so the swim-lane addition
+// stays consistent with the resolution-log delay.
 func resolutionDuration(p PriorityKey) time.Duration {
 	if p == 1 {
-		return time.Duration(4500+rand.IntN(1500)) * time.Millisecond
+		return time.Duration(2500+rand.IntN(1000)) * time.Millisecond
 	}
-	return time.Duration(2000+rand.IntN(1000)) * time.Millisecond
+	return time.Duration(800+rand.IntN(700)) * time.Millisecond
 }
 
 // slotPool tracks MaxConcurrentActivities in-process activity slots so we can

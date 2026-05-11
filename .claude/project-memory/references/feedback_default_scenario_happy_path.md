@@ -38,7 +38,7 @@ consistent for future patterns.
 `priority-fairness` page deliberately defaults
 to `"fairness-off"`. The booth narrative for
 that pattern *starts from the broken state*
-(Acme starves the other tenants) so the
+(Mission Critical starves the other tiers) so the
 presenter can demonstrate the problem first,
 then flip the scenario to `"fairness-on"` to
 show how Temporal's `FairnessKey` /

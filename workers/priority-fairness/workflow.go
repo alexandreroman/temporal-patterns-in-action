@@ -55,8 +55,18 @@ import (
 // temporal.Priority is built here and attached to each child's
 // ChildWorkflowOptions, and the activity inside the child inherits it.
 func HelpdeskRunWorkflow(ctx workflow.Context, input HelpdeskInput) error {
-	ctx = workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
-		StartToCloseTimeout: 10 * time.Second,
+	// Announce activities run as local activities so they don't sit in the
+	// matching service behind the prioritised resolve-ticket backlog. The
+	// parent workflow itself is started without a Priority, so a regular
+	// ExecuteActivity here would inherit the parent's default priority key
+	// (3) and queue behind every P1 ticket — which blocks the P0 dispatch
+	// that follows AnnounceIncidentInjected and is what makes injected
+	// incidents appear to "wait for the other tickets to finish". Local
+	// activities run inline in the workflow task on the same worker,
+	// preserving the announce→dispatch ordering the UI relies on without
+	// taking one of the 4 ticket slots.
+	ctx = workflow.WithLocalActivityOptions(ctx, workflow.LocalActivityOptions{
+		StartToCloseTimeout: 5 * time.Second,
 	})
 
 	parentID := workflow.GetInfo(ctx).WorkflowExecution.ID
@@ -92,7 +102,7 @@ func HelpdeskRunWorkflow(ctx workflow.Context, input HelpdeskInput) error {
 	// 2. Announce the full seed up front so the UI can populate its tenant
 	//    queue panels with the planned backlog. Children are launched right
 	//    after this (step 4) but the planned queue is known from t=0.
-	if err := workflow.ExecuteActivity(ctx, a.AnnounceRunSeeded, AnnounceSeedInput{
+	if err := workflow.ExecuteLocalActivity(ctx, a.AnnounceRunSeeded, AnnounceSeedInput{
 		FairnessOn: input.FairnessOn,
 		Tenants:    seedTickets,
 	}).Get(ctx, nil); err != nil {
@@ -185,7 +195,7 @@ func HelpdeskRunWorkflow(ctx workflow.Context, input HelpdeskInput) error {
 			}
 			// Block on the announce so the queue update lands before any
 			// helpdesk.ticket.assigned event from the dispatched tickets.
-			_ = workflow.ExecuteActivity(ctx, a.AnnounceBurstExecuted, AnnounceBurstInput{
+			_ = workflow.ExecuteLocalActivity(ctx, a.AnnounceBurstExecuted, AnnounceBurstInput{
 				Tenants: burst,
 			}).Get(ctx, nil)
 			// Every tenant's slice spawns its children at once, which is
@@ -205,7 +215,7 @@ func HelpdeskRunWorkflow(ctx workflow.Context, input HelpdeskInput) error {
 				return generateRandomTenant()
 			}).Get(&tenant)
 			t := Ticket{ID: nextID(), Tenant: tenant, Priority: 1} // P0
-			_ = workflow.ExecuteActivity(ctx, a.AnnounceIncidentInjected, AnnounceIncidentInput{
+			_ = workflow.ExecuteLocalActivity(ctx, a.AnnounceIncidentInjected, AnnounceIncidentInput{
 				TenantID: tenant, Ticket: t,
 			}).Get(ctx, nil)
 			pending = append(pending, dispatch(t))

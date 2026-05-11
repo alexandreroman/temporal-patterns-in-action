@@ -179,10 +179,7 @@ onBeforeUnmount(() => {
             v-for="block in lane.blocks"
             :key="block.key"
             class="absolute top-0 bottom-0 rounded-sm"
-            :class="[
-              block.inFlight ? 'opacity-90' : '',
-              block.isP0 ? 'pf-p0-pulse' : '',
-            ]"
+            :class="[block.inFlight ? 'opacity-90' : '', block.isP0 ? 'pf-p0-pulse' : '']"
             :style="{
               left: `${block.leftPct}%`,
               width: `${block.widthPct}%`,
@@ -247,7 +244,8 @@ onBeforeUnmount(() => {
 
 <style scoped>
 @keyframes pf-p0-pulse {
-  0%, 100% {
+  0%,
+  100% {
     filter: brightness(1) saturate(1);
     transform: scale(1, 1);
   }
@@ -280,4 +278,3 @@ onBeforeUnmount(() => {
   animation: pf-p0-lane-flash 2000ms ease-out;
 }
 </style>
-

@@ -221,11 +221,7 @@ func ResolveTicketWorkflow(ctx workflow.Context, in ResolveTicketWorkflowInput) 
 	})
 
 	var a *Activities
-	return workflow.ExecuteActivity(actx, a.ResolveTicket, ResolveTicketActivityInput{
-		Ticket:           in.Ticket,
-		ParentWorkflowID: in.ParentWorkflowID,
-		ParentRunID:      in.ParentRunID,
-	}).Get(ctx, nil)
+	return workflow.ExecuteActivity(actx, a.ResolveTicket, ResolveTicketActivityInput(in)).Get(ctx, nil)
 }
 
 // generateSeed returns a fresh per-tenant priority distribution. Every

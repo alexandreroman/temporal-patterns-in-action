@@ -90,7 +90,10 @@ const cards = computed<Card[]>(() =>
           >
             {{ card.ticketId }}
           </span>
-          <span v-else class="font-mono text-[12px] tabular-nums text-slate-400 dark:text-slate-500">
+          <span
+            v-else
+            class="font-mono text-[12px] tabular-nums text-slate-400 dark:text-slate-500"
+          >
             idle
           </span>
           <span

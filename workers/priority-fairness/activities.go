@@ -3,7 +3,6 @@ package priorityfairness
 import (
 	"context"
 	"fmt"
-	"math/rand/v2"
 	"sync"
 	"time"
 
@@ -108,18 +107,18 @@ func (a *Activities) ResolveTicket(ctx context.Context, in ResolveTicketActivity
 }
 
 // resolutionDuration returns the simulated handling time for a ticket. P0
-// incidents get a 2.5-3.5s window so the rare incident block stays
-// unmistakable in the 20s swim-lane; P1..P3 use a 0.8-1.5s range — fast
-// enough that the 60-ticket demo wraps inside the chart history while
-// keeping consumption (≈3.5 tickets/s) below arrival (6 tickets/s) so a
-// backlog grows for fairness to reorder. An injected P0 still gets a
-// visible ~0.3-1.2s wait before a slot frees, so the swim-lane addition
-// stays consistent with the resolution-log delay.
+// incidents take a fixed 3s so the rare incident block stays unmistakable
+// in the 20s swim-lane; P1..P3 take a fixed 1.2s — fast enough that the
+// 60-ticket demo wraps inside the chart history while keeping consumption
+// (≈3.3 tickets/s) below arrival (6 tickets/s) so a backlog grows for
+// fairness to reorder. An injected P0 still gets a visible ~0.3-1.2s wait
+// before a slot frees, so the swim-lane addition stays consistent with
+// the resolution-log delay.
 func resolutionDuration(p PriorityKey) time.Duration {
 	if p == 1 {
-		return time.Duration(2500+rand.IntN(1000)) * time.Millisecond
+		return 3 * time.Second
 	}
-	return time.Duration(800+rand.IntN(700)) * time.Millisecond
+	return 1200 * time.Millisecond
 }
 
 // slotPool tracks MaxConcurrentActivities in-process activity slots so we can

@@ -39,6 +39,7 @@ func TestHelpdeskRunWorkflow_HappyPath(t *testing.T) {
 	suite := &testsuite.WorkflowTestSuite{}
 	env := suite.NewTestWorkflowEnvironment()
 	env.RegisterActivity(&Activities{Publisher: events.NopPublisher{}})
+	env.RegisterWorkflow(ResolveTicketWorkflow)
 
 	env.ExecuteWorkflow(HelpdeskRunWorkflow, HelpdeskInput{FairnessOn: true})
 
@@ -54,6 +55,7 @@ func TestHelpdeskRunWorkflow_PublishesSeedEvent(t *testing.T) {
 
 	pub := &recordingPublisher{}
 	env.RegisterActivity(&Activities{Publisher: pub})
+	env.RegisterWorkflow(ResolveTicketWorkflow)
 
 	env.ExecuteWorkflow(HelpdeskRunWorkflow, HelpdeskInput{FairnessOn: false})
 

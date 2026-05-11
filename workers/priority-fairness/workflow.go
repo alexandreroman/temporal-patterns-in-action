@@ -1,15 +1,20 @@
 // Package priorityfairness implements the Priority and Fairness pattern: a
-// multi-tenant helpdesk dispatcher. The workflow seeds 60 tickets evenly
-// across 3 tiers (Mission Critical=20, Enterprise=20, Business=20) with
-// the same priority mix, then drops the entire pile onto the task queue
-// at t=0 so the matching service has 60 tasks queued behind 4 slots to
-// sort by Priority + Fairness. Two signals — burst-all-tenants and
-// inject-p0-incident — append more tickets while the run is in flight.
-// The per-activity Priority is what makes high-priority and
-// weighted-fairness dispatch visible: with the worker's
-// MaxConcurrentActivityExecutionSize=4 cap and a 56-ticket backlog from
-// the start, the matching service decides the order in which the queued
-// tasks fire.
+// multi-tenant helpdesk dispatcher. The parent HelpdeskRunWorkflow seeds 60
+// tickets evenly across 3 tiers (Mission Critical=20, Enterprise=20,
+// Business=20) with the same priority mix, then fans out into one
+// ResolveTicketWorkflow child per ticket at t=0. The parent constructs each
+// per-ticket temporal.Priority (PriorityKey always; FairnessKey +
+// FairnessWeight when fairness is enabled) and attaches it to the child's
+// ChildWorkflowOptions.Priority. The ResolveTicket activity inside the
+// child inherits that Priority automatically via SDK semantics, so the
+// matching service still sees per-task priority on every activity
+// schedule. Two signals on the parent — burst-all-tenants and
+// inject-p0-incident — spawn additional children while the run is in
+// flight. The worker's MaxConcurrentActivityExecutionSize=4 cap is still
+// what creates the visible backlog: 60+ children all schedule their
+// ResolveTicket activity onto the same task queue, the matching service
+// holds the backlog, and the per-activity Priority decides which task
+// fires next.
 //
 // Volume narrative: every tier carries the same seed count and the same
 // priority distribution — the only thing that differs is the FairnessKey
@@ -43,14 +48,18 @@ import (
 	"go.temporal.io/sdk/workflow"
 )
 
-// HelpdeskRunWorkflow seeds a multi-tenant ticket backlog, releases each
-// ticket onto the task queue at its tenant's arrival rate, and drains the
-// resulting work while honouring burst-all-tenants and inject-p0-incident
-// signals.
+// HelpdeskRunWorkflow seeds a multi-tenant ticket backlog and fans out one
+// ResolveTicketWorkflow child per ticket. It also honours burst-all-tenants
+// and inject-p0-incident signals by spawning additional children. The
+// parent itself only runs the three announce-* activities; the per-ticket
+// temporal.Priority is built here and attached to each child's
+// ChildWorkflowOptions, and the activity inside the child inherits it.
 func HelpdeskRunWorkflow(ctx workflow.Context, input HelpdeskInput) error {
 	ctx = workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
 		StartToCloseTimeout: 10 * time.Second,
 	})
+
+	parentID := workflow.GetInfo(ctx).WorkflowExecution.ID
 
 	var a *Activities
 
@@ -81,9 +90,8 @@ func HelpdeskRunWorkflow(ctx workflow.Context, input HelpdeskInput) error {
 	}
 
 	// 2. Announce the full seed up front so the UI can populate its tenant
-	//    queue panels with the planned backlog. Activities will be dispatched
-	//    progressively (see the arrival timers below) but the planned queue
-	//    is known from t=0.
+	//    queue panels with the planned backlog. Children are launched right
+	//    after this (step 4) but the planned queue is known from t=0.
 	if err := workflow.ExecuteActivity(ctx, a.AnnounceRunSeeded, AnnounceSeedInput{
 		FairnessOn: input.FairnessOn,
 		Tenants:    seedTickets,
@@ -91,22 +99,28 @@ func HelpdeskRunWorkflow(ctx workflow.Context, input HelpdeskInput) error {
 		return err
 	}
 
-	// 3. Dispatch helper — every activity carries a temporal.Priority set
-	//    from the ticket. With fairness off, FairnessKey is the empty string
-	//    (per the SDK contract: empty FairnessKey inherits from the workflow,
-	//    which has none, so the matching service falls back to FIFO at the
-	//    priority bucket).
+	// 3. Dispatch helper — launch one ResolveTicketWorkflow child per ticket.
+	//    The parent builds the per-ticket temporal.Priority and attaches it
+	//    to ChildWorkflowOptions.Priority; the ResolveTicket activity inside
+	//    the child inherits that Priority via SDK semantics, so the matching
+	//    service sees the per-task Priority on the activity schedule and
+	//    applies Priority + Fairness ordering across the backlog. The child
+	//    WorkflowID is derived from the parent's id + ticket id so it's
+	//    deterministic on replay; the TaskQueue is left empty on
+	//    ChildWorkflowOptions so the SDK inherits the parent's, ensuring
+	//    every ResolveTicket task lands on the same queue the matching
+	//    service is sorting.
 	dispatch := func(t Ticket) workflow.Future {
-		opts := workflow.ActivityOptions{
-			StartToCloseTimeout: 10 * time.Second,
-			Priority:            temporal.Priority{PriorityKey: int(t.Priority)},
-		}
+		p := temporal.Priority{PriorityKey: int(t.Priority)}
 		if input.FairnessOn {
-			opts.Priority.FairnessKey = string(t.Tenant)
-			opts.Priority.FairnessWeight = TenantWeight[t.Tenant]
+			p.FairnessKey = string(t.Tenant)
+			p.FairnessWeight = TenantWeight[t.Tenant]
 		}
-		cctx := workflow.WithActivityOptions(ctx, opts)
-		return workflow.ExecuteActivity(cctx, a.ResolveTicket, t)
+		cctx := workflow.WithChildOptions(ctx, workflow.ChildWorkflowOptions{
+			WorkflowID: fmt.Sprintf("%s-ticket-%s", parentID, t.ID),
+			Priority:   p,
+		})
+		return workflow.ExecuteChildWorkflow(cctx, ResolveTicketWorkflow, t)
 	}
 
 	// 4. Drop the full seed onto the matching service at t=0 — no arrival
@@ -129,8 +143,8 @@ func HelpdeskRunWorkflow(ctx workflow.Context, input HelpdeskInput) error {
 	burstCh := workflow.GetSignalChannel(ctx, SignalBurstAll)
 	incidentCh := workflow.GetSignalChannel(ctx, SignalInjectP0)
 
-	// 5. Drain loop: race future completions and signals. Loop exits when
-	//    every dispatched activity has completed.
+	// 5. Drain loop: race child-workflow completions and signals. Loop exits
+	//    when every dispatched child has completed.
 	handled := make(map[int]bool)
 	completed := 0
 	for {
@@ -174,9 +188,8 @@ func HelpdeskRunWorkflow(ctx workflow.Context, input HelpdeskInput) error {
 			_ = workflow.ExecuteActivity(ctx, a.AnnounceBurstExecuted, AnnounceBurstInput{
 				Tenants: burst,
 			}).Get(ctx, nil)
-			// Burst tickets bypass the per-tenant arrival timer: every
-			// tenant's slice lands on the matching service at once, which
-			// is the whole point of the symmetric-surge scenario. Iterate
+			// Every tenant's slice spawns its children at once, which is
+			// the whole point of the symmetric-surge scenario. Iterate
 			// the tenants in a fixed slice order — ranging over the map
 			// directly would be non-deterministic on replay.
 			for _, tenant := range []Tenant{TenantAcme, TenantBrick, TenantSolo} {
@@ -200,6 +213,36 @@ func HelpdeskRunWorkflow(ctx workflow.Context, input HelpdeskInput) error {
 		sel.Select(ctx)
 	}
 	return nil
+}
+
+// ResolveTicketWorkflow runs one ticket: it executes the ResolveTicket
+// activity. The per-task temporal.Priority is set by the parent on this
+// child's ChildWorkflowOptions and inherited by the activity via SDK
+// semantics, so no Priority field is set here.
+func ResolveTicketWorkflow(ctx workflow.Context, ticket Ticket) error {
+	ctx = workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
+		StartToCloseTimeout: 10 * time.Second,
+	})
+
+	// The activity publishes business events onto the parent's NATS subject so
+	// the frontend (which only knows the parent workflow id) actually sees
+	// them. Fall back to this workflow's own execution if there's no parent —
+	// in this demo there always is one, but it keeps the activity safe to run
+	// standalone in tests.
+	info := workflow.GetInfo(ctx)
+	parentID := info.WorkflowExecution.ID
+	parentRunID := info.WorkflowExecution.RunID
+	if info.ParentWorkflowExecution != nil {
+		parentID = info.ParentWorkflowExecution.ID
+		parentRunID = info.ParentWorkflowExecution.RunID
+	}
+
+	var a *Activities
+	return workflow.ExecuteActivity(ctx, a.ResolveTicket, ResolveTicketActivityInput{
+		Ticket:           ticket,
+		ParentWorkflowID: parentID,
+		ParentRunID:      parentRunID,
+	}).Get(ctx, nil)
 }
 
 // generateSeed returns a fresh per-tenant priority distribution. Every

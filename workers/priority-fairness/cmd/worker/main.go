@@ -15,6 +15,7 @@ import (
 func main() {
 	events.RunWorker(pf.Pattern, pf.TaskQueue, func(w worker.Worker, pub events.Publisher) {
 		w.RegisterWorkflow(pf.HelpdeskRunWorkflow)
+		w.RegisterWorkflow(pf.ResolveTicketWorkflow)
 
 		a := &pf.Activities{Publisher: pub}
 		w.RegisterActivityWithOptions(a.AnnounceRunSeeded,

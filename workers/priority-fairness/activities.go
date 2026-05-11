@@ -76,28 +76,34 @@ func (a *Activities) AnnounceIncidentInjected(ctx context.Context, in AnnounceIn
 // from the pool, publishes helpdesk.ticket.assigned with the agent id, sleeps
 // for a priority-dependent duration to mimic resolution time (P0 incidents
 // take longer so the block stays visible in the swim-lane), then publishes
-// helpdesk.ticket.resolved.
-func (a *Activities) ResolveTicket(ctx context.Context, t Ticket) error {
+// helpdesk.ticket.resolved. Business events are published with the parent
+// workflow's id (carried in the input) so they land on the NATS subject the
+// frontend SSE endpoint subscribes to — the child's own id is invisible to
+// the UI.
+func (a *Activities) ResolveTicket(ctx context.Context, in ResolveTicketActivityInput) error {
+	t := in.Ticket
 	pool := a.slotPoolHandle()
 	agent := pool.Acquire()
 	defer pool.Release(agent)
 
-	events.PublishBusiness(ctx, a.Publisher, Pattern, TypeTicketAssigned, map[string]any{
-		"tenantId":    string(t.Tenant),
-		"priorityKey": int(t.Priority),
-		"ticketId":    t.ID,
-		"agent":       agent,
-	})
+	events.PublishBusinessAs(ctx, a.Publisher, Pattern, in.ParentWorkflowID, in.ParentRunID,
+		TypeTicketAssigned, map[string]any{
+			"tenantId":    string(t.Tenant),
+			"priorityKey": int(t.Priority),
+			"ticketId":    t.ID,
+			"agent":       agent,
+		})
 
 	dur := resolutionDuration(t.Priority)
 	time.Sleep(dur)
 
-	events.PublishBusiness(ctx, a.Publisher, Pattern, TypeTicketResolved, map[string]any{
-		"tenantId":    string(t.Tenant),
-		"priorityKey": int(t.Priority),
-		"ticketId":    t.ID,
-		"agent":       agent,
-	})
+	events.PublishBusinessAs(ctx, a.Publisher, Pattern, in.ParentWorkflowID, in.ParentRunID,
+		TypeTicketResolved, map[string]any{
+			"tenantId":    string(t.Tenant),
+			"priorityKey": int(t.Priority),
+			"ticketId":    t.ID,
+			"agent":       agent,
+		})
 	return nil
 }
 

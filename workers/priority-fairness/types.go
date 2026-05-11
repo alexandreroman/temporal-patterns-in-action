@@ -58,6 +58,17 @@ type HelpdeskInput struct {
 	FairnessOn bool `json:"fairnessOn"`
 }
 
+// ResolveTicketActivityInput is the input to the ResolveTicket activity. It
+// carries the parent workflow's id and run id so the activity can publish its
+// business events onto the parent's NATS subject (the only subject the
+// frontend SSE endpoint subscribes to). Without this the events would land on
+// the child's subject and the UI would never see them.
+type ResolveTicketActivityInput struct {
+	Ticket           Ticket `json:"ticket"`
+	ParentWorkflowID string `json:"parentWorkflowId"`
+	ParentRunID      string `json:"parentRunId"`
+}
+
 // AnnounceSeedInput is the input to the announce-run-seeded activity, which
 // publishes the initial per-tenant queues to the UI. The map keys are
 // stringified tenant ids so the JSON payload matches the frontend types

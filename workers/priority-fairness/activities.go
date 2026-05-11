@@ -108,12 +108,11 @@ func (a *Activities) ResolveTicket(ctx context.Context, in ResolveTicketActivity
 
 // resolutionDuration returns the simulated handling time for a ticket. P0
 // incidents take a fixed 3s so the rare incident block stays unmistakable
-// in the 20s swim-lane; P1..P3 take a fixed 1.2s — fast enough that the
-// 60-ticket demo wraps inside the chart history while keeping consumption
-// (≈3.3 tickets/s) below arrival (6 tickets/s) so a backlog grows for
-// fairness to reorder. An injected P0 still gets a visible ~0.3-1.2s wait
-// before a slot frees, so the swim-lane addition stays consistent with
-// the resolution-log delay.
+// in the 20s swim-lane; P1..P3 take a fixed 1.2s. With 4 slots draining at
+// 1.2s/ticket, consumption is ≈3.3 tickets/s — below the seed arrival rate,
+// so a backlog grows and fairness has something to reorder. An injected P0
+// still gets a visible ~0.3-1.2s wait before a slot frees, so the swim-lane
+// addition stays consistent with the resolution-log delay.
 func resolutionDuration(p PriorityKey) time.Duration {
 	if p == 1 {
 		return 3 * time.Second

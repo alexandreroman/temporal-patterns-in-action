@@ -185,8 +185,8 @@ onBeforeUnmount(() => {
               width: `${block.widthPct}%`,
               backgroundColor: block.color,
               boxShadow: block.isP0
-                ? `0 0 16px 5px rgba(${P0_GLOW_COLOR}, 0.8), 0 0 6px 3px rgba(${P0_GLOW_COLOR}, 0.95), inset 0 1px 0 rgba(255,255,255,0.18)`
-                : 'inset 0 1px 0 rgba(255,255,255,0.18)',
+                ? `0 0 16px 5px rgba(${P0_GLOW_COLOR}, 0.8), 0 0 6px 3px rgba(${P0_GLOW_COLOR}, 0.95), inset 0 1px 0 rgba(255,255,255,0.18), inset -1px 0 0 rgba(0,0,0,0.45)`
+                : 'inset 0 1px 0 rgba(255,255,255,0.18), inset -1px 0 0 rgba(0,0,0,0.45)',
               borderRight: block.inFlight ? '1px dashed rgba(255,255,255,0.45)' : undefined,
             }"
             :title="block.title"

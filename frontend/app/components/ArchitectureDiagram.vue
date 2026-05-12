@@ -112,9 +112,9 @@ const edgeAnim: Record<EdgeState, string> = {
     <!-- Worker -->
     <g>
       <rect
-        x="370"
+        x="355"
         y="75"
-        width="100"
+        width="130"
         height="50"
         rx="8"
         class="transition-all duration-300"
@@ -306,7 +306,7 @@ const edgeAnim: Record<EdgeState, string> = {
     <line
       x1="320"
       y1="100"
-      x2="368"
+      x2="353"
       y2="100"
       fill="none"
       class="transition-all duration-300"
@@ -319,7 +319,7 @@ const edgeAnim: Record<EdgeState, string> = {
       "
     />
     <line
-      x1="470"
+      x1="485"
       y1="88"
       x2="528"
       y2="28"
@@ -332,7 +332,7 @@ const edgeAnim: Record<EdgeState, string> = {
       "
     />
     <line
-      x1="470"
+      x1="485"
       y1="95"
       x2="528"
       y2="76"
@@ -345,7 +345,7 @@ const edgeAnim: Record<EdgeState, string> = {
       "
     />
     <line
-      x1="470"
+      x1="485"
       y1="105"
       x2="528"
       y2="124"
@@ -358,7 +358,7 @@ const edgeAnim: Record<EdgeState, string> = {
       "
     />
     <line
-      x1="470"
+      x1="485"
       y1="112"
       x2="528"
       y2="172"

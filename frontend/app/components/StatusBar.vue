@@ -11,8 +11,15 @@ defineProps<{
   <div
     class="flex items-center gap-3 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600 dark:border-slate-700 dark:bg-slate-800/60 dark:text-slate-300"
   >
+    <!--
+      :duration is required: with mode="out-in", Vue waits for transitionend
+      before mounting the new key. On hidden tabs Chrome never fires
+      transitionend, so without an explicit timer fallback the bar stays
+      pinned on the initial "Ready…" message even after events arrive.
+    -->
     <Transition
       mode="out-in"
+      :duration="{ enter: 200, leave: 150 }"
       enter-active-class="transition duration-200 ease-out"
       enter-from-class="opacity-0 translate-y-0.5"
       enter-to-class="opacity-100 translate-y-0"

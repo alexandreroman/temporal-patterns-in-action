@@ -32,13 +32,6 @@ func OrderProcessingWorkflow(ctx workflow.Context, input OrderInput) (OrderResul
 		OrderID: input.OrderID,
 		Status:  "pending",
 	}
-	progress := Progress{CurrentStep: "starting"}
-
-	if err := workflow.SetQueryHandler(ctx, "getProgress", func() (Progress, error) {
-		return progress, nil
-	}); err != nil {
-		return result, err
-	}
 
 	var a *Activities
 	var compensations []func(workflow.Context) error
@@ -56,10 +49,8 @@ func OrderProcessingWorkflow(ctx workflow.Context, input OrderInput) (OrderResul
 	}
 
 	// Step 1 — check fraud
-	progress.CurrentStep = "check-fraud"
 	var checkID string
 	if err := workflow.ExecuteActivity(ctx, a.CheckFraud, txID, input).Get(ctx, &checkID); err != nil {
-		progress.Failed = "check-fraud"
 		result.Status = "failed"
 		runCompensations()
 		return result, err
@@ -67,14 +58,11 @@ func OrderProcessingWorkflow(ctx workflow.Context, input OrderInput) (OrderResul
 	compensations = append(compensations, func(c workflow.Context) error {
 		return workflow.ExecuteActivity(c, a.ReleaseFraudHold, txID, checkID).Get(c, nil)
 	})
-	progress.Completed = append(progress.Completed, "check-fraud")
 	result.Confirmed = append(result.Confirmed, checkID)
 
 	// Step 2 — prepare shipment
-	progress.CurrentStep = "prepare-shipment"
 	var shipmentID string
 	if err := workflow.ExecuteActivity(ctx, a.PrepareShipment, txID, input, checkID).Get(ctx, &shipmentID); err != nil {
-		progress.Failed = "prepare-shipment"
 		result.Status = "failed"
 		runCompensations()
 		return result, err
@@ -82,14 +70,11 @@ func OrderProcessingWorkflow(ctx workflow.Context, input OrderInput) (OrderResul
 	compensations = append(compensations, func(c workflow.Context) error {
 		return workflow.ExecuteActivity(c, a.CancelShipment, txID, shipmentID).Get(c, nil)
 	})
-	progress.Completed = append(progress.Completed, "prepare-shipment")
 	result.Confirmed = append(result.Confirmed, shipmentID)
 
 	// Step 3 — charge customer
-	progress.CurrentStep = "charge-customer"
 	var paymentID string
 	if err := workflow.ExecuteActivity(ctx, a.ChargeCustomer, txID, input, shipmentID).Get(ctx, &paymentID); err != nil {
-		progress.Failed = "charge-customer"
 		result.Status = "failed"
 		runCompensations()
 		return result, err
@@ -97,20 +82,15 @@ func OrderProcessingWorkflow(ctx workflow.Context, input OrderInput) (OrderResul
 	compensations = append(compensations, func(c workflow.Context) error {
 		return workflow.ExecuteActivity(c, a.RefundCustomer, txID, paymentID, input.Amount).Get(c, nil)
 	})
-	progress.Completed = append(progress.Completed, "charge-customer")
 	result.Confirmed = append(result.Confirmed, paymentID)
 
 	// Step 4 — send confirmation
-	progress.CurrentStep = "send-confirmation"
 	var email string
 	if err := workflow.ExecuteActivity(ctx, a.SendConfirmation, txID, input).Get(ctx, &email); err != nil {
-		progress.Failed = "send-confirmation"
 		result.Status = "failed"
 		runCompensations()
 		return result, err
 	}
-	progress.Completed = append(progress.Completed, "send-confirmation")
-	progress.CurrentStep = "done"
 	result.Confirmed = append(result.Confirmed, email)
 	result.Status = "completed"
 	return result, nil

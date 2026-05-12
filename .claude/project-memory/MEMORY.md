@@ -19,6 +19,7 @@
 - [SSE endpoints need an immediate initial push](references/feedback_sse_initial_flush.md) — push one chunk right after `subscribe()` or Node/h3 holds response headers until the 15s heartbeat, blocking `EventSource.onopen`.
 - [NATS subscribe must be flushed before signalling SSE open](references/feedback_nats_subscribe_flush.md) — `nc.subscribe()` only queues SUB; without `await nc.flush()` the first event (e.g. `helpdesk.run.seeded`) is dropped.
 - [waitForOpen sees stale `open` across runs](references/feedback_waitforopen_stale_status.md) — pattern-stream watch needs `flush:"sync"`, else the second run POSTs `/start` before the new SSE subscription is live and `helpdesk.run.seeded` is dropped.
+- [Don't abort priority-fairness runs mid-flight](references/feedback_priority_fairness_repro_load.md) — each scenario spawns 120+ top-level workflows; serialise repro trials and let each drain so the dev Temporal server doesn't congest.
 - [Frontend component conventions](references/feedback_frontend_component_conventions.md) — generic shells in `components/`; pattern logic lives in `<Pattern><Component>.vue` wrappers.
 - [Saga activities: txID first](references/feedback_saga_idempotency_key_first.md) — saga activities take `txID` as the first business arg after `ctx`; keeps the idempotency key visible in logs and UI.
 - [Batch throttling on worker, not workflow](references/project_batch_throttling.md) — Batch pattern throttles via worker options in all four SDKs; no semaphore variant in the demo.

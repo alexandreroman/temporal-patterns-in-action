@@ -31,6 +31,25 @@ func healthPort() int {
 	return n
 }
 
+// HandleHealthcheck probes the in-process health server and exits if the binary
+// was invoked with the "-healthcheck" arg. Otherwise returns immediately. Call
+// this at the top of any cmd/worker/main.go that builds its own worker setup
+// instead of using RunWorker. Compose runs the worker binary with this arg
+// every 10 s to drive its container healthcheck.
+func HandleHealthcheck() {
+	if len(os.Args) > 1 && os.Args[1] == "-healthcheck" {
+		runHealthcheck()
+	}
+}
+
+// ServeHealth starts the /healthz server in a goroutine when HEALTH_PORT is
+// set. Safe to call multiple times — no-op when the env var is empty.
+func ServeHealth() {
+	if port := healthPort(); port > 0 {
+		go serveHealth(port)
+	}
+}
+
 // RunWorker wires the boilerplate shared by every pattern's cmd/worker/main.go:
 // resolves TEMPORAL_ADDRESS / NATS_URL from the environment, dials Temporal,
 // constructs a worker bound to taskQueue with the progress-event interceptor
@@ -47,10 +66,7 @@ func RunWorker(pattern, taskQueue string, register func(w worker.Worker, publish
 	// The distroless runtime image has no shell, wget, or curl, so Compose
 	// healthchecks re-exec the worker binary with `-healthcheck` to probe the
 	// in-process health server.
-	if len(os.Args) > 1 && os.Args[1] == "-healthcheck" {
-		runHealthcheck()
-		return
-	}
+	HandleHealthcheck()
 
 	address := os.Getenv("TEMPORAL_ADDRESS")
 	if address == "" {
@@ -80,9 +96,7 @@ func RunWorker(pattern, taskQueue string, register func(w worker.Worker, publish
 	w := worker.New(c, taskQueue, opts)
 	register(w, publisher)
 
-	if port := healthPort(); port > 0 {
-		go serveHealth(port)
-	}
+	ServeHealth()
 
 	log.Printf("%s worker connected to %s — listening on task queue: %s", pattern, address, taskQueue)
 

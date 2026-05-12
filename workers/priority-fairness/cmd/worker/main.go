@@ -24,6 +24,8 @@ import (
 )
 
 func main() {
+	events.HandleHealthcheck()
+
 	address := os.Getenv("TEMPORAL_ADDRESS")
 	if address == "" {
 		address = "localhost:7233"

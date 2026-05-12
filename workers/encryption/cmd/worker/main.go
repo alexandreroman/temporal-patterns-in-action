@@ -19,6 +19,8 @@ import (
 )
 
 func main() {
+	events.HandleHealthcheck()
+
 	address := getenv("TEMPORAL_ADDRESS", "localhost:7233")
 	natsURL := getenv("NATS_URL", "nats://localhost:4222")
 
@@ -64,6 +66,8 @@ func main() {
 	register(wClear)
 	wEnc := worker.New(encClient, encryption.TaskQueueEncrypted, worker.Options{Interceptors: interc})
 	register(wEnc)
+
+	events.ServeHealth()
 
 	log.Printf("encryption worker connected to %s — listening on %s and %s",
 		address, encryption.TaskQueueClear, encryption.TaskQueueEncrypted)

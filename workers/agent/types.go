@@ -83,13 +83,3 @@ type Plan struct {
 type ApprovalDecision struct {
 	Approved bool `json:"approved"`
 }
-
-// Progress is returned by the getProgress query handler.
-type Progress struct {
-	Loop      int    `json:"loop"`
-	Phase     string `json:"phase"`
-	LLMCalls  int    `json:"llmCalls"`
-	ToolCalls int    `json:"toolCalls"`
-	Tokens    int    `json:"tokens"`
-	Completed bool   `json:"completed"`
-}

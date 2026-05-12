@@ -45,7 +45,6 @@ const arch = computed<ArchState>(() => {
       case "helpdesk.ticket.resolved":
         if (svc) {
           nodes[svc.node] = "ok";
-          edges[svc.edge] = "idle";
         }
         break;
 

@@ -130,7 +130,14 @@ const ROLE_CLASS: Record<ChatMessage["role"], string> = {
       <p v-if="messages.length === 0" class="py-6 text-center text-xs text-slate-400">
         No messages yet.
       </p>
-      <TransitionGroup name="msg">
+      <!--
+        :duration matches .msg-enter-active. Without it, Vue waits for the
+        first transitionend on each new row. On a hidden tab Chrome never
+        fires transitionend, so rows stay frozen at .msg-enter-from
+        (opacity 0) and the panel looks empty even though messages are
+        already in the DOM.
+      -->
+      <TransitionGroup name="msg" :duration="300">
         <div
           v-for="m in messages"
           :key="m.id"

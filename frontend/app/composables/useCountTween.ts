@@ -2,8 +2,10 @@ import { onBeforeUnmount, ref, watch } from "vue";
 
 /**
  * Tween a counter so viewers see it tick up (e.g. 50 → 100) instead of
- * snapping. Honors prefers-reduced-motion and snaps on reset (target <
- * previous), so starting a new run resets cleanly.
+ * snapping. Honors prefers-reduced-motion, snaps on reset (target <
+ * previous), and snaps when the page is hidden — Chrome pauses
+ * requestAnimationFrame on hidden tabs, so the tween would otherwise stay
+ * pinned at 0 for the entire run.
  */
 export function useCountTween(source: () => number) {
   const displayed = ref(0);
@@ -25,7 +27,8 @@ export function useCountTween(source: () => number) {
       const reduceMotion =
         typeof window !== "undefined" &&
         window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-      if (reduceMotion || target < (previous ?? 0)) {
+      const hidden = typeof document !== "undefined" && document.hidden;
+      if (hidden || reduceMotion || target < (previous ?? 0)) {
         displayed.value = target;
         return;
       }

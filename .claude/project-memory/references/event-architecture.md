@@ -164,21 +164,32 @@ references.
 
 ## Publisher fallback
 
-`events.NewPublisher(url)` returns a
-`NopPublisher` when `url` is empty; if the dial
-fails it returns an error, and each worker's
-`main` is responsible for catching the error and
-substituting a `NopPublisher` so the worker stays
-runnable without NATS for local dev and unit
-tests.
+`events.NewPublisher(url)` always dials NATS at
+`url` and returns either a `NATSPublisher` or an
+error — there is no empty-URL special case. The
+shared `events.RunWorker` (in
+`workers/events/bootstrap.go`) catches that
+error and substitutes `events.NopPublisher{}`
+so the worker stays runnable without NATS for
+local dev and unit tests. Patterns that opt out
+of `RunWorker` and build their own worker setup
+(today: `workers/encryption/cmd/worker/main.go`,
+which dials two clients for the clear and
+encrypted task queues) must replicate the same
+catch-and-substitute pattern in their own
+`main`. `workers/priority-fairness/cmd/worker/
+main.go` adds a locally dialled `client.Client`
+for its activities but still delegates the worker
+loop to `events.RunWorker`, so the fallback is
+handled centrally for it.
 
 **Why:** demos must not require the full infra
 to come up. Tests pass with a nil or Nop
 publisher. A failing NATS does not kill the
-worker. Keeping the dial-failure fallback in
-`main` (not in `NewPublisher`) lets each worker
-decide its own tolerance — e.g. a future pattern
-could choose to fail fast instead.
+worker. Keeping the dial-failure fallback at the
+call site (not inside `NewPublisher`) lets each
+worker decide its own tolerance — e.g. a future
+pattern could choose to fail fast instead.
 
 ## JetStream migration
 

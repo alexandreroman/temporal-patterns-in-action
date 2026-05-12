@@ -7,10 +7,10 @@ import type { Edges, EdgeKey, Nodes, NodeKey } from "~/types/architecture";
  * event-to-state switch is pattern-specific and stays in the wrapper.
  */
 
-export const NODE_IDS: NodeKey[] = ["ui", "temporal", "worker", "s1", "s2", "s3", "s4"];
-export const EDGE_IDS: EdgeKey[] = ["ui_tmp", "tmp_wk", "wk_s1", "wk_s2", "wk_s3", "wk_s4"];
-export const SERVICE_NODES: NodeKey[] = ["s1", "s2", "s3", "s4"];
-export const SERVICE_EDGES: EdgeKey[] = ["wk_s1", "wk_s2", "wk_s3", "wk_s4"];
+const NODE_IDS: NodeKey[] = ["ui", "temporal", "worker", "s1", "s2", "s3", "s4"];
+const EDGE_IDS: EdgeKey[] = ["ui_tmp", "tmp_wk", "wk_s1", "wk_s2", "wk_s3", "wk_s4"];
+const SERVICE_NODES: NodeKey[] = ["s1", "s2", "s3", "s4"];
+const SERVICE_EDGES: EdgeKey[] = ["wk_s1", "wk_s2", "wk_s3", "wk_s4"];
 
 export function initialNodes(): Nodes {
   return {

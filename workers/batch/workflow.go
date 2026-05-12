@@ -52,13 +52,6 @@ func BatchProcessingWorkflow(ctx workflow.Context, input BatchInput) (BatchResul
 	})
 
 	result := BatchResult{BatchID: input.BatchID, Total: input.Total}
-	progress := Progress{Total: input.Total}
-
-	if err := workflow.SetQueryHandler(ctx, "getProgress", func() (Progress, error) {
-		return progress, nil
-	}); err != nil {
-		return result, err
-	}
 
 	futures := make([]workflow.Future, 0, input.Total)
 
@@ -75,23 +68,18 @@ func BatchProcessingWorkflow(ctx workflow.Context, input BatchInput) (BatchResul
 			Index:          i,
 			FailureRate:    input.FailureRate,
 		}
-		progress.InFlight++
 		future := workflow.ExecuteChildWorkflow(childCtx, ProcessImageWorkflow, in)
 		futures = append(futures, future)
 	}
 
-	// Drain: wait for every child and update counters. Counters live on the
-	// workflow goroutine so the query handler sees a consistent snapshot.
+	// Drain: wait for every child and update counters.
 	for _, f := range futures {
 		if err := f.Get(ctx, nil); err != nil {
-			progress.Failed++
 			result.Failed++
 			logger.Warn("item failed after retries", "error", err)
 		} else {
-			progress.Processed++
 			result.Processed++
 		}
-		progress.InFlight--
 	}
 
 	var a *Activities

@@ -142,21 +142,3 @@ type Report struct {
 	SourcesUsed  int    `json:"sourcesUsed"`
 	PartialCount int    `json:"partialCount"`
 }
-
-// Progress is returned by the getProgress query handler. Parallels the
-// counters exposed by agent / batch so the demo page has a uniform surface.
-type Progress struct {
-	Phase     string `json:"phase"`
-	LLMCalls  int    `json:"llmCalls"`
-	Completed bool   `json:"completed"`
-}
-
-// Phase strings reported by the getProgress query.
-const (
-	PhaseIdle      = "idle"
-	PhasePlanning  = "planning"
-	PhaseQueries   = "queries"
-	PhaseResearch  = "research"
-	PhaseSynthesis = "synthesis"
-	PhaseCompleted = "completed"
-)

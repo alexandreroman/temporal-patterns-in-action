@@ -40,11 +40,3 @@ type StageInput struct {
 	Service        string  `json:"service"`
 	FailureRate    float64 `json:"failureRate"`
 }
-
-// Progress is returned by the getProgress query handler.
-type Progress struct {
-	Total     int `json:"total"`
-	Processed int `json:"processed"`
-	Failed    int `json:"failed"`
-	InFlight  int `json:"inFlight"`
-}

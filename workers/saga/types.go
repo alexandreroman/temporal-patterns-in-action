@@ -20,10 +20,3 @@ type OrderResult struct {
 	Status    string   `json:"status"`
 	Confirmed []string `json:"confirmed"`
 }
-
-// Progress is returned by the getProgress query handler.
-type Progress struct {
-	CurrentStep string   `json:"currentStep"`
-	Completed   []string `json:"completed"`
-	Failed      string   `json:"failed,omitempty"`
-}

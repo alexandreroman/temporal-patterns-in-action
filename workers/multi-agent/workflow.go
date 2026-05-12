@@ -46,35 +46,23 @@ func DeepResearchWorkflow(ctx workflow.Context, req DeepResearchRequest) (Report
 	parentExec := workflow.GetInfo(ctx).WorkflowExecution
 	parentID, parentRunID := parentExec.ID, parentExec.RunID
 
-	progress := Progress{Phase: PhaseIdle}
-	if err := workflow.SetQueryHandler(ctx, "getProgress", func() (Progress, error) {
-		return progress, nil
-	}); err != nil {
-		return Report{}, err
-	}
-
 	var a *Activities
 	stdCtx := workflow.WithActivityOptions(ctx, standardActivityOptions())
 	fastCtx := workflow.WithActivityOptions(ctx, fastActivityOptions())
 
 	// Phase 1 — Plan.
-	progress.Phase = PhasePlanning
 	var plan ResearchPlan
 	if err := workflow.ExecuteActivity(stdCtx, a.PlanResearch, req).Get(stdCtx, &plan); err != nil {
 		return Report{}, err
 	}
-	progress.LLMCalls++
 
 	// Phase 2 — Query generation.
-	progress.Phase = PhaseQueries
 	var queries ResearchQueries
 	if err := workflow.ExecuteActivity(stdCtx, a.GenerateQueries, plan).Get(stdCtx, &queries); err != nil {
 		return Report{}, err
 	}
-	progress.LLMCalls++
 
 	// Phase 3 — Fan-out to child research-agent workflows.
-	progress.Phase = PhaseResearch
 	if err := workflow.ExecuteActivity(fastCtx, a.AnnounceFanout, len(queries.Topics)).Get(fastCtx, nil); err != nil {
 		logger.Warn("announce-fanout failed", "error", err)
 	}
@@ -131,7 +119,6 @@ func DeepResearchWorkflow(ctx workflow.Context, req DeepResearchRequest) (Report
 	}
 
 	// Phase 4 — Synthesis.
-	progress.Phase = PhaseSynthesis
 	var report Report
 	if err := workflow.ExecuteActivity(stdCtx, a.SynthesizeReport, SynthesisInput{
 		Prompt:  req.Prompt,
@@ -139,9 +126,6 @@ func DeepResearchWorkflow(ctx workflow.Context, req DeepResearchRequest) (Report
 	}).Get(stdCtx, &report); err != nil {
 		return Report{}, err
 	}
-	progress.LLMCalls++
-	progress.Phase = PhaseCompleted
-	progress.Completed = true
 
 	return report, nil
 }

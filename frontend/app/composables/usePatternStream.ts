@@ -64,7 +64,16 @@ export function usePatternStream(
       }
       open(`/api/patterns/${encodeURIComponent(nextPattern)}/${encodeURIComponent(nextId)}/events`);
     },
-    { immediate: true },
+    // flush:'sync' is required: callers set workflowId.value and immediately
+    // await waitForOpen() in the same tick. With the default 'pre' scheduler
+    // the watch would run on the next microtask, so waitForOpen() would
+    // sample the previous run's stale "open" status, resolve early, and let
+    // the page POST /start before the new EventSource (and its server-side
+    // NATS SUB) is live — dropping the workflow's first event,
+    // helpdesk.run.seeded. Running the effect synchronously resets status to
+    // "connecting" inside the setter, so waitForOpen() correctly waits for
+    // the new connection's open transition.
+    { immediate: true, flush: "sync" },
   );
 
   onBeforeUnmount(() => {

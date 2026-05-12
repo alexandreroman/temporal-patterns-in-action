@@ -19,6 +19,14 @@ export async function subscribe(
 ): Promise<() => void> {
   const nc = await getNatsConnection();
   const sub = nc.subscribe(subject);
+  // nc.subscribe() only queues the SUB protocol frame; it returns before the
+  // server has registered the interest. Without this flush, a publisher
+  // racing the client (e.g. a workflow started immediately after
+  // EventSource.onopen) can land its first events on the server before the
+  // SUB is processed, and those messages are dropped — symptomatically the
+  // priority-fairness `helpdesk.run.seeded` event was missing while later
+  // `helpdesk.ticket.assigned` events arrived normally.
+  await nc.flush();
 
   (async () => {
     for await (const msg of sub) {

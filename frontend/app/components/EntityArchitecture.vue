@@ -71,7 +71,6 @@ const arch = computed<ArchState>(() => {
         running = false;
         nodes.temporal = "ok";
         nodes.ui = "ok";
-        nodes.worker = "ok";
         break;
 
       case "progress.workflow.failed":

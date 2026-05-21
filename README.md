@@ -86,11 +86,11 @@ graph LR
     Frontend -->|SSE| User
 ```
 
-| Module          | Description                                                 |
-| --------------- | ----------------------------------------------------------- |
-| `workers/`      | Go workers, one binary per pattern                          |
-| `frontend/`     | Nuxt 4 + Vue 3 + Tailwind CSS 4 UI and API                  |
-| `codec-server/` | Temporal Codec Server that decodes encrypted payloads on demand for the Temporal Web UI |
+| Module          | Description                                      |
+| --------------- | ------------------------------------------------ |
+| `workers/`      | Go workers, one binary per pattern               |
+| `frontend/`     | Nuxt 4 + Vue 3 + Tailwind CSS 4 UI and API       |
+| `codec-server/` | Opt-in HTTP Codec Server for the Temporal Web UI |
 
 ### How a run flows
 

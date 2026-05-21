@@ -30,6 +30,8 @@ Then open:
 
 - UI — <http://localhost:3000>
 - Temporal Web UI — <http://localhost:8233>
+- Codec Server — <http://localhost:8888> (opt-in,
+  see [Payload Encryption](#payload-encryption))
 
 Stop everything with `docker-compose down`.
 
@@ -84,10 +86,11 @@ graph LR
     Frontend -->|SSE| User
 ```
 
-| Module      | Description                                      |
-| ----------- | ------------------------------------------------ |
-| `workers/`  | Go workers, one binary per pattern               |
-| `frontend/` | Nuxt 4 + Vue 3 + Tailwind CSS 4 UI and API       |
+| Module          | Description                                                 |
+| --------------- | ----------------------------------------------------------- |
+| `workers/`      | Go workers, one binary per pattern                          |
+| `frontend/`     | Nuxt 4 + Vue 3 + Tailwind CSS 4 UI and API                  |
+| `codec-server/` | Temporal Codec Server that decodes encrypted payloads on demand for the Temporal Web UI |
 
 ### How a run flows
 
@@ -170,6 +173,39 @@ raw event list cannot.
 | Durable AI Agent             | `workers/agent`             |
 | Multi-agent (deep research)  | `workers/multi-agent`       |
 | Priority and Fairness        | `workers/priority-fairness` |
+
+### Payload Encryption
+
+The Encryption pattern wires an AES-256-GCM
+`PayloadCodec` on the Temporal client and worker
+so the server only ever stores ciphertext. Open
+any workflow on the `patterns-encryption-encrypted`
+task queue in the Temporal Web UI and you will see
+opaque base64 — that's the point.
+
+A companion **Codec Server** runs in the
+`codec-server` service (port `8888`). It exposes
+the same codec over HTTP so the Web UI can call
+`/decode` and reveal the plaintext on demand. It
+is **opt-in**: nothing is decoded automatically.
+To enable it for your browser session:
+
+1. Open an encrypted workflow in the Temporal Web
+   UI and click the **glasses icon** in the top
+   bar (next to the user avatar).
+2. In the *Codec Server* modal, pick *"Use my
+   browser setting and ignore Cluster-level
+   setting"*.
+3. Enter the codec server address —
+   `http://localhost:8888` — and click *Apply*.
+
+Toggling the option off restores the ciphertext
+view.
+
+The codec server reuses `workers/encryption`'s
+`EncryptionCodec` via a `replace` directive in
+its `go.mod`, so the encrypt/decrypt logic lives
+in a single place.
 
 ## License
 

@@ -145,6 +145,23 @@ services:
           memory: 64M
     restart: unless-stopped
 
+  codec-server:
+    build:
+      context: .
+      dockerfile: codec-server/Dockerfile
+    environment:
+      LISTEN_ADDR: ":8888"
+      # Origins allowed to call /decode from the browser. The Temporal Web
+      # UI runs on 8233; add others (comma-separated) if needed.
+      UI_ORIGIN: "http://localhost:8233,http://127.0.0.1:8233"
+    ports:
+      - "8888:8888" # http — Temporal Web UI "Remote Codec Endpoint"
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+    restart: unless-stopped
+
   worker-encryption:
     build:
       context: ./workers

@@ -12,11 +12,17 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"go.temporal.io/sdk/converter"
 
 	"github.com/alexandreroman/temporal-patterns-in-action/workers/encryption"
 )
+
+// maxRequestBytes caps incoming codec requests. Temporal payloads are small
+// (history entries); 4 MiB leaves plenty of headroom while protecting the
+// process from oversized POSTs.
+const maxRequestBytes = 4 << 20
 
 func main() {
 	listen := getenv("LISTEN_ADDR", ":8888")
@@ -31,12 +37,28 @@ func main() {
 	}
 
 	mux := http.NewServeMux()
-	mux.Handle("/", withCORS(uiOrigin, h))
+	mux.Handle("/", withCORS(uiOrigin, withBodyLimit(h)))
+
+	srv := &http.Server{
+		Addr:              listen,
+		Handler:           mux,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      15 * time.Second,
+		IdleTimeout:       60 * time.Second,
+	}
 
 	log.Printf("codec server listening on %s — UI origin %s", listen, uiOrigin)
-	if err := http.ListenAndServe(listen, mux); err != nil {
+	if err := srv.ListenAndServe(); err != nil {
 		log.Fatalf("codec server stopped: %v", err)
 	}
+}
+
+func withBodyLimit(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		r.Body = http.MaxBytesReader(w, r.Body, maxRequestBytes)
+		next.ServeHTTP(w, r)
+	})
 }
 
 func withCORS(allowed string, next http.Handler) http.Handler {

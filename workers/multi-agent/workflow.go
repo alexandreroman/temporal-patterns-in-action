@@ -164,7 +164,7 @@ func ResearchAgentWorkflow(ctx workflow.Context, in ResearchAgentInput) (Researc
 		result.Sources = append(result.Sources, sr.Sources...)
 	}
 
-	if failures == len(in.Queries) {
+	if len(in.Queries) > 0 && failures == len(in.Queries) {
 		return ResearchResult{}, temporal.NewNonRetryableApplicationError(
 			fmt.Sprintf("all %d searches failed for topic %q", failures, in.TopicName),
 			"AllSearchesFailed", nil)

@@ -23,8 +23,7 @@ type flakyActivities struct {
 
 func (a *flakyActivities) CreateThumbnail(ctx context.Context, in StageInput) error {
 	if int(activity.GetInfo(ctx).Attempt) == 1 {
-		runID := activity.GetInfo(ctx).WorkflowExecution.RunID
-		events.PublishBusinessAs(ctx, a.Publisher, Pattern, in.RootWorkflowID, runID, TypeItemAttemptFailed, map[string]any{
+		events.PublishBusinessAs(ctx, a.Publisher, Pattern, in.RootWorkflowID, in.RootRunID, TypeItemAttemptFailed, map[string]any{
 			"index":   in.Index,
 			"service": in.Service,
 			"attempt": 1,

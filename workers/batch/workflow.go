@@ -43,7 +43,9 @@ func stageActivityOptions() workflow.ActivityOptions {
 // item failures are counted and reported — they never fail the workflow itself.
 func BatchProcessingWorkflow(ctx workflow.Context, input BatchInput) (BatchResult, error) {
 	logger := workflow.GetLogger(ctx)
-	rootID := workflow.GetInfo(ctx).WorkflowExecution.ID
+	info := workflow.GetInfo(ctx)
+	rootID := info.WorkflowExecution.ID
+	rootRunID := info.WorkflowExecution.RunID
 
 	// Activity options for the closing summary. Child workflows set their own
 	// options on the stage activities.
@@ -65,6 +67,7 @@ func BatchProcessingWorkflow(ctx workflow.Context, input BatchInput) (BatchResul
 		in := ImageInput{
 			BatchID:        input.BatchID,
 			RootWorkflowID: rootID,
+			RootRunID:      rootRunID,
 			Index:          i,
 			FailureRate:    input.FailureRate,
 		}
@@ -112,6 +115,7 @@ func ProcessImageWorkflow(ctx workflow.Context, in ImageInput) error {
 		stage := StageInput{
 			BatchID:        in.BatchID,
 			RootWorkflowID: in.RootWorkflowID,
+			RootRunID:      in.RootRunID,
 			Index:          in.Index,
 			Service:        s.service,
 			FailureRate:    in.FailureRate,

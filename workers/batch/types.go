@@ -28,6 +28,7 @@ type ImageInput struct {
 	// business events to the parent's NATS subject via this value so the UI
 	// sees every item event on a single per-batch stream.
 	RootWorkflowID string  `json:"rootWorkflowId"`
+	RootRunID      string  `json:"rootRunId"`
 	Index          int     `json:"index"`
 	FailureRate    float64 `json:"failureRate"`
 }
@@ -36,6 +37,7 @@ type ImageInput struct {
 type StageInput struct {
 	BatchID        string  `json:"batchId"`
 	RootWorkflowID string  `json:"rootWorkflowId"`
+	RootRunID      string  `json:"rootRunId"`
 	Index          int     `json:"index"`
 	Service        string  `json:"service"`
 	FailureRate    float64 `json:"failureRate"`

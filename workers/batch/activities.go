@@ -45,13 +45,11 @@ func (a *Activities) WriteMetadata(ctx context.Context, in StageInput) error {
 // business events route to the parent workflow's NATS subject via
 // PublishBusinessAs so the UI sees one per-batch stream.
 func (a *Activities) runStage(ctx context.Context, in StageInput, emitCompleted bool) error {
-	info := activity.GetInfo(ctx)
-	attempt := int(info.Attempt)
-	runID := info.WorkflowExecution.RunID
+	attempt := int(activity.GetInfo(ctx).Attempt)
 	activity.GetLogger(ctx).Info("Processing stage",
 		"batch", in.BatchID, "index", in.Index, "service", in.Service, "attempt", attempt)
 
-	events.PublishBusinessAs(ctx, a.Publisher, Pattern, in.RootWorkflowID, runID, TypeItemStarted, map[string]any{
+	events.PublishBusinessAs(ctx, a.Publisher, Pattern, in.RootWorkflowID, in.RootRunID, TypeItemStarted, map[string]any{
 		"index":   in.Index,
 		"service": in.Service,
 		"attempt": attempt,
@@ -62,7 +60,7 @@ func (a *Activities) runStage(ctx context.Context, in StageInput, emitCompleted 
 	// Failure injection: only on the first attempt, so a bounded retry policy
 	// always reaches a successful second attempt.
 	if attempt == 1 && in.FailureRate > 0 && rand.Float64() < in.FailureRate {
-		events.PublishBusinessAs(ctx, a.Publisher, Pattern, in.RootWorkflowID, runID, TypeItemAttemptFailed, map[string]any{
+		events.PublishBusinessAs(ctx, a.Publisher, Pattern, in.RootWorkflowID, in.RootRunID, TypeItemAttemptFailed, map[string]any{
 			"index":   in.Index,
 			"service": in.Service,
 			"attempt": attempt,
@@ -71,14 +69,14 @@ func (a *Activities) runStage(ctx context.Context, in StageInput, emitCompleted 
 		return fmt.Errorf("%s service timeout", in.Service)
 	}
 
-	events.PublishBusinessAs(ctx, a.Publisher, Pattern, in.RootWorkflowID, runID, TypeItemStageCompleted, map[string]any{
+	events.PublishBusinessAs(ctx, a.Publisher, Pattern, in.RootWorkflowID, in.RootRunID, TypeItemStageCompleted, map[string]any{
 		"index":   in.Index,
 		"service": in.Service,
 		"attempt": attempt,
 	})
 
 	if emitCompleted {
-		events.PublishBusinessAs(ctx, a.Publisher, Pattern, in.RootWorkflowID, runID, TypeItemCompleted, map[string]any{
+		events.PublishBusinessAs(ctx, a.Publisher, Pattern, in.RootWorkflowID, in.RootRunID, TypeItemCompleted, map[string]any{
 			"index": in.Index,
 		})
 	}

@@ -36,17 +36,17 @@ type EncryptionCodec struct {
 func (c *EncryptionCodec) Encode(payloads []*commonpb.Payload) ([]*commonpb.Payload, error) {
 	gcm, err := newGCM(c.Key)
 	if err != nil {
-		return payloads, err
+		return nil, err
 	}
 	out := make([]*commonpb.Payload, len(payloads))
 	for i, p := range payloads {
 		plaintext, err := proto.Marshal(p)
 		if err != nil {
-			return payloads, fmt.Errorf("marshal payload: %w", err)
+			return nil, fmt.Errorf("marshal payload: %w", err)
 		}
 		nonce := make([]byte, gcm.NonceSize())
 		if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
-			return payloads, fmt.Errorf("read nonce: %w", err)
+			return nil, fmt.Errorf("read nonce: %w", err)
 		}
 		sealed := gcm.Seal(nil, nonce, plaintext, nil)
 		out[i] = &commonpb.Payload{
@@ -66,7 +66,7 @@ func (c *EncryptionCodec) Encode(payloads []*commonpb.Payload) ([]*commonpb.Payl
 func (c *EncryptionCodec) Decode(payloads []*commonpb.Payload) ([]*commonpb.Payload, error) {
 	gcm, err := newGCM(c.Key)
 	if err != nil {
-		return payloads, err
+		return nil, err
 	}
 	out := make([]*commonpb.Payload, len(payloads))
 	for i, p := range payloads {
@@ -76,16 +76,16 @@ func (c *EncryptionCodec) Decode(payloads []*commonpb.Payload) ([]*commonpb.Payl
 		}
 		ns := gcm.NonceSize()
 		if len(p.Data) < ns {
-			return payloads, fmt.Errorf("payload too short for nonce")
+			return nil, fmt.Errorf("payload too short for nonce")
 		}
 		nonce, ciphertext := p.Data[:ns], p.Data[ns:]
 		plaintext, err := gcm.Open(nil, nonce, ciphertext, nil)
 		if err != nil {
-			return payloads, fmt.Errorf("gcm open: %w", err)
+			return nil, fmt.Errorf("gcm open: %w", err)
 		}
 		var orig commonpb.Payload
 		if err := proto.Unmarshal(plaintext, &orig); err != nil {
-			return payloads, fmt.Errorf("unmarshal payload: %w", err)
+			return nil, fmt.Errorf("unmarshal payload: %w", err)
 		}
 		out[i] = &orig
 	}

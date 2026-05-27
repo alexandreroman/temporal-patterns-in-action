@@ -51,11 +51,11 @@ Prerequisites: Go 1.25+, Node.js 22 LTS, pnpm (via
 `corepack enable`), and [Air](https://github.com/air-verse/air)
 for worker hot-reload.
 
-Launch Temporal + NATS in containers, then run the frontend and
-all workers locally with hot-reload:
+Launch the full dev stack — Temporal + NATS in containers, plus
+the frontend and all workers locally with hot-reload — in one
+command:
 
 ```bash
-make infra-up
 make dev
 ```
 

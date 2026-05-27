@@ -43,7 +43,7 @@ dev-workers: ## Run every pattern worker with hot-reload (requires Air)
 	$(MAKE) -C workers dev-all
 
 .PHONY: dev
-dev: ## Run the frontend and all workers in parallel with hot-reload
+dev: infra-up ## Start infra, then run the frontend and all workers in parallel with hot-reload
 	@$(MAKE) -j frontend dev-workers
 
 .PHONY: check

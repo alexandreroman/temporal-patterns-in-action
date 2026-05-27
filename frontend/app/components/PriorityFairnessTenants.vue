@@ -12,6 +12,7 @@ import { priorityLevel, type SimState, type Tenant } from "~/utils/priority-fair
 const props = defineProps<{
   tenants: readonly Tenant[];
   state: SimState;
+  fairnessOn: boolean;
 }>();
 
 interface Lane {
@@ -123,7 +124,10 @@ watch(lanes, () => scheduleMeasure(), { deep: true });
           <span class="text-xs font-medium text-slate-700 dark:text-slate-200">
             {{ lane.tenant.name }}
           </span>
-          <span class="text-[10px] uppercase tracking-wide text-slate-500 dark:text-slate-400">
+          <span
+            v-if="fairnessOn"
+            class="text-[10px] uppercase tracking-wide text-slate-500 dark:text-slate-400"
+          >
             weight {{ lane.tenant.weight }}
           </span>
         </div>

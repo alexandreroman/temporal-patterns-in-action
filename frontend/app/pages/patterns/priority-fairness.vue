@@ -121,7 +121,7 @@ async function injectIncident(): Promise<void> {
     <!-- Two-column body -->
     <div class="mt-3 grid gap-3 lg:grid-cols-[2fr_1fr]">
       <div class="flex flex-col gap-3">
-        <PriorityFairnessTenants :tenants="TENANTS" :state="state" />
+        <PriorityFairnessTenants :tenants="TENANTS" :state="state" :fairness-on="fairnessOn" />
         <PriorityFairnessWorkers :agents="state.agents" />
       </div>
       <div class="lg:relative">

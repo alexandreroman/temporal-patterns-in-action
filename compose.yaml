@@ -1,6 +1,7 @@
 services:
   temporal:
-    image: temporalio/temporal:latest
+    image: temporalio/temporal:1.7.0
+    pull_policy: missing
     command:
       - server
       - start-dev
@@ -29,7 +30,8 @@ services:
     restart: unless-stopped
 
   nats:
-    image: nats:2-alpine
+    image: nats:2.14-alpine
+    pull_policy: missing
     command: ["-js", "-m", "8222"]
     ports:
       - "4222:4222" # client protocol — workers & frontend

@@ -18,7 +18,7 @@ infra-logs: ## Follow Temporal server logs
 
 .PHONY: app-up
 app-up: ## Build and run the full stack (infra, frontend, workers) in containers
-	docker-compose up -d --build
+	docker-compose up -d
 
 .PHONY: app-down
 app-down: ## Stop the full stack and remove containers

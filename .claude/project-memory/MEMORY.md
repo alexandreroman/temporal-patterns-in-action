@@ -37,3 +37,4 @@
 - [Codec Server is opt-in by design](references/project_codec_server_ui_endpoint.md) — never set `--ui-codec-endpoint`; ciphertext-then-toggle is the demo's payoff, users enable the codec endpoint manually.
 - [Temporal UI Codec Server: glasses icon](references/feedback_temporal_ui_codec_glasses_icon.md) — point users to the glasses icon in the top bar, not the bottom-left user/Settings menu.
 - [cmux compose port isolation](references/project_cmux_compose_port_isolation.md) — post-create.sh writes a gitignored compose.override.yaml using `!override` to remap host ports from CMUX_PORT.
+- [Status bar must not gate content on out-in transition](references/feedback_statusbar_no_outin_transition.md) — `<Transition mode="out-in">` wedges on hidden tabs (rAF/timers freeze); use a CSS keyframes animation keyed by the value.

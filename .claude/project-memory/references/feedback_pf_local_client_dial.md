@@ -23,12 +23,11 @@ client through to every pattern, and do NOT
 touch the other patterns' `cmd/worker/main.go`
 to absorb a new parameter.
 
-**Why:** the user explicitly rejected the
-cross-pattern refactor: "Non, seulement dans
-le module Priorité !!!". A bootstrap-signature
-change touches 6 unrelated patterns just to
-serve this demo; the localized dial keeps the
-blast radius inside `workers/priority-fairness/`.
+**Why:** a bootstrap-signature change would touch
+6 unrelated patterns just to serve this demo; the
+localized dial keeps the blast radius inside
+`workers/priority-fairness/`. The cross-pattern
+refactor is explicitly out of scope.
 
 **How to apply:** whenever something in
 priority-fairness needs a Temporal API the
@@ -37,5 +36,4 @@ a signal, run a query, list executions), wire
 it from the locally dialled client in this
 module's main. Avoid the temptation to "clean
 this up" by moving the dial into
-`events.RunWorker` — that change has been
-declined.
+`events.RunWorker` — that change is out of scope.

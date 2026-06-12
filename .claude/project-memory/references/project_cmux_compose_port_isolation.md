@@ -44,9 +44,9 @@ would not.
 - `compose.override.yaml` / `.yml` are gitignored —
   never commit them; the main worktree keeps the stock
   3000/7233/8233 ports.
-- The temporal service no longer passes `--ui-port`;
-  `start-dev` defaults the UI to 8233 (gRPC+1000), so
-  the published mapping is unchanged.
+- The temporal service does not set `--ui-port`;
+  `start-dev` defaults the UI to 8233 (gRPC+1000), which
+  is the container-side port published in the override.
 - Extend the offset scheme in `post-create.sh` whenever
   a new pattern adds a host-published port; see
   [[project_adding_new_pattern]].

@@ -31,14 +31,13 @@ priorities:
   saga page does not need ctx-cancel handling
   inside its simulated-work sleeps.
 
-**Why:** The user explicitly reminded me of this
-after I added a `simulateWork(ctx, d)` helper
-in `workers/saga/activities.go` that selects
-on `<-time.After(d)` vs `<-ctx.Done()`.
-Strictly correct, but heavier than a demo
-sleep needs to be — and it adds a helper and
-a `context` dance where a one-line
-`time.Sleep(d)` would read fine on screen.
+**Why:** Production-grade reflexes work against
+a live demo. A `simulateWork(ctx, d)` helper
+that selects on `<-time.After(d)` vs
+`<-ctx.Done()` is strictly correct but heavier
+than a demo sleep needs to be — it adds a helper
+and a `context` dance where a one-line
+`time.Sleep(d)` reads fine on screen.
 
 **How to apply:** Before writing code in this
 repo, ask *"what does the audience need to

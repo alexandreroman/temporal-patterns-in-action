@@ -39,18 +39,13 @@ the drain loop reads (plus listens for
 ChildWorkflow futures or relying on a signal-
 back from the per-ticket workflow.
 
-**Why:** the user asked twice in the same
-conversation. First: drop the ChildWorkflow
-wrapper; then, after a wrong reading where I
-removed the wrapper entirely and called
+**Why:** the demo is about showing per-task
+Priority on independent top-level workflows —
+not on the activities of a single parent, and
+not on child workflows. The two tempting
+collapses (a `ChildWorkflow` wrapper, or calling
 `ResolveTicket` directly with
-`ActivityOptions.Priority`, the user
-clarified: "Non je veux effectivement lancer
-un nouveau workflow par ticket, juste ne pas
-utiliser un ChildWorkflow". The demo is about
-showing per-task Priority on independent
-top-level workflows, not on activities of one
-parent and not on children.
+`ActivityOptions.Priority`) both lose that point.
 
 **How to apply:** when editing
 `workers/priority-fairness/workflow.go` or

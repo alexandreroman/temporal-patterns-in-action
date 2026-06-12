@@ -20,19 +20,14 @@ synchronously at watcher creation, including
 during prerender, so it does NOT replace an
 `onMounted` wrapper.
 
-**Why:** incident on 2026-05-08 — a code-writer
-brief told the sub-agent to "drop `onMounted`"
-and rely on a top-level
+**Why:** a top-level
 `watch(() => props.running, …, { immediate: true })`
-to drive a `requestAnimationFrame` loop. SSR
-fired the watcher, hit
-`cancelAnimationFrame`, which is undefined in
-Node, and the
-`/patterns/priority-fairness` page returned
-HTTP 500. `eslint` and `vue-tsc` both passed
-because `cancelAnimationFrame` is declared by
-`lib.dom` — these checks don't catch SSR-only
-failures.
+driving a `requestAnimationFrame` loop fires
+during SSR, hits `cancelAnimationFrame` (undefined
+in Node), and crashes the page with HTTP 500.
+`eslint` and `vue-tsc` both pass because
+`cancelAnimationFrame` is declared by `lib.dom` —
+the static checks don't catch SSR-only failures.
 
 **How to apply:**
 

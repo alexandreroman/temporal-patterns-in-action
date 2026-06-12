@@ -35,15 +35,13 @@ ps aux | grep -E "(go-build|workers/<pattern>)"
 kill <pid>
 ```
 
-**Why:** Encountered 2026-04-18 during saga
-timing work: a stale `go run` worker from a
-previous session was returning ship/send
-activities in ~3 ms while the new container
-sleeps 2.5 s. Because Temporal's server
-dispatches each activity task to whichever
-poller picks it up first, two competing
-workers produce inconsistent behavior that is
-easy to misread as a build-cache problem.
+**Why:** Temporal dispatches each activity task
+to whichever poller picks it up first, so two
+workers on the same task queue produce
+inconsistent behavior that is easy to misread as
+a build-cache problem. A stale `go run` worker
+can return an activity in ~3 ms while the
+freshly-built container sleeps for seconds.
 
 **How to apply:** When timing or behavior
 doesn't match freshly-built code, before

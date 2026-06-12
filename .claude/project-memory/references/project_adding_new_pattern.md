@@ -51,10 +51,8 @@ Cross-check the event-architecture memory for
 kebab-case activity registration. Progress
 events come for free from the shared
 activity-side interceptor — workflow code must
-not publish anything itself. The previous
-shared `workers/Dockerfile` parametrised via
-`ARG PATTERN` was split per pattern in commit
-4c06c53 so each Dockerfile is independent and
-compose services reference their own
-`dockerfile:` path instead of passing a build
-arg.
+not publish anything itself. Each pattern owns
+an independent Dockerfile; compose services
+reference their own `dockerfile:` path rather
+than sharing one parametrised by an
+`ARG PATTERN` build arg.

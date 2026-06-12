@@ -18,22 +18,18 @@ across SDKs — letting one drift out of sync,
 whether in content or in range alignment, is a
 demo-quality regression.
 
-**Why:** Two separate incidents, same root cause.
+**Why:** Two failure modes share one root cause —
+editing a snippet without propagating the change.
 
-1. The user had to explicitly ask to unify the
-   snippets after I updated only the Go version
-   of `BatchCodeViewer` (semaphore →
-   worker-options) and left Java, TypeScript,
-   and Python still showing the semaphore form.
-2. A later audit found misaligned ranges in
-   `AgentCodeViewer`, `BatchCodeViewer`,
-   `EncryptionCodeViewer`, and
-   `EntityCodeViewer` — e.g. Agent `finalAnswer`
-   was `[37,39]` but the `return *resp.Plan`
-   statement sat on line 40, so the intended
-   highlight missed the return entirely. Earlier
-   edits had shifted snippet lines without
-   recomputing the ranges.
+1. Updating only the Go snippet (e.g. semaphore →
+   worker-options) leaves Java, TypeScript, and
+   Python showing the stale form.
+2. Editing a snippet's `lines` without recomputing
+   the 0-indexed ranges leaves highlights off by a
+   line — e.g. a `[37,39]` range misses a
+   `return *resp.Plan` that has shifted to line 40.
+
+Both read as demo-quality regressions.
 
 **How to apply:**
 

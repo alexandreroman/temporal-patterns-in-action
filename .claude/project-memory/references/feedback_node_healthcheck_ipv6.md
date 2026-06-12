@@ -18,10 +18,7 @@ by default, so the probe gets `Connection
 refused` and the container is marked unhealthy
 even though the endpoint is reachable on
 `127.0.0.1` and via the published port on the
-host. This was observed when adding
-`/api/health` — the first attempt used
-`localhost` and failed; switching to `127.0.0.1`
-made the container healthy immediately.
+host.
 
 **How to apply:** when adding a compose
 healthcheck (or any in-container probe) that

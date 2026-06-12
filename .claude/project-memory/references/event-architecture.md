@@ -106,9 +106,8 @@ endpoint and the SSE endpoint.
 ## No workflow.started; no compensation bracket
 
 `progress.workflow.started` and
-`progress.compensation.started|completed` have
-been dropped entirely. The frontend derives
-equivalents:
+`progress.compensation.started|completed` are
+not emitted. The frontend derives equivalents:
 
 - **Time anchor** — `EventStream.vue` uses
   `events[0].time` as t=0, not a dedicated

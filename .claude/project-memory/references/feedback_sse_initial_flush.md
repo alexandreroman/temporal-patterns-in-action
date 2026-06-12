@@ -17,18 +17,16 @@ the first chunk is written, and
 that first chunk.
 
 **Why:** Node/h3 buffers `writeHead` until a
-body write happens. In this repo's SSE
-endpoint, nothing was pushed at open time, so
-headers were held until the 15 s heartbeat
-interval fired. That manifested as "workflows
-take several seconds to start": the client's
+body write happens. Without an open-time push,
+headers stay held until the 15 s heartbeat
+interval fires. Because the client's
 `waitForStreamOpen()` in
 `frontend/app/pages/patterns/saga.vue` waits
-for `onopen` before POSTing
-`/api/saga/start`, and that wait was ~15 s.
-Measured against the preview (prod) build:
-**15 011 ms before fix, 8 ms after**
-(2026-04-18).
+for `onopen` before POSTing `/api/saga/start`,
+the whole start is delayed by ~15 s ("workflows
+take several seconds to start"). With the
+immediate push it drops to ~8 ms on the
+preview (prod) build.
 
 **How to apply:** any new pattern adding its
 own SSE endpoint MUST push a first chunk

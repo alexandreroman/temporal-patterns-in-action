@@ -29,17 +29,16 @@ the three tenant queue panels stay `(empty)` for the entire run
 while the swimlane, agent cards and resolved counts populate
 normally from later events.
 
-**Why:** the [[feedback_nats_subscribe_flush]] fix closed the server-side
-race (SUB → flush before signalling SSE open), but the client side
-still observed a stale `status` from the previous run because the
-reactive watch was async. Verified in Chrome (2026-05-12): on the
-failing run, `FETCH_START_REQ` fired ~17 ms before the new
-`EventSource`'s `open` event; the new SUB therefore wasn't live yet
-when the worker published. Setting `flush: "sync"` on the watch
-makes the close/open + `status.value = "connecting"` mutation
-happen inside the `.value = id` setter, so the very next line in
-`start()` correctly observes the new connection state and
-`waitForOpen()` waits for the real open transition.
+**Why:** [[feedback_nats_subscribe_flush]] closes the server-side
+race (SUB → flush before signalling SSE open), but with an async
+watch the client still observes a stale `status` from the previous
+run: the fetch to `/start` fires ~17 ms before the new
+`EventSource`'s `open` event, so the new SUB isn't live yet when the
+worker publishes. `flush: "sync"` on the watch makes the close/open +
+`status.value = "connecting"` mutation happen inside the
+`.value = id` setter, so the very next line in `start()` observes the
+new connection state and `waitForOpen()` waits for the real open
+transition.
 
 **How to apply:** any composable that exposes a `waitForOpen()`-style
 helper alongside a `workflowId`-driven reactive watch must keep the

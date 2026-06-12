@@ -18,17 +18,16 @@ makes Vue wait for the animation to complete
 before removing the leaving element, briefly
 showing two copies of the same logical message.
 
-**Why:** In Durable AI Agent, clicking *Run
-agent* first rendered a placeholder user prompt
-with `id: "pending-prompt"`, and the
-`agent.user.prompt` event then re-rendered it
-with `id: env.id`. Vue saw a key flip → the
-leaving row lingered ~1s because `.msg-row`'s
-flash animation was still active, producing the
-reported "two messages added, then erased,
-replaced by one" flicker. Fixing it by using a
-single sentinel (`USER_PROMPT_KEY`) in both the
-placeholder and the event handler eliminated the
+**Why:** When a placeholder uses
+`id: "pending-prompt"` and the
+`agent.user.prompt` event re-renders it with
+`id: env.id`, Vue sees a key flip → the leaving
+row lingers ~1s because `.msg-row`'s flash
+animation is still active, briefly showing two
+copies of the same logical message ("two messages
+added, then erased, replaced by one"). A single
+sentinel key (`USER_PROMPT_KEY`) on both the
+placeholder and the event handler eliminates the
 swap entirely.
 
 **How to apply:** Whenever a component prepends

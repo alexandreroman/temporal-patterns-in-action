@@ -36,6 +36,6 @@ while latency stays in the millisecond range.
 `matching.useNewMatcher` priority/fairness, default the
 parent's announce-style activities to `ExecuteLocalActivity`.
 Only escalate to a regular activity if the announce needs
-durable retries beyond the workflow task. Discovered in
-`workers/priority-fairness/workflow.go` (HelpdeskRunWorkflow)
-on 2026-05-11 while debugging "injected P0 waits for backlog".
+durable retries beyond the workflow task. The reference
+implementation is `HelpdeskRunWorkflow` in
+`workers/priority-fairness/workflow.go`.

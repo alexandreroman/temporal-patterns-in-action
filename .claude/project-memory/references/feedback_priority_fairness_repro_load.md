@@ -19,10 +19,9 @@ container ([[event-architecture]] / `compose.yaml`).
 Each scenario adds 1 helpdesk workflow + 120 ticket
 workflows + dozens of long-poll waiters to the
 namespace. Aborting the SSE only stops the UI; the
-workflows keep running. The user noted explicitly that
-piling unfinished runs up "va surcharger le serveur
-Temporal" and that the server may need a restart once
-the namespace is congested — at which point
+workflows keep running. Piling unfinished runs up
+overloads the Temporal server, and it may need a restart
+once the namespace is congested — at which point
 reproductions become unreliable for unrelated reasons.
 
 **How to apply:** for repro loops over this pattern,

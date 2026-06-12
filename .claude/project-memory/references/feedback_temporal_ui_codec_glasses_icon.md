@@ -19,11 +19,11 @@ NOT what the user wants to point demo readers at.
 The per-workflow glasses-icon modal is the
 canonical demo entry point.
 
-**Why:** Corrected after a README PR mis-pointed
-users to the bottom-left Settings menu. The
-glasses icon is contextual (it sits on each
-workflow view) and matches the "decode this
-workflow's payloads" mental model.
+**Why:** The glasses icon is contextual — it sits
+on each workflow view and matches the "decode
+this workflow's payloads" mental model, unlike
+the global Settings entry, which is not the
+intended entry point for demo readers.
 
 **How to apply:**
 

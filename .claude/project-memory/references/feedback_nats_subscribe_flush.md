@@ -19,10 +19,10 @@ must `await nc.flush()` immediately after
 before any later code returns control to the
 client.
 
-**Why:** the bug presented as "with Fairness ON
-the Priority pattern sometimes shows no tickets
-in the tenant queues, only in the swimlane".
-Sequence:
+**Why:** without the flush, a startup race drops
+the first event, so the Priority pattern with
+Fairness ON shows no tickets in the tenant queues,
+only in the swimlane. The sequence is:
 
 1. The page opens the SSE, awaits `onopen`.
 2. The handler subscribes + pushes the initial

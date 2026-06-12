@@ -13,15 +13,13 @@ value must be the happy-path option (`"happy"`,
 that pattern), never the failure, partial, or
 retry variant.
 
-**Why:** The user corrected me after I defaulted
-`frontend/app/pages/patterns/multi-agent.vue` to
-`"partial"` on the assumption that the partial-
-failure scenario was the more interesting demo.
-The user wants the default to be the clean
-success path so a first-time run tells the
-pattern's positive story end-to-end; viewers
+**Why:** The default must let a first-time run tell
+the pattern's positive story end-to-end; viewers
 flip to the failure/partial scenario themselves
-when they want to see the resilience behaviour.
+when they want to see the resilience behaviour. A
+failure/partial default (e.g. `"partial"` on the
+multi-agent page) misrepresents the pattern at
+first glance.
 
 **How to apply:** In every new
 `frontend/app/pages/patterns/<name>.vue`, set the
@@ -42,7 +40,6 @@ that pattern *starts from the broken state*
 presenter can demonstrate the problem first,
 then flip the scenario to `"fairness-on"` to
 show how Temporal's `FairnessKey` /
-`FairnessWeight` solve it. The user confirmed
-this exception explicitly on 2026-05-08; the
-general rule still holds for every other
-pattern.
+`FairnessWeight` solve it. This is a deliberate
+exception; the general rule still holds for every
+other pattern.

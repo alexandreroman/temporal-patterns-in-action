@@ -14,16 +14,16 @@ the call site — not through `useRuntimeConfig()` /
 **Why:** Nuxt bakes `runtimeConfig` defaults at build
 time. Setting a plain `FOO` env var in the container
 does NOT override the baked value — only the
-`NUXT_FOO` prefix does. That divergence broke
-container networking once: `NATS_URL=nats://nats:4222`
-was ignored, the frontend fell back to
-`nats://localhost:4222` → `ECONNREFUSED ::1:4222`,
-and the UI appeared frozen ("no workflow is
-launching") even though workflows were starting fine
-on Temporal — only the SSE/NATS event stream was
-broken. The user chose to keep the env var name
-`NATS_URL` (consistent with the Go workers) rather
-than rename it `NUXT_NATS_URL`.
+`NUXT_FOO` prefix does. Via `runtimeConfig`, a
+`NATS_URL=nats://nats:4222` is ignored, the frontend
+falls back to `nats://localhost:4222` →
+`ECONNREFUSED ::1:4222`, and the UI appears frozen
+("no workflow is launching") even though workflows
+run fine on Temporal — only the SSE/NATS event
+stream is broken. Reading `process.env.*` at the
+call site avoids this. The env var stays named
+`NATS_URL` (consistent with the Go workers), not
+`NUXT_NATS_URL`.
 
 **How to apply:** when adding a new server-side env
 var (service URL, API key, …), follow the pattern in

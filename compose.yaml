@@ -7,8 +7,6 @@ services:
       - start-dev
       - --ip
       - 0.0.0.0
-      - --ui-port
-      - "8233"
       - --dynamic-config-value
       - matching.useNewMatcher=true
       - --dynamic-config-value

@@ -1,0 +1,7 @@
+# Compiled binary from `go build` with no -o (named after the module dir)
+/codec-server
+tmp/
+*.test
+*.out
+coverage.*
+bin/

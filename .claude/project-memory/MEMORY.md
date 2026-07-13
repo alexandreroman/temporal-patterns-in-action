@@ -35,6 +35,7 @@
 - [Priority pattern: top-level workflow per ticket](references/feedback_priority_top_level_workflow.md) — each ticket runs as its own top-level workflow started via local activity + client.ExecuteWorkflow; never a ChildWorkflow.
 - [priority-fairness dials its own client](references/feedback_pf_local_client_dial.md) — don't widen events.RunWorker; dial the client locally in priority-fairness/cmd/worker/main.go.
 - [Codec Server is opt-in by design](references/project_codec_server_ui_endpoint.md) — never set `--ui-codec-endpoint`; ciphertext-then-toggle is the demo's payoff, users enable the codec endpoint manually.
+- [Go Dockerfiles: cache mounts need an explicit id](references/feedback_codec_server_no_cache_mount.md) — id-less podman `type=cache` breaks `go build` resolution ("no required module provides package"); always set `id=gomod`/`id=gobuild` (matches skillbox go-rules).
 - [Temporal UI Codec Server: glasses icon](references/feedback_temporal_ui_codec_glasses_icon.md) — point users to the glasses icon in the top bar, not the bottom-left user/Settings menu.
 - [cmux compose port isolation](references/project_cmux_compose_port_isolation.md) — post-create.sh writes a gitignored compose.override.yaml using `!override` to remap host ports from CMUX_PORT.
 - [Casper compose/dev port isolation](references/project_casper_compose_port_isolation.md) — `compose-override` target regenerates the gitignored override from CASPER_PORT; infra-up/app-up/bootstrap all depend on it so `make dev` launches infra on matching ports.

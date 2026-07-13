@@ -8,10 +8,15 @@ ENV CGO_ENABLED=0 \
 COPY workers ./workers
 COPY codec-server ./codec-server
 WORKDIR /src/codec-server
-RUN --mount=type=cache,target=/go/pkg/mod \
+# Explicit id= on the cache mounts is required: under podman/buildah an
+# id-less type=cache mount on the Go module cache breaks `go build` module
+# resolution ("no required module provides package" even though the modules
+# are present and `go list -m all` resolves them). With a stable id it works
+# and both caches persist across builds. Same rule as the worker Dockerfiles.
+RUN --mount=type=cache,id=gomod,target=/go/pkg/mod \
     go mod download
-RUN --mount=type=cache,target=/go/pkg/mod \
-    --mount=type=cache,target=/root/.cache/go-build \
+RUN --mount=type=cache,id=gomod,target=/go/pkg/mod \
+    --mount=type=cache,id=gobuild,target=/root/.cache/go-build \
     go build -ldflags='-s -w' -o /out/codec-server .
 
 FROM gcr.io/distroless/static-debian12:nonroot

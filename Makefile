@@ -15,6 +15,31 @@ export TEMPORAL_ADDRESS := localhost:$(shell expr $(CASPER_PORT) + 1)
 export NATS_URL         := nats://localhost:$(shell expr $(CASPER_PORT) + 3)
 endif
 
+# Host ports shown in the "connect" URLs printed by app-up and dev. With
+# CASPER_PORT set, compose.override.yaml remaps the frontend to CASPER_PORT, the
+# Temporal Web UI to CASPER_PORT+2 and the Codec Server to CASPER_PORT+4 (see
+# the compose-override target); otherwise the compose.yaml defaults apply.
+ifneq ($(CASPER_PORT),)
+FRONTEND_PORT     := $(CASPER_PORT)
+TEMPORAL_UI_PORT  := $(shell expr $(CASPER_PORT) + 2)
+CODEC_SERVER_PORT := $(shell expr $(CASPER_PORT) + 4)
+else
+FRONTEND_PORT     := 3000
+TEMPORAL_UI_PORT  := 8233
+CODEC_SERVER_PORT := 8888
+endif
+
+# Print the URLs to reach the running stack. Used by app-up and dev. The Codec
+# Server is opt-in: paste its URL into the Temporal Web UI (glasses icon) to
+# decrypt encryption-pattern payloads; the stack does not wire it up for you.
+define show_urls
+	@echo ""
+	@echo "The stack is up. Open:"
+	@echo "  App                http://localhost:$(FRONTEND_PORT)"
+	@echo "  Temporal Web UI    http://localhost:$(TEMPORAL_UI_PORT)"
+	@echo "  Codec Server       http://localhost:$(CODEC_SERVER_PORT) (set in Temporal Web UI, glasses icon)"
+endef
+
 ##@ Infra
 
 .PHONY: infra-up
@@ -34,6 +59,7 @@ infra-logs: ## Follow Temporal server logs
 .PHONY: app-up
 app-up: compose-override ## Build and run the full stack (infra, frontend, workers) in containers
 	docker-compose up -d
+	$(show_urls)
 
 .PHONY: app-down
 app-down: ## Stop the full stack and remove containers
@@ -59,6 +85,7 @@ dev-workers: ## Run every pattern worker with hot-reload (requires Air)
 
 .PHONY: dev
 dev: infra-up ## Start infra, then run the frontend and all workers in parallel with hot-reload
+	$(show_urls)
 	@$(MAKE) -j frontend dev-workers
 
 .PHONY: check

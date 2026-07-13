@@ -1,0 +1,11 @@
+{
+  "workspace": {
+    "scripts": {
+      "setup": "make bootstrap",
+      "teardown": "make teardown",
+      "run": "make app-up",
+      "stop": "make app-down",
+      "dev": "make dev"
+    }
+  }
+}

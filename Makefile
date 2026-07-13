@@ -1,5 +1,18 @@
 .DEFAULT_GOAL := app-up
 
+# Per-worktree dev-mode port isolation. When Casper assigns this workspace a
+# CASPER_PORT, `make bootstrap` remaps the container host ports (see
+# compose.override.yaml); mirror that for the host-run dev processes so several
+# worktrees can `make dev` at once. The frontend listens on CASPER_PORT and
+# both frontend and workers reach the remapped infra (temporal +1, nats +3).
+# Unset CASPER_PORT keeps the default ports. compose.yaml hardcodes the
+# in-container addresses, so exporting these never affects the containers.
+ifneq ($(CASPER_PORT),)
+export PORT             := $(CASPER_PORT)
+export TEMPORAL_ADDRESS := localhost:$(shell expr $(CASPER_PORT) + 1)
+export NATS_URL         := nats://localhost:$(shell expr $(CASPER_PORT) + 3)
+endif
+
 ##@ Infra
 
 .PHONY: infra-up

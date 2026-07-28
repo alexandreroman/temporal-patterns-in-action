@@ -1,0 +1,14 @@
+# Dependency build scripts are opt-in. These three stay off: the app
+# builds and runs correctly without them, as verified by a full
+# containerised end-to-end run.
+allowBuilds:
+  esbuild: false
+  protobufjs: false
+  unrs-resolver: false
+
+# These two live here rather than in .npmrc: pnpm 11 reads its settings
+# from this file and honours .npmrc only for auth and registry keys.
+# savePrefix keeps every range in package.json on "~" (the project
+# convention); engineStrict enforces the engines.node floor.
+savePrefix: "~"
+engineStrict: true

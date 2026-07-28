@@ -1,97 +1,65 @@
 ---
-name: "@temporalio/client 1.16+ breaks Nuxt SSR dev bundle"
-description: "@temporalio/client 1.16 through 1.21 generate broken extension-less ESM imports in .nuxt/dev/index.mjs; pinned to ~1.15.0 as a workaround."
+name: "@temporalio/client is loaded through createRequire"
+description: "@temporalio/client 1.16+ breaks the Nuxt dev SSR bundle; the frontend loads it as CommonJS and force-traces it."
 type: project
 ---
 
-# @temporalio/client 1.16+ breaks Nuxt SSR dev bundle
+# @temporalio/client is loaded through createRequire
 
-`@temporalio/client` versions ≥1.16 cause
-`.nuxt/dev/index.mjs` to import 14 sub-modules
-of the package (e.g.
-`/.../client/lib/async-completion-client`)
-as bare absolute paths without `.js`
-extensions, which Node's ESM loader rejects:
+`frontend/server/utils/temporal.ts` loads
+`@temporalio/client` with `createRequire`, not with a plain
+`import`, and re-exports `WorkflowNotFoundError` so the whole
+server shares that single load. `nuxt.config.ts` lists the
+package under `nitro.externals.traceInclude`.
 
-> Cannot find module
-> '/.../client/lib/async-completion-client'
-> imported from
-> '/.../.nuxt/dev/index.mjs'. Did you mean to
-> import '...async-completion-client.js'?
+**Why:** from 1.16 onward the package makes Nitro emit
+extension-less ESM imports of its sub-modules
+(`/…/client/lib/async-completion-client`, no `file://` prefix
+and no `.js`), which Node's ESM loader rejects. Every SSR route
+then answers HTTP 500 — `server/utils/temporal.ts` is
+auto-loaded for every render, so one broken bundle takes down
+the whole site, not just the Temporal pages.
 
-The dev server then loops on the
-"`.nuxt/dist directory has been removed.
-Restarting Nuxt...`" placeholder and serves
-HTTP 503 on every route. Working versions
-(≤1.15) emit a single
-`import ... from 'file:///.../client/lib/index.js'`
-because Vite's optimizeDeps wraps the package
-into one ESM module.
+The trigger is the package, not the framework or the bundler:
+it reproduces on Nuxt 4.1 (Nitro 2.12), Nuxt 4.4 (Nitro 2.13.4)
+and Nuxt 4.5, the last of which builds with Vite 8 / rolldown
+rather than esbuild. Versions ≤1.15 emit a single
+`file:///…/client/lib/index.js` import and are unaffected.
 
-**Bisect:**
+**Only the dev bundle exhibits it.** `pnpm build` and the
+container image succeed on the affected versions, so the E2E
+net — which exercises only the container — cannot catch it.
 
-| client version | result |
-| -------------- | ------ |
-| 1.13.x         | OK     |
-| 1.14.0         | OK     |
-| 1.15.0         | OK     |
-| 1.16.0         | BROKEN |
-| 1.17.0 / 1.17.1 | BROKEN |
-| 1.21.1         | BROKEN |
+Three constraints make the CommonJS load work:
 
-The trigger is the package, not the framework
-and not the bundler. The regression reproduces
-on Nuxt 4.1 (Nitro 2.12), Nuxt 4.4 (Nitro
-2.13.4) and Nuxt 4.5 — the last of which builds
-with Vite 8 / rolldown instead of esbuild, and
-still emits the same 22 extension-less
-`@temporalio/client/lib/<x>` imports. Under Nuxt
-4.5 every route answers HTTP 500 rather than
-503; the cause is identical.
+- Resolution is anchored on `process.argv[1]`, the running
+  server entry. See [[project_nitro_import_meta_url_placeholder]]
+  for why `import.meta.url` is unusable here.
+- `traceInclude` is required because a `require` is invisible
+  to Nitro's dependency tracer; without it the package is
+  absent from `.output/server/node_modules` and the container
+  fails at boot.
+- Both call sites share one load, so `instanceof
+  WorkflowNotFoundError` compares against a single class
+  identity.
 
-Only the dev bundle breaks. `pnpm build` and the
-containerised production image succeed on the
-affected versions, so the E2E net — which
-exercises only the container — stays green and
-cannot catch this. Reach for `pnpm dev` plus a
-`curl` on `/` when validating a bump.
+Configuration-only alternatives do not work:
+`nitro.externals.external`, `vite.ssr.external`,
+`vite.ssr.noExternal`, `vite.optimizeDeps.include` and
+`vite.ssr.optimizeDeps.include` all leave the malformed imports
+in place. `nitro.externals.inline` on the client alone raises
+`Cannot read properties of undefined (reading 'api')`; inlining
+the whole `@temporalio` family raises `Cannot set properties of
+undefined (setting 'Long')` from the protobufjs-generated
+`@temporalio/proto/protos/root.js`.
 
-The
-`devtools` config is unrelated (broken with
-both `enabled: true` and `enabled: false`).
-
-**Why:** keeping the dev server unblocked
-matters more than chasing the upstream bug —
-the affected import is `frontend/server/utils/
-temporal.ts`, which Nuxt auto-loads for every
-SSR render, so a single broken bundle takes
-down every route, not just the pages that
-talk to Temporal.
-
-**How to apply:**
-
-- Keep `@temporalio/client` at `~1.15.0` in
-  `frontend/package.json` until upstream
-  Nitro/Vite handle the post-1.16 package
-  shape — or the Temporal SDK fixes the
-  publishing artifact that trips the
-  bundler. Lift the pin only after a
-  successful smoke run of `pnpm dev` and a
-  `curl -fsS http://localhost:3000/`.
-- The following knobs were tried and did
-  NOT help: `nitro.externals.external`,
-  `nitro.externals.inline`,
-  `vite.ssr.external`, `vite.ssr.noExternal`,
-  `vite.optimizeDeps.include`,
-  `vite.ssr.optimizeDeps.include`, fresh
-  `pnpm install`, wiping `.nuxt` and
-  `node_modules/.cache`. Don't burn cycles
-  retrying these unless the upstream
-  changelog says otherwise.
-- Symptom recognition: if the Nuxt dev page
-  is stuck on the loader (`__NUXT_LOADING__`
-  in the HTML, HTTP 503), grep
-  `frontend/.nuxt/dev/index.mjs` for
-  `@temporalio/client` — if the imports lack
-  `.js` and the `file://` prefix, it's this
-  regression.
+**How to apply:** keep the `createRequire` load and the
+`traceInclude` entry together — removing either one alone
+breaks a different environment, and each carries a comment
+pointing at the other. When bumping the package, validate on
+three surfaces, because each catches what the others miss:
+`pnpm dev` plus `curl` on `/`, `pnpm build`, and booting the
+built server the way the container does
+(`node .output/server/index.mjs`) plus `curl`. Should upstream
+fix the published artifact, a plain `import` becomes possible
+again and both pieces can go.

@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 # Build context: repo root — we need both ./workers (for the shared
 # encryption package) and ./codec-server (this binary).
-FROM golang:1.25-alpine AS build
+FROM golang:1.26-alpine AS build
 WORKDIR /src
 ENV CGO_ENABLED=0 \
     GOOS=linux
@@ -19,7 +19,7 @@ RUN --mount=type=cache,id=gomod,target=/go/pkg/mod \
     --mount=type=cache,id=gobuild,target=/root/.cache/go-build \
     go build -ldflags='-s -w' -o /out/codec-server .
 
-FROM gcr.io/distroless/static-debian12:nonroot
+FROM gcr.io/distroless/static-debian13:nonroot
 COPY --from=build /out/codec-server /usr/local/bin/codec-server
 EXPOSE 8888
 ENTRYPOINT ["/usr/local/bin/codec-server"]

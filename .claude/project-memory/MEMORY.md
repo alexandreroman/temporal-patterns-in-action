@@ -30,7 +30,8 @@
 - [Realistic animated token counters](references/feedback_token_counters.md) — emit non-round tokens per step from the worker and animate the UI with `useCountTween`; mirror `AgentStatePanel.vue`.
 - [Stable Vue keys for placeholder items](references/feedback_stable_keys_for_placeholder_messages.md) — optimistic placeholder and event-driven row in a `<TransitionGroup>` must share one `:key`, or `.msg-flash` makes both linger during the swap.
 - [Nuxt SSR browser globals](references/feedback_nuxt_ssr_browser_globals.md) — wrap rAF/window/etc. in onMounted or `import.meta.client`; `watch(immediate:true)` is NOT an SSR guard. Smoke with `curl` after frontend edits.
-- [@temporalio/client 1.16+ breaks Nuxt SSR](references/project_temporalio_client_116_ssr_regression.md) — pin to `~1.15.0`; 1.16+ emits extension-less ESM imports that Node rejects, dev page stuck on 503 loader.
+- [@temporalio/client is loaded through createRequire](references/project_temporalio_client_116_ssr_regression.md) — 1.16+ emits extension-less ESM imports Node rejects; CommonJS load + `traceInclude`, both required.
+- [Nitro rewrites import.meta.url to a placeholder](references/project_nitro_import_meta_url_placeholder.md) — it is `file:///_entry.js` in built chunks; anchor on `process.argv[1]`, and boot the output to catch it.
 - [Announce activities → ExecuteLocalActivity](references/feedback_announce_use_local_activity.md) — parent has no Priority, so regular announces inherit key 3 and block high-priority dispatch behind the backlog.
 - [Priority pattern: top-level workflow per ticket](references/feedback_priority_top_level_workflow.md) — each ticket runs as its own top-level workflow started via local activity + client.ExecuteWorkflow; never a ChildWorkflow.
 - [priority-fairness dials its own client](references/feedback_pf_local_client_dial.md) — don't widen events.RunWorker; dial the client locally in priority-fairness/cmd/worker/main.go.
@@ -40,3 +41,5 @@
 - [cmux compose port isolation](references/project_cmux_compose_port_isolation.md) — post-create.sh writes a gitignored compose.override.yaml using `!override` to remap host ports from CMUX_PORT.
 - [Casper compose/dev port isolation](references/project_casper_compose_port_isolation.md) — `compose-override` target regenerates the gitignored override from CASPER_PORT; infra-up/app-up/bootstrap all depend on it so `make dev` launches infra on matching ports.
 - [Status bar must not gate content on out-in transition](references/feedback_statusbar_no_outin_transition.md) — `<Transition mode="out-in">` wedges on hidden tabs (rAF/timers freeze); use a CSS keyframes animation keyed by the value.
+- [pnpm settings live in pnpm-workspace.yaml](references/project_pnpm_config_in_workspace_yaml.md) — `allowBuilds` gates dependency build scripts; the `pnpm` field in package.json is ignored and the Dockerfile must copy the file.
+- [Verify dynamic config keys with a wrong-type probe](references/project_verify_dynamic_config_keys.md) — start-dev silently ignores unknown keys; feed a bad type at `--log-level debug` plus traffic, with a bogus control.

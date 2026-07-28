@@ -10,13 +10,7 @@ import type { EventEnvelope } from "~~/shared/events";
  */
 
 type Phase =
-  | "Idle"
-  | "Planning"
-  | "Query gen"
-  | "Research"
-  | "Research (partial)"
-  | "Synthesis"
-  | "Done";
+  "Idle" | "Planning" | "Query gen" | "Research" | "Research (partial)" | "Synthesis" | "Done";
 
 const LLM_STEPS = new Set(["plan-research", "generate-queries", "synthesize-report"]);
 

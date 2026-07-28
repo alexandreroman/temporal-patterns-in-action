@@ -54,8 +54,7 @@ const isEncrypted = computed(() => props.scenario === "encrypted");
       <pre
         v-if="clientPayload"
         class="min-h-0 flex-1 overflow-auto whitespace-pre-wrap break-all font-mono text-[11px] text-slate-300"
-        >{{ clientJson }}</pre
-      >
+        >{{ clientJson }}</pre>
       <div v-else class="min-h-0 flex-1 overflow-auto">
         <p class="font-mono text-[11px] text-slate-500">(run the workflow)</p>
       </div>
@@ -100,8 +99,7 @@ const isEncrypted = computed(() => props.scenario === "encrypted");
             ? 'whitespace-pre text-emerald-200'
             : 'whitespace-pre-wrap break-all text-rose-200',
         ]"
-        >{{ isEncrypted ? storedBase64Wrapped : clientJson }}</pre
-      >
+        >{{ isEncrypted ? storedBase64Wrapped : clientJson }}</pre>
       <div v-else class="min-h-0 flex-1 overflow-auto">
         <p class="font-mono text-[11px] text-slate-500">(run the workflow)</p>
       </div>
@@ -178,8 +176,7 @@ const isEncrypted = computed(() => props.scenario === "encrypted");
       <pre
         v-if="clientPayload && workerHasDecoded"
         class="min-h-0 flex-1 overflow-auto whitespace-pre-wrap break-all font-mono text-[11px] text-slate-300"
-        >{{ clientJson }}</pre
-      >
+        >{{ clientJson }}</pre>
       <div v-else class="min-h-0 flex-1 overflow-auto">
         <p class="font-mono text-[11px] text-slate-500">
           {{ clientPayload ? "(waiting for worker)" : "(run the workflow)" }}

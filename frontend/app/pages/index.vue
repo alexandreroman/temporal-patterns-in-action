@@ -11,13 +11,7 @@ import IconPriorityFairness from "~/components/IconPriorityFairness.vue";
 useSeoMeta({ title: "Patterns" });
 
 type PatternIcon =
-  | "saga"
-  | "batch"
-  | "encryption"
-  | "agent"
-  | "multi-agent"
-  | "entity"
-  | "priority-fairness";
+  "saga" | "batch" | "encryption" | "agent" | "multi-agent" | "entity" | "priority-fairness";
 
 const ICONS: Record<PatternIcon, Component> = {
   saga: IconSaga,

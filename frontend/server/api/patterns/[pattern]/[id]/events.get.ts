@@ -1,6 +1,8 @@
 import { randomUUID } from "node:crypto";
-import { WorkflowNotFoundError } from "@temporalio/client";
 import { subscribe } from "~~/server/utils/nats";
+// Re-exported by the util rather than imported from "@temporalio/client":
+// see the CommonJS loading note in server/utils/temporal.ts.
+import { WorkflowNotFoundError } from "~~/server/utils/temporal";
 import type { EventEnvelope } from "~~/shared/events";
 
 const HEARTBEAT_INTERVAL_MS = 15_000;

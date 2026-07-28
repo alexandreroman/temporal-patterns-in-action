@@ -1,5 +1,39 @@
-import { Client, Connection } from "@temporalio/client";
+import { createRequire } from "node:module";
+import { resolve } from "node:path";
 import { DEMO_KEY, EncryptionCodec } from "./encryption-codec";
+import type * as TemporalClient from "@temporalio/client";
+
+// @temporalio/client goes through Node's CommonJS loader instead of a plain
+// `import`: since 1.16 the package makes Nitro emit extension-less ESM imports
+// (".../lib/async-completion-client") that Node's loader rejects, so every SSR
+// route answers HTTP 500 in dev. createRequire loads the package as the
+// CommonJS it actually is, bypassing the bundler's ESM transform.
+//
+// Two details keep the production build working too:
+//   - resolution is anchored on the running server entry, which sits next to
+//     the node_modules tree holding the package. Nitro rewrites
+//     `import.meta.url` to the placeholder "file:///_entry.js" in non-entry
+//     chunks, so using it here would search from the filesystem root;
+//   - `nitro.externals.traceInclude` in nuxt.config.ts ships the package in
+//     .output/server/node_modules, since a require is invisible to Nitro's
+//     dependency tracer.
+
+// Node always sets argv[1]; the fallback only satisfies the type checker.
+const serverEntry = resolve(process.argv[1] ?? "index.mjs");
+const requireFromServerEntry = createRequire(serverEntry);
+
+const { Client, Connection, WorkflowNotFoundError } = requireFromServerEntry(
+  "@temporalio/client",
+) as typeof TemporalClient;
+
+// The bindings above are values only; alias the classes so the same names keep
+// working as types.
+type Client = TemporalClient.Client;
+type Connection = TemporalClient.Connection;
+
+// Re-exported so the whole server shares this single load: a second require
+// would yield a distinct class identity and silently break `instanceof`.
+export { WorkflowNotFoundError };
 
 let plainClient: Promise<Client> | null = null;
 let encryptedClient: Promise<Client> | null = null;

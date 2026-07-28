@@ -1,3 +1,5 @@
+import { createRequire } from "node:module";
+
 import tailwindcss from "@tailwindcss/vite";
 
 export default defineNuxtConfig({
@@ -11,6 +13,14 @@ export default defineNuxtConfig({
   css: ["~/assets/css/main.css"],
   vite: {
     plugins: [tailwindcss()],
+  },
+  nitro: {
+    externals: {
+      // server/utils/temporal.ts loads @temporalio/client with createRequire
+      // (see the note there), which hides it from Nitro's dependency tracer.
+      // Force-trace it so it still ships in .output/server/node_modules.
+      traceInclude: [createRequire(import.meta.url).resolve("@temporalio/client")],
+    },
   },
   typescript: {
     strict: true,

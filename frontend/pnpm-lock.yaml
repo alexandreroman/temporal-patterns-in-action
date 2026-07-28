@@ -12,8 +12,8 @@ importers:
         specifier: ~3.4.0
         version: 3.4.0
       '@temporalio/client':
-        specifier: ~1.15.0
-        version: 1.15.1
+        specifier: ~1.21.1
+        version: 1.21.1
       nuxt:
         specifier: ~4.5.1
         version: 4.5.1(@babel/plugin-syntax-jsx@7.29.7(@babel/core@7.29.7(supports-color@10.2.2)))(@babel/plugin-syntax-typescript@7.29.7(@babel/core@7.29.7(supports-color@10.2.2)))(@types/node@26.1.2)(@vue/compiler-sfc@3.5.40)(db0@0.3.4)(esbuild@0.28.1)(eslint@10.8.0(jiti@2.7.0)(supports-color@10.2.2))(ioredis@5.11.1(supports-color@10.2.2))(lightningcss@1.33.0)(magicast@0.5.3)(optionator@0.9.4)(oxc-parser@0.140.0)(rollup-plugin-visualizer@7.0.1(rolldown@1.2.0)(rollup@4.62.3))(rollup@4.62.3)(srvx@0.11.22)(supports-color@10.2.2)(terser@5.49.0)(typescript@6.0.3)(vite@8.1.5(@types/node@26.1.2)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0))(vue-tsc@3.3.8(typescript@6.0.3))(yaml@2.9.0)
@@ -1452,17 +1452,17 @@ packages:
     peerDependencies:
       vite: ^5.2.0 || ^6 || ^7 || ^8
 
-  '@temporalio/client@1.15.1':
-    resolution: {integrity: sha512-JtZmzNfN5pglpsuRIRDKnuLNNeWUJUOlOQ1NT/UPRVgPU9ezTNbtrKnMXCta2caK0t2HiNi+CbPgLkU4ROu4Jw==}
-    engines: {node: '>= 20.0.0'}
+  '@temporalio/client@1.21.1':
+    resolution: {integrity: sha512-rdZAh20wzI5i/SyS46Nv9mE6t2KkS9DTrB57HEMLsq6eqm58Nc6la0WQKJGsUNkmN98KKirByidZ5D/ik3kiQw==}
+    engines: {node: '>= 20.3.0'}
 
-  '@temporalio/common@1.15.1':
-    resolution: {integrity: sha512-1jL58eD2l3R8u8I+qpvgxTyRH/7QMlHS3O8idXdMefuSEB0Dus0CAgDoNTDeCfLieoOuWXgxkIKGWSFgEprj2w==}
-    engines: {node: '>= 20.0.0'}
+  '@temporalio/common@1.21.1':
+    resolution: {integrity: sha512-8Pis59xYLrGu6GfkkWvrYWkSPEvo8lBBILsR6gBHGbymNlEc0ynylRXqPmRjwuLfYS7jHzxqjjO7cvXJQ/z2Fg==}
+    engines: {node: '>= 20.3.0'}
 
-  '@temporalio/proto@1.15.1':
-    resolution: {integrity: sha512-2vKdoZ3dxDAf80U7ghYEQg6eviNeYnWrYCCf9nvyHBc5tHbFgT/RZFBOYHGguY/OGv6FE6kRGsCllwXWMKJefA==}
-    engines: {node: '>= 20.0.0'}
+  '@temporalio/proto@1.21.1':
+    resolution: {integrity: sha512-eSHGrZ6CxbtjrAzxiMgKrWeDiBlWk6/JkIqsB1hrkPB6TQXC67Az8v0BL0Fj3ur8ktQZbaacON/xCDjTsvJyGw==}
+    engines: {node: '>= 20.3.0'}
 
   '@tybys/wasm-util@0.10.3':
     resolution: {integrity: sha512-F3fo1MYrRJYL3zER0OUOmkutjr1Vp23m7OsSgp7nq4SP6OqX6C/56XFIPAl5bt3zaBRjmW7SGz3u/6LwFpYcOg==}
@@ -3302,9 +3302,9 @@ packages:
   natural-compare@1.4.0:
     resolution: {integrity: sha512-OWND8ei3VtNC9h7V60qff3SVobHr996CTwgxubgyQYEpg290h9J0buyECNNJexkFm5sOajh5G116RYA1c8ZMSw==}
 
-  nexus-rpc@0.0.1:
-    resolution: {integrity: sha512-hAWn8Hh2eewpB5McXR5EW81R3pR/ziuGhKCF3wFyUVCklanPqrIgMNr7jKCbzXeNVad0nUDfWpFRqh2u+zxQtw==}
-    engines: {node: '>= 18.0.0'}
+  nexus-rpc@0.0.2:
+    resolution: {integrity: sha512-IWjIExdVYlmwXuzHdY/Q3lXCv1gbqoAXPazQhy2w4Xgtgha3H0OOujEESVPQcFUFMWm+pAk2gKnb57g8S41JZg==}
+    engines: {node: '>= 20.0.0'}
 
   nitropack@2.13.4:
     resolution: {integrity: sha512-tX7bT6zxNeMwkc6hxHiZeUoTOjVrcjoh1Z3cmxOlodIqjl4HISgqfGOmkWSayky3Nv9Z5+KQH52F8nmXJY5AAA==}
@@ -6178,24 +6178,25 @@ snapshots:
       tailwindcss: 4.3.3
       vite: 8.1.5(@types/node@26.1.2)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0)
 
-  '@temporalio/client@1.15.1':
+  '@temporalio/client@1.21.1':
     dependencies:
       '@grpc/grpc-js': 1.14.4
-      '@temporalio/common': 1.15.1
-      '@temporalio/proto': 1.15.1
+      '@temporalio/common': 1.21.1
+      '@temporalio/proto': 1.21.1
       abort-controller: 3.0.0
       long: 5.3.2
+      nexus-rpc: 0.0.2
       uuid: 11.1.1
 
-  '@temporalio/common@1.15.1':
+  '@temporalio/common@1.21.1':
     dependencies:
-      '@temporalio/proto': 1.15.1
+      '@temporalio/proto': 1.21.1
       long: 5.3.2
       ms: 3.0.0-canary.1
-      nexus-rpc: 0.0.1
+      nexus-rpc: 0.0.2
       proto3-json-serializer: 2.0.2
 
-  '@temporalio/proto@1.15.1':
+  '@temporalio/proto@1.21.1':
     dependencies:
       long: 5.3.2
       protobufjs: 7.6.5
@@ -8074,7 +8075,7 @@ snapshots:
 
   natural-compare@1.4.0: {}
 
-  nexus-rpc@0.0.1: {}
+  nexus-rpc@0.0.2: {}
 
   nitropack@2.13.4(oxc-parser@0.140.0)(rolldown@1.2.0)(srvx@0.11.22)(supports-color@10.2.2)(vite@8.1.5(@types/node@26.1.2)(esbuild@0.28.1)(jiti@2.7.0)(terser@5.49.0)(yaml@2.9.0)):
     dependencies:

@@ -23,17 +23,17 @@
     "@nats-io/transport-node": "~3.4.0",
     "@temporalio/client": "~1.15.0",
     "nuxt": "~4.4.0",
-    "shiki": "~4.0.2",
-    "vue": "~3.5.0",
+    "shiki": "~4.3.1",
+    "vue": "~3.5.40",
     "vue-router": "~4.5.0"
   },
   "devDependencies": {
     "@nuxt/eslint": "~1.15.0",
-    "@tailwindcss/vite": "~4.3.0",
+    "@tailwindcss/vite": "~4.3.3",
     "eslint": "~9.39.4",
-    "prettier": "~3.8.0",
-    "tailwindcss": "~4.3.0",
+    "prettier": "~3.9.6",
+    "tailwindcss": "~4.3.3",
     "typescript": "~5.9.0",
-    "vue-tsc": "~3.2.0"
+    "vue-tsc": "~3.3.8"
   }
 }

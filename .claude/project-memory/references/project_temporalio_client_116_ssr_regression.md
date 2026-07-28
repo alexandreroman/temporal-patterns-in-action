@@ -1,6 +1,6 @@
 ---
 name: "@temporalio/client 1.16+ breaks Nuxt SSR dev bundle"
-description: "@temporalio/client 1.16 and 1.17 generate broken extension-less ESM imports in .nuxt/dev/index.mjs; pinned to ~1.15.0 as a workaround."
+description: "@temporalio/client 1.16 through 1.21 generate broken extension-less ESM imports in .nuxt/dev/index.mjs; pinned to ~1.15.0 as a workaround."
 type: project
 ---
 
@@ -37,10 +37,26 @@ into one ESM module.
 | 1.15.0         | OK     |
 | 1.16.0         | BROKEN |
 | 1.17.0 / 1.17.1 | BROKEN |
+| 1.21.1         | BROKEN |
 
-The regression reproduces on both Nuxt 4.1
-(Nitro 2.12) and Nuxt 4.4 (Nitro 2.13.4), so
-the trigger is the package, not Nuxt. The
+The trigger is the package, not the framework
+and not the bundler. The regression reproduces
+on Nuxt 4.1 (Nitro 2.12), Nuxt 4.4 (Nitro
+2.13.4) and Nuxt 4.5 — the last of which builds
+with Vite 8 / rolldown instead of esbuild, and
+still emits the same 22 extension-less
+`@temporalio/client/lib/<x>` imports. Under Nuxt
+4.5 every route answers HTTP 500 rather than
+503; the cause is identical.
+
+Only the dev bundle breaks. `pnpm build` and the
+containerised production image succeed on the
+affected versions, so the E2E net — which
+exercises only the container — stays green and
+cannot catch this. Reach for `pnpm dev` plus a
+`curl` on `/` when validating a bump.
+
+The
 `devtools` config is unrelated (broken with
 both `enabled: true` and `enabled: false`).
 

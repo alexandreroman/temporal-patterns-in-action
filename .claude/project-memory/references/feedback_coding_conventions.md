@@ -15,6 +15,11 @@ type: feedback
   latest LTS or stable release. Verify against
   official docs or via context7 before choosing
   a version.
+- **Node.js base images:** "LTS" means the
+  **Active LTS** major. A newer major in
+  *Current* status is not a valid target, and
+  neither is an older one in *Maintenance*.
+  Check the official Node release schedule.
 
 **Why:** These are load-bearing preferences the
 user holds, not optional style suggestions.

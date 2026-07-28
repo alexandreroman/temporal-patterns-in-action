@@ -56,10 +56,13 @@ infra-logs: ## Follow Temporal server logs
 
 ##@ App
 
+# app-up runs compose attached: it streams container logs and Ctrl-C stops the
+# stack. The URLs are printed first, since nothing else reaches the terminal
+# once compose takes over.
 .PHONY: app-up
 app-up: compose-override ## Build and run the full stack (infra, frontend, workers) in containers
-	docker-compose up -d
 	$(show_urls)
+	docker-compose up
 
 .PHONY: app-down
 app-down: ## Stop the full stack and remove containers

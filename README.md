@@ -33,6 +33,9 @@ Then open:
 - Codec Server — <http://localhost:8888> (opt-in,
   see [Payload Encryption](#payload-encryption))
 
+`make endpoints` prints those same addresses, adjusted to the
+ports this worktree actually publishes.
+
 Stop everything with `docker-compose down`.
 
 ## Configuration

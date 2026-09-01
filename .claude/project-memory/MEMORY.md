@@ -40,6 +40,7 @@
 - [Temporal UI Codec Server: glasses icon](references/feedback_temporal_ui_codec_glasses_icon.md) — point users to the glasses icon in the top bar, not the bottom-left user/Settings menu.
 - [cmux compose port isolation](references/project_cmux_compose_port_isolation.md) — post-create.sh writes a gitignored compose.override.yaml using `!override` to remap host ports from CMUX_PORT.
 - [Casper compose/dev port isolation](references/project_casper_compose_port_isolation.md) — `compose-override` target regenerates the gitignored override from CASPER_PORT; infra-up/app-up/bootstrap all depend on it so `make dev` launches infra on matching ports.
+- [Casper info panel mirrors make endpoints](references/feedback_casper_info_panel.md) — `make endpoints` prints the addresses as Markdown; app-up/dev publish the panel, app-down/infra-down/teardown clear it.
 - [Status bar must not gate content on out-in transition](references/feedback_statusbar_no_outin_transition.md) — `<Transition mode="out-in">` wedges on hidden tabs (rAF/timers freeze); use a CSS keyframes animation keyed by the value.
 - [pnpm settings live in pnpm-workspace.yaml](references/project_pnpm_config_in_workspace_yaml.md) — `allowBuilds` gates dependency build scripts; the `pnpm` field in package.json is ignored and the Dockerfile must copy the file.
 - [Verify dynamic config keys with a wrong-type probe](references/project_verify_dynamic_config_keys.md) — start-dev silently ignores unknown keys; feed a bad type at `--log-level debug` plus traffic, with a bogus control.

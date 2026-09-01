@@ -15,10 +15,11 @@ export TEMPORAL_ADDRESS := localhost:$(shell expr $(CASPER_PORT) + 1)
 export NATS_URL         := nats://localhost:$(shell expr $(CASPER_PORT) + 3)
 endif
 
-# Host ports shown in the "connect" URLs printed by app-up and dev. With
-# CASPER_PORT set, compose.override.yaml remaps the frontend to CASPER_PORT, the
-# Temporal Web UI to CASPER_PORT+2 and the Codec Server to CASPER_PORT+4 (see
-# the compose-override target); otherwise the compose.yaml defaults apply.
+# Host ports advertised by `make endpoints`, and by the workspace info panel
+# that mirrors it. With CASPER_PORT set, compose.override.yaml remaps the
+# frontend to CASPER_PORT, the Temporal Web UI to CASPER_PORT+2 and the Codec
+# Server to CASPER_PORT+4 (see the compose-override target); otherwise the
+# compose.yaml defaults apply.
 ifneq ($(CASPER_PORT),)
 FRONTEND_PORT     := $(CASPER_PORT)
 TEMPORAL_UI_PORT  := $(shell expr $(CASPER_PORT) + 2)
@@ -29,26 +30,18 @@ TEMPORAL_UI_PORT  := 8233
 CODEC_SERVER_PORT := 8888
 endif
 
-# Print the URLs to reach the running stack. Used by app-up and dev. The Codec
-# Server is opt-in: paste its URL into the Temporal Web UI (glasses icon) to
-# decrypt encryption-pattern payloads; the stack does not wire it up for you.
-define show_urls
-	@echo ""
-	@echo "The stack is up. Open:"
-	@echo "  App                http://localhost:$(FRONTEND_PORT)"
-	@echo "  Temporal Web UI    http://localhost:$(TEMPORAL_UI_PORT)"
-	@echo "  Codec Server       http://localhost:$(CODEC_SERVER_PORT) (set in Temporal Web UI, glasses icon)"
-endef
-
 ##@ Infra
 
 .PHONY: infra-up
 infra-up: compose-override ## Start local Temporal server and NATS (docker-compose)
 	docker-compose up -d temporal nats
 
+# This stops the Temporal server, so the Web UI address the panel advertises
+# stops answering even though the frontend container may still be running.
 .PHONY: infra-down
 infra-down: ## Stop local Temporal server and NATS
 	docker-compose stop temporal nats
+	@$(clear-endpoints)
 
 .PHONY: infra-logs
 infra-logs: ## Follow Temporal server logs
@@ -56,17 +49,52 @@ infra-logs: ## Follow Temporal server logs
 
 ##@ App
 
-# app-up runs compose attached: it streams container logs and Ctrl-C stops the
-# stack. The URLs are printed first, since nothing else reaches the terminal
-# once compose takes over.
+# Markdown on stdout, so the answer to "where is this worktree listening?" can
+# be read in a terminal or piped into whatever renders it. The Codec Server row
+# is an address to paste rather than one the stack wires up for you, so the
+# line below the table says where it goes.
+.PHONY: endpoints
+endpoints: ## Print this worktree's published endpoints as Markdown
+	@printf '%s\n' \
+		'# Temporal Patterns in Action' \
+		'' \
+		'| Service | Address |' \
+		'| --- | --- |' \
+		'| App | <http://localhost:$(FRONTEND_PORT)> |' \
+		'| Temporal Web UI | <http://localhost:$(TEMPORAL_UI_PORT)> |' \
+		'| Codec Server | <http://localhost:$(CODEC_SERVER_PORT)> |' \
+		'' \
+		'The Codec Server is opt-in: paste its address into the Temporal Web UI' \
+		'(glasses icon, top bar) to decrypt encryption-pattern payloads.'
+
+# The workspace info panel mirrors `make endpoints`, so whichever command
+# brought the stack up or down leaves it telling the truth. The casper CLI is on
+# PATH outside a workspace too, hence the CASPER_WORKSPACE_ID test alongside it,
+# and `|| true` keeps a panel update from ever failing the target that asked for
+# it.
+in-casper-workspace = [ -n "$$CASPER_WORKSPACE_ID" ] && command -v casper >/dev/null 2>&1
+
+define publish-endpoints
+$(in-casper-workspace) && $(MAKE) -s endpoints | casper info set - >/dev/null || true
+endef
+
+define clear-endpoints
+$(in-casper-workspace) && casper info clear >/dev/null || true
+endef
+
+# The endpoints are printed and published first, because `docker-compose up`
+# runs attached: it streams container logs, never returns until Ctrl-C, and
+# nothing else reaches the terminal once it takes over.
 .PHONY: app-up
 app-up: compose-override ## Build and run the full stack (infra, frontend, workers) in containers
-	$(show_urls)
+	@$(MAKE) -s endpoints
+	@$(publish-endpoints)
 	docker-compose up
 
 .PHONY: app-down
 app-down: ## Stop the full stack and remove containers
 	docker-compose down
+	@$(clear-endpoints)
 
 .PHONY: app-logs
 app-logs: ## Follow logs from every container
@@ -88,7 +116,8 @@ dev-workers: ## Run every pattern worker with hot-reload (requires Air)
 
 .PHONY: dev
 dev: infra-up ## Start infra, then run the frontend and all workers in parallel with hot-reload
-	$(show_urls)
+	@$(MAKE) -s endpoints
+	@$(publish-endpoints)
 	@$(MAKE) -j frontend dev-workers
 
 .PHONY: check
@@ -135,6 +164,7 @@ compose-override: ## Pin container host ports to $CASPER_PORT (compose.override.
 .PHONY: teardown
 teardown: ## Stop this worktree's containers
 	docker-compose down
+	@$(clear-endpoints)
 
 ##@ Helpers
 

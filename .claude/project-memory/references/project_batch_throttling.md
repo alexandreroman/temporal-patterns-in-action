@@ -1,40 +1,42 @@
 ---
-name: "Batch pattern throttling lives on the worker, not the workflow"
-description: "All four snippets in BatchCodeViewer.vue show worker-level throttling only; the workflow-level semaphore variant is deliberately not shown."
+name: "Batch pattern throttling is an in-workflow sliding window"
+description: "BatchProcessingWorkflow bounds in-flight child workflows with a workflow.Selector window; the worker sets no activity concurrency cap."
 type: project
 ---
 
-# Batch pattern throttling lives on the worker, not the workflow
+# Batch pattern throttling is an in-workflow sliding window
 
-All four snippets (Go, Java, TS, Python) in
-`frontend/app/components/BatchCodeViewer.vue` show worker-level
-throttling only. The workflow-level sliding-window variant
-(semaphore + slot release) is deliberately NOT shown — unified
-pedagogy, one idea per demo.
+`BatchProcessingWorkflow` bounds the number of in-flight child
+workflows itself: a sliding window (`workflow.Selector` in Go)
+starts a new `ProcessImageWorkflow` only when a slot frees up, then
+drains the remaining children before the summary. All four
+snippets in `frontend/app/components/BatchCodeViewer.vue` show the
+same in-workflow window, each with its SDK's idiom.
 
 Consequences:
 
-- `BatchInput` has no `Parallelism` field. Do not add one back.
-- There is no `workflow.NewSemaphore` / `workflow.Go` slot-release
-  goroutine in `workflow.go`. Do not reintroduce them.
-- `frontend/server/api/batch/start.post.ts` does not send
-  `parallelism` in `args`.
-- `frontend/app/components/BatchSlots.vue` still takes a
-  `parallelism` prop for the UI-side slot visualization. That is a
-  display constant (`PARALLELISM = 4` in `pages/patterns/batch.vue`),
-  not a workflow input — leave it alone.
+- The Batch worker (`workers/batch/cmd/worker/main.go`) sets no
+  `MaxConcurrentActivityExecutionSize`; the window bounds the load
+  per batch (at most `windowSize` activities), independent of
+  `BATCH_WORKER_REPLICAS`. Concurrent batches add up (4 × batches).
+- The window size is a Go constant in `workers/batch/workflow.go`
+  and matches the UI display constant `PARALLELISM = 4` in
+  `frontend/app/pages/patterns/batch.vue`. Change both together.
+- The window stays in the parent (no signals, no continue-as-new):
+  at `TOTAL = 48` the parent history is far below Temporal's limits
+  (2,000 pending children, 51,200 events). The parent costs about
+  7-8 history events per item (365 events for 48 items), so the
+  10,240-event warning lands around 1,300 items.
 
-**Why:** Demo-first pedagogy. Mixing two throttling strategies
-across languages split the viewer's attention; the unified form
-keeps one idea per demo. The numeric cap in Go
-(`maxConcurrentActivities = 4`) is chosen to match the
-`PARALLELISM = 4` the UI visualizes.
+**Why:** A worker-level activity cap does not limit how many items
+are in flight: every child starts at once, the server holds N open
+executions and an N-deep activity backlog, and the cap multiplies
+with worker replicas. Temporal's guidance is to cap concurrent
+children in the parent; the demo teaches that best practice.
 
-**How to apply:** If asked to "add a semaphore to Go", "pass
-parallelism through", or "show the workflow-level variant",
-surface this note first and confirm the user really wants to
-reintroduce the split before editing. When asked to reintroduce
-a semaphore variant, it should live in a separate demo, not
-re-split this one. When tuning the cap, change both
-`maxConcurrentActivities` and the frontend `PARALLELISM` constant
-together.
+**How to apply:** Keep throttling in the workflow when editing the
+Batch pattern. For batches large enough to approach the history or
+pending-children limits, the official Sliding Window design
+(children signal the parent, parent continues-as-new every window)
+is the next step — present it as a separate variant rather than
+growing this one.

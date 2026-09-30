@@ -6,9 +6,9 @@ import type { ArchState, EdgeKey, NodeKey } from "~/types/architecture";
 /**
  * Batch architecture: UI -> Temporal -> Worker -> (Resize | Thumbnail | CDN |
  *                                                      Metadata DB)
- * The active service is derived from the `service` field on `batch.item.*`
- * events — the activity name is always `process-image` and carries no routing
- * information on its own.
+ * The active service is derived from the `service` field that every stage
+ * activity sets on its `batch.item.*` events, so the diagram does not need to
+ * map activity names to services.
  */
 
 const SERVICE_TO_NODE: Record<string, { node: NodeKey; edge: EdgeKey }> = {

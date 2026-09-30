@@ -21,7 +21,7 @@ type BatchResult struct {
 }
 
 // ImageInput is the input to ProcessImageWorkflow — the per-image child
-// workflow that fans out across the 4 pipeline stages.
+// workflow that runs the 4 pipeline stages in order.
 type ImageInput struct {
 	BatchID string `json:"batchId"`
 	// RootWorkflowID is the parent workflow ID; stage activities route their

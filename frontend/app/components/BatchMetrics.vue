@@ -4,14 +4,17 @@ import type { EventEnvelope } from "~~/shared/events";
 
 /**
  * Four-card summary derived from the event stream.
- *   - processed: unique indices whose final state is `completed`.
- *   - failed:    unique indices whose final state is `attempt_failed`
- *                (i.e. retried to exhaustion without completing).
- *   - queued:    items still Running in Temporal — i.e. not yet completed or
- *                failed. Throughput is gated by the worker's
- *                MaxConcurrentActivityExecutionSize, so this count reflects
- *                workflows waiting for a worker activity slot.
+ *   - processed: unique indices whose latest state is `completed`.
+ *   - failed:    unique indices whose latest state is an `attempt_failed` on
+ *                the final attempt (retries exhausted without completing).
+ *   - queued:    indices with no `batch.item.*` event yet — still waiting for
+ *                a slot in the workflow's sliding window, as in `BatchGrid`.
+ *                Items currently running are counted in none of the cards.
  */
+
+// Matches MaximumAttempts in the stage retry policy (workers/batch/workflow.go):
+// an attempt_failed below this attempt is only a backoff before the next retry.
+const MAX_ATTEMPTS = 3;
 
 interface Metrics {
   processed: number;
@@ -27,30 +30,35 @@ const props = withDefaults(
   { total: 48 },
 );
 
+interface LastItemEvent {
+  type: string;
+  attempt: number;
+}
+
 const metrics = computed<Metrics>(() => {
-  const lastType = new Map<number, string>();
+  const lastEvent = new Map<number, LastItemEvent>();
 
   for (const env of props.events) {
+    if (!env.type.startsWith("batch.item.")) continue;
     const data = env.data as Record<string, unknown>;
     const idx = data.index;
     if (typeof idx !== "number") continue;
-    if (
-      env.type === "batch.item.started" ||
-      env.type === "batch.item.completed" ||
-      env.type === "batch.item.attempt_failed"
-    ) {
-      lastType.set(idx, env.type);
-    }
+    const attempt = typeof data.attempt === "number" ? data.attempt : 1;
+    lastEvent.set(idx, { type: env.type, attempt });
   }
 
   let processed = 0;
   let failed = 0;
-  for (const type of lastType.values()) {
-    if (type === "batch.item.completed") processed++;
-    else if (type === "batch.item.attempt_failed") failed++;
+  for (const event of lastEvent.values()) {
+    if (event.type === "batch.item.completed") {
+      processed++;
+    } else if (event.type === "batch.item.attempt_failed" && event.attempt >= MAX_ATTEMPTS) {
+      failed++;
+    }
   }
 
-  const queued = Math.max(0, props.total - processed - failed);
+  const admitted = lastEvent.size;
+  const queued = Math.max(0, props.total - admitted);
 
   return { processed, failed, queued };
 });

@@ -1,9 +1,8 @@
-// Package batch implements the long-running batch pattern: dispatch N child
-// workflows in one shot, then report a summary. Each child workflow fans out
-// to the 4 pipeline stages. The effective sliding window is enforced by the
-// worker's MaxConcurrentActivityExecutionSize rather than an in-workflow
-// semaphore. Retries are bounded (MaximumAttempts=3) so a transient stage
-// timeout is retried to success.
+// Package batch implements the long-running batch pattern: process N images
+// through child workflows while a sliding window in the parent keeps at most
+// windowSize children in flight, then report a summary. Each child runs the 4
+// pipeline stages sequentially. Retries are bounded (MaximumAttempts=3) so a
+// transient stage timeout is retried to success.
 package batch
 
 import (
@@ -13,6 +12,10 @@ import (
 	"go.temporal.io/sdk/temporal"
 	"go.temporal.io/sdk/workflow"
 )
+
+// windowSize is the maximum number of child workflows in flight at once. It
+// matches PARALLELISM in frontend/app/pages/patterns/batch.vue.
+const windowSize = 4
 
 // Service names are one per stage: each child workflow walks the full
 // pipeline (resize, thumbnail, cdn, metadata) in order, so the Service on
@@ -37,9 +40,9 @@ func stageActivityOptions() workflow.ActivityOptions {
 	}
 }
 
-// BatchProcessingWorkflow dispatches Total child workflows in one shot, then
-// reports a summary. The effective sliding window is enforced by the worker's
-// MaxConcurrentActivityExecutionSize rather than in-workflow logic. Individual
+// BatchProcessingWorkflow processes Total images with a sliding window: it
+// starts a new child workflow only when one of the windowSize in-flight
+// children finishes, then drains the window and reports a summary. Individual
 // item failures are counted and reported — they never fail the workflow itself.
 func BatchProcessingWorkflow(ctx workflow.Context, input BatchInput) (BatchResult, error) {
 	logger := workflow.GetLogger(ctx)
@@ -55,12 +58,19 @@ func BatchProcessingWorkflow(ctx workflow.Context, input BatchInput) (BatchResul
 
 	result := BatchResult{BatchID: input.BatchID, Total: input.Total}
 
-	futures := make([]workflow.Future, 0, input.Total)
+	// Every child future is added to the selector; each Select call runs the
+	// callback of exactly one finished child.
+	selector := workflow.NewSelector(ctx)
+	inFlight := 0
 
-	// Dispatch loop — start every child immediately. The worker's
-	// MaxConcurrentActivityExecutionSize caps how many stage activities run in
-	// parallel, which throttles the effective sliding window.
-	for i := 0; i < input.Total; i++ {
+	// Dispatch loop — the sliding window. Once windowSize children are in
+	// flight, wait for one to finish before starting the next.
+	for i := range input.Total {
+		if inFlight == windowSize {
+			selector.Select(ctx) // wait for a child to finish, freeing a slot
+			inFlight--
+		}
+
 		childCtx := workflow.WithChildOptions(ctx, workflow.ChildWorkflowOptions{
 			WorkflowID: fmt.Sprintf("%s-item-%03d", rootID, i),
 		})
@@ -72,17 +82,20 @@ func BatchProcessingWorkflow(ctx workflow.Context, input BatchInput) (BatchResul
 			FailureRate:    input.FailureRate,
 		}
 		future := workflow.ExecuteChildWorkflow(childCtx, ProcessImageWorkflow, in)
-		futures = append(futures, future)
+		selector.AddFuture(future, func(f workflow.Future) {
+			if err := f.Get(ctx, nil); err != nil {
+				result.Failed++
+				logger.Warn("item failed after retries", "error", err)
+			} else {
+				result.Processed++
+			}
+		})
+		inFlight++
 	}
 
-	// Drain: wait for every child and update counters.
-	for _, f := range futures {
-		if err := f.Get(ctx, nil); err != nil {
-			result.Failed++
-			logger.Warn("item failed after retries", "error", err)
-		} else {
-			result.Processed++
-		}
+	// Drain the last children still in the window.
+	for ; inFlight > 0; inFlight-- {
+		selector.Select(ctx)
 	}
 
 	var a *Activities

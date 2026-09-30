@@ -4,8 +4,10 @@ import type { BatchStartRequest, BatchStartResponse } from "~~/shared/types";
 
 useSeoMeta({ title: "Long-Running Batch" });
 
-// Demo-side constants: kept in sync with the server so the UI renders the
-// right `total` / `parallelism` without re-inferring from events.
+// Demo-side constants so the UI renders the right `total` / `parallelism`
+// without re-inferring from events. TOTAL matches the batch size the server
+// starts; PARALLELISM mirrors `windowSize` in `workers/batch/workflow.go` and
+// is display-only (the server does not receive it).
 const TOTAL = 48;
 const PARALLELISM = 4;
 
@@ -69,7 +71,7 @@ async function start() {
           <IconBatch class="h-5 w-5" />
         </span>
         <h1 class="text-2xl font-semibold tracking-tight text-slate-100">
-          Long-Running Batch &mdash; Worker-Throttled Fan-Out
+          Long-Running Batch &mdash; Sliding-Window Fan-Out
         </h1>
       </div>
       <div class="flex items-center gap-2">
@@ -117,7 +119,7 @@ async function start() {
     <!-- Code + event stream -->
     <div class="mt-4 flex flex-col gap-3 lg:flex-row">
       <div class="min-w-0 lg:w-[560px] lg:shrink-0">
-        <BatchCodeViewer :events="events" />
+        <BatchCodeViewer :events="events" :total="TOTAL" />
       </div>
       <div class="min-w-0 flex-1">
         <BatchEventStream :events="events" />

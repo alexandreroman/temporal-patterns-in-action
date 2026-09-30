@@ -5,16 +5,14 @@ import type { EventEnvelope } from "~~/shared/events";
 /**
  * Grid of `total` cells, one per item. Each cell's state is folded from the
  * event stream: the most recent `batch.item.*` event for that index decides
- * the cell colour. A `queued` cell means the child workflow is already Running
- * in Temporal but is waiting for a worker activity slot, since throttling is
- * enforced via `worker.Options.MaxConcurrentActivityExecutionSize` rather than
- * by staggering workflow dispatch. An item cycles `queued` → `running` →
- * `queued` between stages as it waits for the next worker activity slot (each
- * `batch.item.stage_completed` returns it to `queued`), then finally `done`
- * when `WriteMetadata` emits `batch.item.completed`. Retry policy guarantees
- * every item eventually completes, so a terminal `failed` state is not
- * surfaced. The `X/4` label counts successful `stage_completed` events for the
- * item; `batch.item.completed` clamps it to 4.
+ * the cell colour. A `queued` cell means the child workflow has not been
+ * started yet — it is waiting for a slot in the parent's sliding window. Once
+ * admitted, an item stays `running` across its 4 stages (`retrying` while a
+ * stage runs a retry attempt), then turns `done` when `WriteMetadata` emits
+ * `batch.item.completed`. Retry policy guarantees every item eventually
+ * completes, so a terminal `failed` state is not surfaced. The `X/4` label
+ * counts successful `stage_completed` events for the item;
+ * `batch.item.completed` clamps it to 4.
  */
 
 type CellState = "queued" | "running" | "retrying" | "done";
@@ -51,7 +49,8 @@ const cells = computed<Cell[]>(() => {
         break;
       }
       case "batch.item.stage_completed":
-        cell.state = "queued";
+        // The child keeps its window slot between stages.
+        cell.state = "running";
         cell.progress = Math.min(4, cell.progress + 1);
         break;
       case "batch.item.completed":

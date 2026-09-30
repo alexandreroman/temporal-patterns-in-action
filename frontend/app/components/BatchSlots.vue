@@ -4,13 +4,12 @@ import type { EventEnvelope } from "~~/shared/events";
 import { BATCH_SERVICE_LABEL } from "~/utils/batch-services";
 
 /**
- * Sliding-window view: up to `parallelism` chips showing the items currently
- * occupying a worker activity slot. An item is "active" between its latest
- * `batch.item.started` and the NEXT `batch.item.stage_completed` /
- * `attempt_failed` / `completed` (or a workflow terminal event). Because a
- * stage_completed event releases the slot before the next stage re-acquires
- * one, the chips truly reflect the 4 items currently in a worker activity
- * slot. A chip flips to `retry` when a subsequent `started` arrives with
+ * Sliding-window view: up to `parallelism` chips, one per item in the
+ * workflow's window, labelled with the stage it is running. An item is
+ * "active" between its latest `batch.item.started` and the NEXT
+ * `batch.item.stage_completed` / `attempt_failed` / `completed` (or a workflow
+ * terminal event), so one chip briefly reads idle while a child moves to its
+ * next stage. A chip flips to `retry` when a subsequent `started` arrives with
  * attempt>1.
  */
 
@@ -65,7 +64,9 @@ const activeItems = computed<ActiveItem[]>(() => {
   }
 
   if (terminated) return [];
-  // Iteration order preserves insertion — most recently started first.
+  // Map iteration follows insertion order: the oldest running stage comes
+  // first. The window keeps at most `parallelism` items active, so the slice
+  // never drops one.
   return Array.from(byIndex.values()).slice(0, props.parallelism);
 });
 

@@ -15,12 +15,7 @@
 # the workspace info panel that mirrors it. Unset CASPER_PORT keeps the
 # compose.yaml defaults.
 
-# cmux worktrees reuse the Casper port scheme.
-CASPER_PORT ?= $(CMUX_PORT)
-
 ifneq ($(CASPER_PORT),)
-# Exported so the compose-override recipe sees a CMUX_PORT fallback too.
-export CASPER_PORT
 export PORT             := $(CASPER_PORT)
 export TEMPORAL_ADDRESS := localhost:$(shell expr $(CASPER_PORT) + 1)
 export NATS_URL         := nats://localhost:$(shell expr $(CASPER_PORT) + 3)

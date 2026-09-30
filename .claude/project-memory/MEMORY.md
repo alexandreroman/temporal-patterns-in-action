@@ -61,7 +61,6 @@
 ## Infra and workspaces
 
 - [Casper compose/dev port isolation](references/project_casper_compose_port_isolation.md) — override from CASPER_PORT; `!override`.
-- [cmux compose port isolation](references/project_cmux_compose_port_isolation.md) — Makefile defaults CASPER_PORT to CMUX_PORT.
 - [Casper info panel mirrors make endpoints](references/feedback_casper_info_panel.md) — app-up/dev publish, down targets clear.
 - [Browser tests: casper load is a hidden page](references/feedback_casper_browser_hidden_page.md) — use `casper browser open`.
 - [Node healthcheck: use 127.0.0.1](references/feedback_node_healthcheck_ipv6.md) — busybox wget tries `::1`; Nuxt is IPv4.

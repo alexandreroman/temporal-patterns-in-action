@@ -24,5 +24,4 @@ it), not the Python `podman-compose`. The codec server's
 **How to apply:** a new host port gets an offset in
 `compose-override`, a row in `make endpoints`
 ([[feedback_casper_info_panel]]) and a matching export. Never
-commit the override. cmux worktrees reuse the same generator
-([[project_cmux_compose_port_isolation]]).
+commit the override.

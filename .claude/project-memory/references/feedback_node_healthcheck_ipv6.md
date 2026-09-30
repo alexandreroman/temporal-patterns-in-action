@@ -11,7 +11,7 @@ from inside its container must target
 `http://127.0.0.1:3000/...`, not
 `http://localhost:3000/...`.
 
-**Why:** the frontend image is `node:22-alpine`,
+**Why:** the frontend image is `node:24-alpine`,
 whose busybox `wget` resolves `localhost` to `::1`
 first. Nuxt/nitro binds to `0.0.0.0` (IPv4 only)
 by default, so the probe gets `Connection

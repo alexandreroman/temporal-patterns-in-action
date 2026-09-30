@@ -50,7 +50,7 @@ containerized stack; override them only when running outside compose.
 
 ## Local development
 
-Prerequisites: Go 1.25+, Node.js 22 LTS, pnpm (via
+Prerequisites: Go 1.26+, Node.js 24 LTS, pnpm (via
 `corepack enable`), and [Air](https://github.com/air-verse/air)
 for worker hot-reload.
 

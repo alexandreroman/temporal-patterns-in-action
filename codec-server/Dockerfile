@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 # Build context: repo root — we need both ./workers (for the shared
 # encryption package) and ./codec-server (this binary).
-FROM golang:1.26-alpine AS build
+FROM golang:1.27-alpine AS build
 WORKDIR /src
 ENV CGO_ENABLED=0 \
     GOOS=linux

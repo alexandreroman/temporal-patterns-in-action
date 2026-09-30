@@ -55,12 +55,7 @@ type RemoveItemSignal struct {
 // consistent with the other signals.
 type CheckoutSignal struct{}
 
-// Progress is what getCart returns. Mutated queries-answered counter implies
-// the handler must be able to increment state on every call — but query
-// handlers must be side-effect free in Temporal. So the counter is advisory
-// only: we increment it inside the query handler, which is safe because
-// that field is not part of replay decision logic and only observed via
-// subsequent queries, not persisted history. Do NOT use it to drive branching.
+// Progress is what getCart returns.
 type Progress struct {
 	CartID          string     `json:"cartId"`
 	Items           []CartItem `json:"items"`

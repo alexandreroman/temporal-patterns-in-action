@@ -1,9 +1,21 @@
-bin/
-tmp/
-*.test
-*.out
-coverage.*
-.DS_Store
-Dockerfile
+# Build context of every worker image (see compose.yaml). Patterns are
+# anchored at the context root, so nested paths need the **/ prefix.
+
+# Build and hot-reload artifacts
+**/bin/
+**/tmp/
+**/*.test
+**/*.out
+**/coverage.*
+
+# Dev-only and build-only files the image never needs
+**/Dockerfile
+**/.air.toml
+**/*.md
 .dockerignore
-README.md
+.gitignore
+.golangci.yml
+Makefile
+
+# OS / editor
+**/.DS_Store

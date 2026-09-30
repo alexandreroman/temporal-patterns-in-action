@@ -1,0 +1,19 @@
+# Shared Air config for every pattern worker. `make dev-<pattern>` runs Air
+# from workers/ and passes the pattern-specific build command, entrypoint,
+# watched directories and tmp_dir as CLI flags.
+#
+# Settings that need a duration stay here: the CLI parses build.kill_delay as
+# a plain integer, so a value such as "2s" on the command line becomes 0.
+root = "."
+
+[build]
+include_ext = ["go"]
+exclude_dir = ["tmp"]
+delay = 500
+stop_on_error = true
+# SIGINT first so the worker drains in-flight tasks, then SIGKILL after 2s.
+send_interrupt = true
+kill_delay = "2s"
+
+[log]
+time = true

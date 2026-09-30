@@ -1,7 +1,30 @@
+# Settings shared by every pattern worker; each worker service merges them
+# with `<<: *worker` and adds its own `build`.
+x-worker: &worker
+  environment:
+    TEMPORAL_ADDRESS: temporal:7233
+    NATS_URL: nats://nats:4222
+    HEALTH_PORT: 8080
+  depends_on:
+    temporal:
+      condition: service_healthy
+    nats:
+      condition: service_healthy
+  healthcheck:
+    test: ["CMD", "/usr/local/bin/worker", "-healthcheck"]
+    interval: 10s
+    timeout: 5s
+    retries: 3
+    start_period: 10s
+  deploy:
+    resources:
+      limits:
+        memory: 64M
+  restart: on-failure
+
 services:
   temporal:
     image: temporalio/temporal:1.9.1
-    pull_policy: missing
     command:
       - server
       - start-dev
@@ -29,8 +52,7 @@ services:
 
   nats:
     image: nats:2.15-alpine
-    pull_policy: missing
-    command: ["-js", "-m", "8222"]
+    command: ["-m", "8222"] # monitoring port, probed by the healthcheck
     ports:
       - "4222:4222" # client protocol — workers & frontend
     healthcheck:
@@ -67,83 +89,31 @@ services:
       resources:
         limits:
           memory: 256M
-    restart: unless-stopped
+    restart: on-failure
 
   worker-saga:
+    <<: *worker
     build:
       context: ./workers
       dockerfile: saga/Dockerfile
-    environment:
-      TEMPORAL_ADDRESS: temporal:7233
-      NATS_URL: nats://nats:4222
-      HEALTH_PORT: 8080
-    depends_on:
-      temporal:
-        condition: service_healthy
-      nats:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "/usr/local/bin/worker", "-healthcheck"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
-    deploy:
-      resources:
-        limits:
-          memory: 64M
-    restart: unless-stopped
 
   worker-batch:
+    <<: *worker
     build:
       context: ./workers
       dockerfile: batch/Dockerfile
-    environment:
-      TEMPORAL_ADDRESS: temporal:7233
-      NATS_URL: nats://nats:4222
-      HEALTH_PORT: 8080
-    depends_on:
-      temporal:
-        condition: service_healthy
-      nats:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "/usr/local/bin/worker", "-healthcheck"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
+    # The merge key is shallow, so `deploy` is restated in full to add replicas.
     deploy:
       replicas: ${BATCH_WORKER_REPLICAS:-1}
       resources:
         limits:
           memory: 64M
-    restart: unless-stopped
 
   worker-agent:
+    <<: *worker
     build:
       context: ./workers
       dockerfile: agent/Dockerfile
-    environment:
-      TEMPORAL_ADDRESS: temporal:7233
-      NATS_URL: nats://nats:4222
-      HEALTH_PORT: 8080
-    depends_on:
-      temporal:
-        condition: service_healthy
-      nats:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "/usr/local/bin/worker", "-healthcheck"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
-    deploy:
-      resources:
-        limits:
-          memory: 64M
-    restart: unless-stopped
 
   codec-server:
     build:
@@ -160,104 +130,28 @@ services:
       resources:
         limits:
           memory: 64M
-    restart: unless-stopped
+    restart: on-failure
 
   worker-encryption:
+    <<: *worker
     build:
       context: ./workers
       dockerfile: encryption/Dockerfile
-    environment:
-      TEMPORAL_ADDRESS: temporal:7233
-      NATS_URL: nats://nats:4222
-      HEALTH_PORT: 8080
-    depends_on:
-      temporal:
-        condition: service_healthy
-      nats:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "/usr/local/bin/worker", "-healthcheck"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
-    deploy:
-      resources:
-        limits:
-          memory: 64M
-    restart: unless-stopped
 
   worker-multi-agent:
+    <<: *worker
     build:
       context: ./workers
       dockerfile: multi-agent/Dockerfile
-    environment:
-      TEMPORAL_ADDRESS: temporal:7233
-      NATS_URL: nats://nats:4222
-      HEALTH_PORT: 8080
-    depends_on:
-      temporal:
-        condition: service_healthy
-      nats:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "/usr/local/bin/worker", "-healthcheck"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
-    deploy:
-      resources:
-        limits:
-          memory: 64M
-    restart: unless-stopped
 
   worker-entity:
+    <<: *worker
     build:
       context: ./workers
       dockerfile: entity/Dockerfile
-    environment:
-      TEMPORAL_ADDRESS: temporal:7233
-      NATS_URL: nats://nats:4222
-      HEALTH_PORT: 8080
-    depends_on:
-      temporal:
-        condition: service_healthy
-      nats:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "/usr/local/bin/worker", "-healthcheck"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
-    deploy:
-      resources:
-        limits:
-          memory: 64M
-    restart: unless-stopped
 
   worker-priority-fairness:
+    <<: *worker
     build:
       context: ./workers
       dockerfile: priority-fairness/Dockerfile
-    environment:
-      TEMPORAL_ADDRESS: temporal:7233
-      NATS_URL: nats://nats:4222
-      HEALTH_PORT: 8080
-    depends_on:
-      temporal:
-        condition: service_healthy
-      nats:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD", "/usr/local/bin/worker", "-healthcheck"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
-      start_period: 10s
-    deploy:
-      resources:
-        limits:
-          memory: 64M
-    restart: unless-stopped

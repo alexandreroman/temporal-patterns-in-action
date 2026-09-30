@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import type { ArchState, EdgeState, NodeState } from "~/types/architecture";
+import type { ArchState, EdgeKey, EdgeState, NodeState } from "~/types/architecture";
 
-defineProps<{
+const props = defineProps<{
   arch: ArchState;
   serviceLabels: [string, string, string, string];
   workerLabel: string;
@@ -41,6 +41,32 @@ const edgeAnim: Record<EdgeState, string> = {
   warn: "edge-flow-active",
   error: "edge-flow-error",
 };
+
+// Service slots stacked on the right; `label` indexes the serviceLabels prop.
+const SERVICES = [
+  { key: "s1", label: 0, y: 8 },
+  { key: "s2", label: 1, y: 56 },
+  { key: "s3", label: 2, y: 104 },
+  { key: "s4", label: 3, y: 152 },
+] as const;
+
+const EDGES: ReadonlyArray<{ key: EdgeKey; x1: number; y1: number; x2: number; y2: number }> = [
+  { key: "ui_tmp", x1: 140, y1: 100, x2: 188, y2: 100 },
+  { key: "tmp_wk", x1: 320, y1: 100, x2: 353, y2: 100 },
+  { key: "wk_s1", x1: 485, y1: 88, x2: 528, y2: 28 },
+  { key: "wk_s2", x1: 485, y1: 95, x2: 528, y2: 76 },
+  { key: "wk_s3", x1: 485, y1: 105, x2: 528, y2: 124 },
+  { key: "wk_s4", x1: 485, y1: 112, x2: 528, y2: 172 },
+];
+
+function edgeClass(state: EdgeState): string[] {
+  return [edgeStroke[state], props.arch.running ? edgeAnim[state] : ""];
+}
+
+// Dashes only while data flows, so a settled or failed edge reads as solid.
+function edgeDash(state: EdgeState): string {
+  return props.arch.running && state !== "idle" && state !== "error" ? "6 4" : "none";
+}
 </script>
 
 <template>
@@ -184,95 +210,26 @@ const edgeAnim: Record<EdgeState, string> = {
       </g>
     </template>
 
-    <!-- Service 1 -->
-    <g>
+    <!-- Services -->
+    <g v-for="service in SERVICES" :key="service.key">
       <rect
         x="530"
-        y="8"
+        :y="service.y"
         width="120"
         height="40"
         rx="8"
         class="transition-all duration-300"
-        :class="[nodeFill[arch.nodes.s1], nodeStroke[arch.nodes.s1]]"
+        :class="[nodeFill[arch.nodes[service.key]], nodeStroke[arch.nodes[service.key]]]"
         stroke-width="1"
       />
       <text
         x="590"
-        y="28"
+        :y="service.y + 20"
         text-anchor="middle"
         dominant-baseline="central"
         class="fill-slate-800 dark:fill-slate-100 text-[11px] font-medium"
       >
-        {{ serviceLabels[0] }}
-      </text>
-    </g>
-
-    <!-- Service 2 -->
-    <g>
-      <rect
-        x="530"
-        y="56"
-        width="120"
-        height="40"
-        rx="8"
-        class="transition-all duration-300"
-        :class="[nodeFill[arch.nodes.s2], nodeStroke[arch.nodes.s2]]"
-        stroke-width="1"
-      />
-      <text
-        x="590"
-        y="76"
-        text-anchor="middle"
-        dominant-baseline="central"
-        class="fill-slate-800 dark:fill-slate-100 text-[11px] font-medium"
-      >
-        {{ serviceLabels[1] }}
-      </text>
-    </g>
-
-    <!-- Service 3 -->
-    <g>
-      <rect
-        x="530"
-        y="104"
-        width="120"
-        height="40"
-        rx="8"
-        class="transition-all duration-300"
-        :class="[nodeFill[arch.nodes.s3], nodeStroke[arch.nodes.s3]]"
-        stroke-width="1"
-      />
-      <text
-        x="590"
-        y="124"
-        text-anchor="middle"
-        dominant-baseline="central"
-        class="fill-slate-800 dark:fill-slate-100 text-[11px] font-medium"
-      >
-        {{ serviceLabels[2] }}
-      </text>
-    </g>
-
-    <!-- Service 4 -->
-    <g>
-      <rect
-        x="530"
-        y="152"
-        width="120"
-        height="40"
-        rx="8"
-        class="transition-all duration-300"
-        :class="[nodeFill[arch.nodes.s4], nodeStroke[arch.nodes.s4]]"
-        stroke-width="1"
-      />
-      <text
-        x="590"
-        y="172"
-        text-anchor="middle"
-        dominant-baseline="central"
-        class="fill-slate-800 dark:fill-slate-100 text-[11px] font-medium"
-      >
-        {{ serviceLabels[3] }}
+        {{ serviceLabels[service.label] }}
       </text>
     </g>
 
@@ -289,86 +246,17 @@ const edgeAnim: Record<EdgeState, string> = {
 
     <!-- Edges -->
     <line
-      x1="140"
-      y1="100"
-      x2="188"
-      y2="100"
+      v-for="edge in EDGES"
+      :key="edge.key"
+      :x1="edge.x1"
+      :y1="edge.y1"
+      :x2="edge.x2"
+      :y2="edge.y2"
       fill="none"
       class="transition-all duration-300"
-      :class="[edgeStroke[arch.edges.ui_tmp], arch.running ? edgeAnim[arch.edges.ui_tmp] : '']"
-      :stroke-width="arch.edges.ui_tmp !== 'idle' ? 3 : 2"
-      :stroke-dasharray="
-        arch.running && arch.edges.ui_tmp !== 'idle' && arch.edges.ui_tmp !== 'error'
-          ? '6 4'
-          : 'none'
-      "
-    />
-    <line
-      x1="320"
-      y1="100"
-      x2="353"
-      y2="100"
-      fill="none"
-      class="transition-all duration-300"
-      :class="[edgeStroke[arch.edges.tmp_wk], arch.running ? edgeAnim[arch.edges.tmp_wk] : '']"
-      :stroke-width="arch.edges.tmp_wk !== 'idle' ? 3 : 2"
-      :stroke-dasharray="
-        arch.running && arch.edges.tmp_wk !== 'idle' && arch.edges.tmp_wk !== 'error'
-          ? '6 4'
-          : 'none'
-      "
-    />
-    <line
-      x1="485"
-      y1="88"
-      x2="528"
-      y2="28"
-      fill="none"
-      class="transition-all duration-300"
-      :class="[edgeStroke[arch.edges.wk_s1], arch.running ? edgeAnim[arch.edges.wk_s1] : '']"
-      :stroke-width="arch.edges.wk_s1 !== 'idle' ? 3 : 2"
-      :stroke-dasharray="
-        arch.running && arch.edges.wk_s1 !== 'idle' && arch.edges.wk_s1 !== 'error' ? '6 4' : 'none'
-      "
-    />
-    <line
-      x1="485"
-      y1="95"
-      x2="528"
-      y2="76"
-      fill="none"
-      class="transition-all duration-300"
-      :class="[edgeStroke[arch.edges.wk_s2], arch.running ? edgeAnim[arch.edges.wk_s2] : '']"
-      :stroke-width="arch.edges.wk_s2 !== 'idle' ? 3 : 2"
-      :stroke-dasharray="
-        arch.running && arch.edges.wk_s2 !== 'idle' && arch.edges.wk_s2 !== 'error' ? '6 4' : 'none'
-      "
-    />
-    <line
-      x1="485"
-      y1="105"
-      x2="528"
-      y2="124"
-      fill="none"
-      class="transition-all duration-300"
-      :class="[edgeStroke[arch.edges.wk_s3], arch.running ? edgeAnim[arch.edges.wk_s3] : '']"
-      :stroke-width="arch.edges.wk_s3 !== 'idle' ? 3 : 2"
-      :stroke-dasharray="
-        arch.running && arch.edges.wk_s3 !== 'idle' && arch.edges.wk_s3 !== 'error' ? '6 4' : 'none'
-      "
-    />
-    <line
-      x1="485"
-      y1="112"
-      x2="528"
-      y2="172"
-      fill="none"
-      class="transition-all duration-300"
-      :class="[edgeStroke[arch.edges.wk_s4], arch.running ? edgeAnim[arch.edges.wk_s4] : '']"
-      :stroke-width="arch.edges.wk_s4 !== 'idle' ? 3 : 2"
-      :stroke-dasharray="
-        arch.running && arch.edges.wk_s4 !== 'idle' && arch.edges.wk_s4 !== 'error' ? '6 4' : 'none'
-      "
+      :class="edgeClass(arch.edges[edge.key])"
+      :stroke-width="arch.edges[edge.key] !== 'idle' ? 3 : 2"
+      :stroke-dasharray="edgeDash(arch.edges[edge.key])"
     />
   </svg>
 </template>

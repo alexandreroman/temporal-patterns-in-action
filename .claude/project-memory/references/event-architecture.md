@@ -34,7 +34,7 @@ separate field — via the rule:
 otherwise → `business`. Progress types follow
 `progress.<subtype>` (shared across patterns);
 business types follow `<pattern>.<subtype>`
-(e.g. `saga.inventory.reserved`). The
+(e.g. `saga.fraud.checked`). The
 asymmetry is intentional: pattern-prefixing
 business types eliminates any possible
 `type`-string collision between patterns, while
@@ -55,8 +55,11 @@ registers only an **activity-inbound**
 interceptor that publishes
 `progress.step.started|completed|failed`
 directly to NATS (activity context allows I/O).
+It skips local activities: those are
+orchestration plumbing (priority-fairness
+announces and dispatch), not demo steps.
 Business events stay explicit in activity code
-(e.g. `saga.inventory.reserved`).
+(e.g. `saga.fraud.checked`).
 
 **Why:** a workflow-scope publish would require
 a local activity (the SDK forbids direct I/O
@@ -78,9 +81,11 @@ package — removing any of those is a regression.
 `progress.workflow.failed` are **not** emitted
 by the worker. The SSE endpoint at
 `frontend/server/api/patterns/[pattern]/[id]/events.get.ts`
-opens a background `handle.result()` watcher on
-the Temporal workflow; when the workflow
-terminates, the endpoint pushes one synthetic
+polls the workflow with `describe()` every
+500 ms — not `handle.result()`: the result
+payload may be encrypted and the server-side
+client has no codec. When the status leaves
+RUNNING, the endpoint pushes one synthetic
 envelope into the SSE stream (not onto NATS).
 
 Because the SSE stream opens *before* the
@@ -90,7 +95,7 @@ with 250 ms backoff up to 30 s to tolerate
 `WorkflowNotFoundError`. Once the workflow
 exists, it either emits the terminal event
 immediately (if describe already reports a
-terminal status) or awaits `result()`. Non-
+terminal status) or keeps polling. Non-
 `COMPLETED` terminal statuses (CANCELLED,
 TERMINATED, TIMED_OUT, FAILED) are surfaced as
 `progress.workflow.failed` with
@@ -115,8 +120,8 @@ not emitted. The frontend derives equivalents:
 - **Compensation state** — components set
   `compensating = true` on the first
   `progress.step.started` whose step is a
-  *compensation* activity (release-inventory,
-  refund-payment, cancel-shipment). Do **not**
+  *compensation* activity (release-fraud-hold,
+  cancel-shipment, refund-customer). Do **not**
   flip the flag on `progress.step.failed` for
   a forward step: the worker interceptor emits
   that event on every retry attempt, so a
@@ -146,11 +151,10 @@ which would expose Go method names.
 **Why:** the `step` field in `progress.step.*`
 events comes from
 `activity.GetInfo().ActivityType.Name`; the
-frontend timeline and the pre-existing saga
-`Progress.CurrentStep` query use kebab-case.
-Using the struct form would publish `ReserveCar`
-while the UI expects `reserve-car`, silently
-breaking the timeline.
+frontend timeline and step highlights use
+kebab-case. The struct form would publish
+`CheckFraud` while the UI expects `check-fraud`,
+silently breaking the timeline.
 
 **How to apply:** when adding a new pattern,
 register each activity method individually with
@@ -172,8 +176,8 @@ error and substitutes `events.NopPublisher{}`
 so the worker stays runnable without NATS for
 local dev and unit tests. Patterns that opt out
 of `RunWorker` and build their own worker setup
-(today: `workers/encryption/cmd/worker/main.go`,
-which dials two clients for the clear and
+(`workers/encryption/cmd/worker/main.go`, which
+dials two clients for the clear and
 encrypted task queues) must replicate the same
 catch-and-substitute pattern in their own
 `main`. `workers/priority-fairness/cmd/worker/
@@ -195,6 +199,7 @@ pattern could choose to fail fast instead.
 The current subject hierarchy is JetStream-ready:
 if replay, durable consumers, or restart survival
 become needed, declare a stream per pattern
-(`subjects=patterns.<name>.>`) and switch the
-publisher to `js.Publish` — no subject or envelope
-changes required.
+(`subjects=patterns.<name>.>`), enable JetStream
+on the `nats` compose service (`-js`), and switch
+the publisher to `js.Publish` — no subject or
+envelope changes required.

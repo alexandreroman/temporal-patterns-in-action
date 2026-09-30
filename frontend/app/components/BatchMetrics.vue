@@ -22,13 +22,10 @@ interface Metrics {
   queued: number;
 }
 
-const props = withDefaults(
-  defineProps<{
-    events: EventEnvelope[];
-    total?: number;
-  }>(),
-  { total: 48 },
-);
+const props = defineProps<{
+  events: EventEnvelope[];
+  total: number;
+}>();
 
 interface LastItemEvent {
   type: string;

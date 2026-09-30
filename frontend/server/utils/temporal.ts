@@ -26,50 +26,44 @@ const { Client, Connection, WorkflowNotFoundError } = requireFromServerEntry(
   "@temporalio/client",
 ) as typeof TemporalClient;
 
-// The bindings above are values only; alias the classes so the same names keep
-// working as types.
+// The binding above is a value only; alias the class so the same name keeps
+// working as a type.
 type Client = TemporalClient.Client;
-type Connection = TemporalClient.Connection;
 
 // Re-exported so the whole server shares this single load: a second require
 // would yield a distinct class identity and silently break `instanceof`.
 export { WorkflowNotFoundError };
 
 let plainClient: Promise<Client> | null = null;
-let encryptedClient: Promise<Client> | null = null;
-
-async function buildConnection(): Promise<Connection> {
-  const address = process.env.TEMPORAL_ADDRESS ?? "localhost:7233";
-  return Connection.connect({ address });
-}
-
-function namespace(): string {
-  return process.env.TEMPORAL_NAMESPACE ?? "default";
-}
 
 export function getTemporalClient(): Promise<Client> {
   if (plainClient !== null) return plainClient;
-  plainClient = (async () => {
-    const connection = await buildConnection();
-    return new Client({ connection, namespace: namespace() });
-  })();
+  const address = process.env.TEMPORAL_ADDRESS ?? "localhost:7233";
+  const namespace = process.env.TEMPORAL_NAMESPACE ?? "default";
+  plainClient = Connection.connect({ address })
+    .then((connection) => new Client({ connection, namespace }))
+    .catch((error) => {
+      // Drop the failed dial so the next caller retries instead of reusing
+      // the rejected promise forever.
+      plainClient = null;
+      throw error;
+    });
   return plainClient;
 }
 
 // Returns a Client whose data converter applies the AES-256-GCM codec on the
 // way to Temporal. Used only by the encryption pattern's encrypted scenario;
 // every other caller uses getTemporalClient() and sees raw payloads.
-export function getEncryptedTemporalClient(): Promise<Client> {
-  if (encryptedClient !== null) return encryptedClient;
-  encryptedClient = (async () => {
-    const connection = await buildConnection();
-    return new Client({
-      connection,
-      namespace: namespace(),
-      dataConverter: { payloadCodecs: [new EncryptionCodec(DEMO_KEY)] },
-    });
-  })();
-  return encryptedClient;
+//
+// Clients are cheap, connections are not: this one shares the plain client's
+// connection and namespace instead of dialing Temporal a second time.
+export async function getEncryptedTemporalClient(): Promise<Client> {
+  const plain = await getTemporalClient();
+  return new Client({
+    connection: plain.connection,
+    namespace: plain.options.namespace,
+    dataConverter: { payloadCodecs: [new EncryptionCodec(DEMO_KEY)] },
+  });
 }
 
 export const SAGA_TASK_QUEUE = "patterns-saga";

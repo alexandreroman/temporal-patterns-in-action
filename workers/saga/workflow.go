@@ -28,19 +28,14 @@ func OrderProcessingWorkflow(ctx workflow.Context, input OrderInput) (OrderResul
 	ctx = workflow.WithActivityOptions(ctx, ao)
 	logger := workflow.GetLogger(ctx)
 
-	result := OrderResult{
-		OrderID: input.OrderID,
-		Status:  "pending",
-	}
+	result := OrderResult{OrderID: input.OrderID}
 
 	var a *Activities
 	var compensations []func(workflow.Context) error
 
 	runCompensations := func() {
-		disconnected, _ := workflow.NewDisconnectedContext(ctx)
-		compCtx := workflow.WithActivityOptions(disconnected, workflow.ActivityOptions{
-			StartToCloseTimeout: 6 * time.Second,
-		})
+		// The disconnected context keeps ctx's activity options.
+		compCtx, _ := workflow.NewDisconnectedContext(ctx)
 		for i := len(compensations) - 1; i >= 0; i-- {
 			if err := compensations[i](compCtx); err != nil {
 				logger.Error("compensation failed", "error", err)
@@ -51,9 +46,8 @@ func OrderProcessingWorkflow(ctx workflow.Context, input OrderInput) (OrderResul
 	// Step 1 — check fraud
 	var checkID string
 	if err := workflow.ExecuteActivity(ctx, a.CheckFraud, txID, input).Get(ctx, &checkID); err != nil {
-		result.Status = "failed"
 		runCompensations()
-		return result, err
+		return OrderResult{}, err
 	}
 	compensations = append(compensations, func(c workflow.Context) error {
 		return workflow.ExecuteActivity(c, a.ReleaseFraudHold, txID, checkID).Get(c, nil)
@@ -63,9 +57,8 @@ func OrderProcessingWorkflow(ctx workflow.Context, input OrderInput) (OrderResul
 	// Step 2 — prepare shipment
 	var shipmentID string
 	if err := workflow.ExecuteActivity(ctx, a.PrepareShipment, txID, input, checkID).Get(ctx, &shipmentID); err != nil {
-		result.Status = "failed"
 		runCompensations()
-		return result, err
+		return OrderResult{}, err
 	}
 	compensations = append(compensations, func(c workflow.Context) error {
 		return workflow.ExecuteActivity(c, a.CancelShipment, txID, shipmentID).Get(c, nil)
@@ -75,9 +68,8 @@ func OrderProcessingWorkflow(ctx workflow.Context, input OrderInput) (OrderResul
 	// Step 3 — charge customer
 	var paymentID string
 	if err := workflow.ExecuteActivity(ctx, a.ChargeCustomer, txID, input, shipmentID).Get(ctx, &paymentID); err != nil {
-		result.Status = "failed"
 		runCompensations()
-		return result, err
+		return OrderResult{}, err
 	}
 	compensations = append(compensations, func(c workflow.Context) error {
 		return workflow.ExecuteActivity(c, a.RefundCustomer, txID, paymentID, input.Amount).Get(c, nil)
@@ -87,9 +79,8 @@ func OrderProcessingWorkflow(ctx workflow.Context, input OrderInput) (OrderResul
 	// Step 4 — send confirmation
 	var email string
 	if err := workflow.ExecuteActivity(ctx, a.SendConfirmation, txID, input).Get(ctx, &email); err != nil {
-		result.Status = "failed"
 		runCompensations()
-		return result, err
+		return OrderResult{}, err
 	}
 	result.Confirmed = append(result.Confirmed, email)
 	result.Status = "completed"

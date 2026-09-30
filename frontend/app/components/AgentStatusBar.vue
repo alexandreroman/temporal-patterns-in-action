@@ -1,25 +1,23 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { EventEnvelope } from "~~/shared/events";
-import type { StatusTone } from "~/types/status-bar";
-
-interface Derived {
-  tone: StatusTone;
-  message: string;
-}
+import type { StatusState, StatusTone } from "~/types/status-bar";
 
 const props = defineProps<{
   events: EventEnvelope[];
 }>();
 
-const derived = computed<Derived>(() => {
+const derived = computed<StatusState>(() => {
   if (props.events.length === 0) {
     return { tone: "idle", message: "Ready — choose a scenario and run" };
   }
 
   let tone: StatusTone = "running";
   let message = "Starting agent…";
-  let awaitingApproval = false;
+  // Set by agent.approval.received: whether the human rejected the plan, or
+  // approved it and the agent is resuming.
+  let rejected = false;
+  let resumed = false;
 
   for (const env of props.events) {
     const data = env.data as Record<string, unknown>;
@@ -27,7 +25,7 @@ const derived = computed<Derived>(() => {
       case "progress.step.started":
         if (data.step === "call-llm") {
           tone = "running";
-          message = awaitingApproval ? "Resuming — LLM reasoning" : "LLM reasoning…";
+          message = resumed ? "Resuming — LLM reasoning" : "LLM reasoning…";
         } else if (data.step === "execute-mcp-tool") {
           tone = "running";
           message = "MCP tool running…";
@@ -45,10 +43,10 @@ const derived = computed<Derived>(() => {
       case "agent.approval.requested":
         tone = "running";
         message = "Workflow durably waiting for approval…";
-        awaitingApproval = true;
         break;
       case "agent.approval.received":
-        awaitingApproval = false;
+        rejected = !data.approved;
+        resumed = !!data.approved;
         tone = "running";
         message = data.approved ? "Approved — resuming agent" : "Rejected — stopping";
         break;
@@ -58,7 +56,7 @@ const derived = computed<Derived>(() => {
         break;
       case "progress.workflow.failed":
         tone = "error";
-        message = awaitingApproval
+        message = rejected
           ? "Agent stopped — plan rejected"
           : `Agent failed: ${String(data.error ?? "")}`;
         break;

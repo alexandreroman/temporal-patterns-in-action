@@ -43,7 +43,7 @@ func HandleHealthcheck() {
 }
 
 // ServeHealth starts the /healthz server in a goroutine when HEALTH_PORT is
-// set. Safe to call multiple times — no-op when the env var is empty.
+// set. No-op when the env var is empty.
 func ServeHealth() {
 	if port := healthPort(); port > 0 {
 		go serveHealth(port)
@@ -73,8 +73,8 @@ func RunWorker(pattern, taskQueue string, register func(w worker.Worker, publish
 		address = "localhost:7233"
 	}
 
-	natsURL, ok := os.LookupEnv("NATS_URL")
-	if !ok {
+	natsURL := os.Getenv("NATS_URL")
+	if natsURL == "" {
 		natsURL = "nats://localhost:4222"
 	}
 

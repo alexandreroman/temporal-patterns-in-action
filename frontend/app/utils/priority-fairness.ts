@@ -39,9 +39,8 @@ export const PRIORITIES = [
   { key: 4, label: "P3", meaning: "low", bg: "#B0AEA4", fg: "#2A2A28" },
 ] as const satisfies readonly PriorityLevel[];
 
-export const NUM_AGENTS = 4;
-export const TICK_MS = 250;
-export const HISTORY_LEN = 80; // 20 s × 4 ticks/s
+/** Time span shown by the resolution swim-lane chart. */
+export const WINDOW_MS = 20_000;
 export const TICKET_HISTORY_CAP = 256;
 
 export type AgentSlot = "A1" | "A2" | "A3" | "A4";
@@ -57,8 +56,6 @@ export interface Agent {
   slot: AgentSlot;
   ticket: Ticket | null;
   tenant: TenantId | null;
-  progress: number;
-  duration: number;
 }
 
 export interface LogEntry {

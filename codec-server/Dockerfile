@@ -5,8 +5,11 @@ FROM golang:1.27-alpine AS build
 WORKDIR /src
 ENV CGO_ENABLED=0 \
     GOOS=linux
-COPY workers ./workers
-COPY codec-server ./codec-server
+# Both manifests are needed to resolve the module graph: codec-server's
+# go.mod replaces the workers module with ../workers. Copying only the
+# manifests first keeps the download layer cached across source edits.
+COPY workers/go.mod workers/go.sum ./workers/
+COPY codec-server/go.mod codec-server/go.sum ./codec-server/
 WORKDIR /src/codec-server
 # Explicit id= on the cache mounts is required: under podman/buildah an
 # id-less type=cache mount on the Go module cache breaks `go build` module
@@ -15,9 +18,11 @@ WORKDIR /src/codec-server
 # and both caches persist across builds. Same rule as the worker Dockerfiles.
 RUN --mount=type=cache,id=gomod,target=/go/pkg/mod \
     go mod download
+COPY workers /src/workers
+COPY codec-server /src/codec-server
 RUN --mount=type=cache,id=gomod,target=/go/pkg/mod \
     --mount=type=cache,id=gobuild,target=/root/.cache/go-build \
-    go build -ldflags='-s -w' -o /out/codec-server .
+    go build -trimpath -ldflags='-s -w' -o /out/codec-server .
 
 FROM gcr.io/distroless/static-debian13:nonroot
 COPY --from=build /out/codec-server /usr/local/bin/codec-server

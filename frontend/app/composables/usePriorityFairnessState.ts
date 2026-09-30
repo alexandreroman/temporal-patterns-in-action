@@ -2,7 +2,6 @@ import { computed, type ComputedRef, type Ref } from "vue";
 import type { EventEnvelope } from "~~/shared/events";
 import {
   AGENT_SLOTS,
-  NUM_AGENTS,
   TICKET_HISTORY_CAP,
   type Agent,
   type AgentSlot,
@@ -22,13 +21,7 @@ export function usePriorityFairnessState(events: Ref<EventEnvelope[]>): Computed
 }
 
 function freshAgents(): Agent[] {
-  return AGENT_SLOTS.slice(0, NUM_AGENTS).map((slot) => ({
-    slot,
-    ticket: null,
-    tenant: null,
-    progress: 0,
-    duration: 0,
-  }));
+  return AGENT_SLOTS.map((slot) => ({ slot, ticket: null, tenant: null }));
 }
 
 function emptyQueues(): Record<TenantId, Ticket[]> {
@@ -50,14 +43,8 @@ interface SeededPayload {
   tenants?: Partial<Record<TenantId, Ticket[]>>;
 }
 
-interface AssignedPayload {
-  tenant?: TenantId;
-  ticketId?: string;
-  priority?: PriorityKey;
-  agent?: AgentSlot;
-}
-
-interface ResolvedPayload {
+/** Payload of helpdesk.ticket.assigned and helpdesk.ticket.resolved. */
+interface TicketPayload {
   tenant?: TenantId;
   ticketId?: string;
   priority?: PriorityKey;
@@ -79,10 +66,10 @@ function deriveState(events: readonly EventEnvelope[]): SimState {
       // tickets. The event remains useful for the event-stream log and
       // code-viewer highlight.
       case "helpdesk.ticket.assigned":
-        applyAssigned(state, env.data as AssignedPayload, time);
+        applyAssigned(state, env.data as TicketPayload, time);
         break;
       case "helpdesk.ticket.resolved":
-        applyResolved(state, env.data as ResolvedPayload, time);
+        applyResolved(state, env.data as TicketPayload, time);
         break;
     }
   }
@@ -102,7 +89,7 @@ function applySeed(state: SimState, data: SeededPayload, time: number): void {
   };
 }
 
-function applyAssigned(state: SimState, data: AssignedPayload, time: number): void {
+function applyAssigned(state: SimState, data: TicketPayload, time: number): void {
   if (!data.tenant || !data.agent || !data.ticketId) return;
   const queue = state.queues[data.tenant];
   const idx = queue.findIndex((t) => t.id === data.ticketId);
@@ -116,11 +103,6 @@ function applyAssigned(state: SimState, data: AssignedPayload, time: number): vo
   if (!agent) return;
   agent.ticket = ticket;
   agent.tenant = data.tenant;
-  // duration=1, progress=1 keeps the worker card's bar fully filled while
-  // busy — we don't have sub-second progress from the backend, so the bar
-  // simply represents "agent occupied" rather than ticket completion %.
-  agent.duration = 1;
-  agent.progress = 1;
   state.ticketHistory.push({
     ticketId: data.ticketId,
     agent: data.agent,
@@ -141,14 +123,12 @@ function applyAssigned(state: SimState, data: AssignedPayload, time: number): vo
   });
 }
 
-function applyResolved(state: SimState, data: ResolvedPayload, time: number): void {
+function applyResolved(state: SimState, data: TicketPayload, time: number): void {
   if (!data.tenant || !data.agent || !data.ticketId) return;
   const agent = state.agents.find((a) => a.slot === data.agent);
   if (agent) {
     agent.ticket = null;
     agent.tenant = null;
-    agent.progress = 0;
-    agent.duration = 0;
   }
   state.resolved[data.tenant] += 1;
 

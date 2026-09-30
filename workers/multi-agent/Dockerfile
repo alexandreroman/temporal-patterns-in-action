@@ -13,7 +13,7 @@ RUN --mount=type=cache,id=gomod,target=/go/pkg/mod \
 COPY . .
 RUN --mount=type=cache,id=gomod,target=/go/pkg/mod \
     --mount=type=cache,id=gobuild,target=/root/.cache/go-build \
-    go build -ldflags='-s -w' -o /out/worker ./multi-agent/cmd/worker
+    go build -trimpath -ldflags='-s -w' -o /out/worker ./multi-agent/cmd/worker
 
 FROM gcr.io/distroless/static-debian13:nonroot
 COPY --from=build /out/worker /usr/local/bin/worker

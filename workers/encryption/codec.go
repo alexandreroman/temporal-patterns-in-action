@@ -7,6 +7,7 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
+	"errors"
 	"fmt"
 	"io"
 
@@ -48,14 +49,14 @@ func (c *EncryptionCodec) Encode(payloads []*commonpb.Payload) ([]*commonpb.Payl
 		if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
 			return nil, fmt.Errorf("read nonce: %w", err)
 		}
-		sealed := gcm.Seal(nil, nonce, plaintext, nil)
 		out[i] = &commonpb.Payload{
 			Metadata: map[string][]byte{
 				"encoding":          []byte(metaEncoding),
 				"encryption-cipher": []byte(cipherName),
 				"encryption-key-id": []byte(keyID),
 			},
-			Data: append(nonce, sealed...),
+			// Seal appends to nonce, so Data is nonce||ciphertext||authTag.
+			Data: gcm.Seal(nonce, nonce, plaintext, nil),
 		}
 	}
 	return out, nil
@@ -76,7 +77,7 @@ func (c *EncryptionCodec) Decode(payloads []*commonpb.Payload) ([]*commonpb.Payl
 		}
 		ns := gcm.NonceSize()
 		if len(p.Data) < ns {
-			return nil, fmt.Errorf("payload too short for nonce")
+			return nil, errors.New("payload too short for nonce")
 		}
 		nonce, ciphertext := p.Data[:ns], p.Data[ns:]
 		plaintext, err := gcm.Open(nil, nonce, ciphertext, nil)

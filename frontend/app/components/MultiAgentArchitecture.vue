@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { EventEnvelope } from "~~/shared/events";
-import type { ArchState, EdgeKey, NodeKey } from "~/types/architecture";
+import type { EdgeKey, NodeKey } from "~/types/architecture";
 
 /**
  * Multi-agent architecture: UI -> Temporal -> Worker (parent wf) ->
@@ -18,17 +18,15 @@ const SEARCH_SERVICES: Array<{ node: NodeKey; edge: EdgeKey }> = [
   { node: "s4", edge: "wk_s4" },
 ];
 
+// Parent-side activities that call the LLM API (s1).
+const LLM_STEPS = new Set(["plan-research", "generate-queries", "synthesize-report"]);
+
 const props = defineProps<{
   events: EventEnvelope[];
 }>();
 
-const arch = computed<ArchState>(() => {
-  const nodes = initialNodes();
-  const edges = initialEdges();
-
-  let running = props.events.length > 0;
-
-  for (const env of props.events) {
+const arch = computed(() =>
+  foldArch(props.events, (env, nodes, edges) => {
     const data = env.data as Record<string, unknown>;
     const step = typeof data.step === "string" ? data.step : "";
     const qi = typeof data.queryIndex === "number" ? data.queryIndex : -1;
@@ -36,11 +34,7 @@ const arch = computed<ArchState>(() => {
 
     switch (env.type) {
       case "progress.step.started":
-        if (
-          step === "plan-research" ||
-          step === "generate-queries" ||
-          step === "synthesize-report"
-        ) {
+        if (LLM_STEPS.has(step)) {
           nodes.temporal = "active";
           nodes.worker = "active";
           nodes.s1 = "active";
@@ -49,11 +43,7 @@ const arch = computed<ArchState>(() => {
         break;
 
       case "progress.step.completed":
-        if (
-          step === "plan-research" ||
-          step === "generate-queries" ||
-          step === "synthesize-report"
-        ) {
+        if (LLM_STEPS.has(step)) {
           nodes.s1 = "ok";
           edges.wk_s1 = "idle";
         }
@@ -61,11 +51,7 @@ const arch = computed<ArchState>(() => {
 
       case "progress.step.failed":
         // Interceptor fires on every retry attempt — mark transient.
-        if (
-          step === "plan-research" ||
-          step === "generate-queries" ||
-          step === "synthesize-report"
-        ) {
+        if (LLM_STEPS.has(step)) {
           nodes.s1 = "warn";
           edges.wk_s1 = "warn";
         }
@@ -99,25 +85,9 @@ const arch = computed<ArchState>(() => {
         nodes.s1 = "ok";
         edges.wk_s1 = "idle";
         break;
-
-      case "progress.workflow.completed":
-        resetAll(nodes, edges);
-        running = false;
-        nodes.temporal = "ok";
-        nodes.ui = "ok";
-        break;
-
-      case "progress.workflow.failed":
-        applyWorkflowFailed(nodes, edges);
-        running = false;
-        break;
     }
-  }
-
-  if (running) applyRunningBaseline(nodes, edges);
-
-  return { nodes, edges, running };
-});
+  }),
+);
 </script>
 
 <template>

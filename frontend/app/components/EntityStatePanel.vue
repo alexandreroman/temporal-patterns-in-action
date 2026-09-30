@@ -61,8 +61,6 @@ const derived = computed<Derived>(() => {
         queriesAnswered++;
         break;
       case "progress.workflow.completed":
-        status = "Completed";
-        break;
       case "progress.workflow.failed":
         status = "Completed";
         break;

@@ -33,6 +33,11 @@ const topics = computed<Topic[]>(() => {
 
   for (const env of props.events) {
     const data = env.data as Record<string, unknown>;
+    // Per-search and per-child events address a card (and a query chip) by index.
+    const ti = typeof data.topicIndex === "number" ? data.topicIndex : -1;
+    const qi = typeof data.queryIndex === "number" ? data.queryIndex : -1;
+    const card = byIndex.get(ti);
+    const chip = card?.queries[qi];
 
     switch (env.type) {
       case "multi-agent.plan.ready": {
@@ -58,83 +63,46 @@ const topics = computed<Topic[]>(() => {
           const topic = t as Record<string, unknown>;
           const idx = typeof topic.topicIndex === "number" ? topic.topicIndex : -1;
           if (idx < 0) continue;
-          const card = byIndex.get(idx);
-          if (!card) continue;
+          const topicCard = byIndex.get(idx);
+          if (!topicCard) continue;
           const qs = Array.isArray(topic.queries) ? (topic.queries as unknown[]) : [];
-          card.queries = qs.map((q) => ({
+          topicCard.queries = qs.map((q) => ({
             text: String(q ?? ""),
             state: "idle" as ChipState,
           }));
-          if (typeof topic.topicName === "string" && topic.topicName) card.name = topic.topicName;
+          if (typeof topic.topicName === "string" && topic.topicName) {
+            topicCard.name = topic.topicName;
+          }
         }
         break;
       }
       case "multi-agent.fanout.started": {
-        for (const card of byIndex.values()) {
-          if (card.state === "idle") card.state = "running";
+        for (const topicCard of byIndex.values()) {
+          if (topicCard.state === "idle") topicCard.state = "running";
         }
         break;
       }
-      case "multi-agent.search.started": {
-        const ti = typeof data.topicIndex === "number" ? data.topicIndex : -1;
-        const qi = typeof data.queryIndex === "number" ? data.queryIndex : -1;
-        const card = byIndex.get(ti);
-        if (!card) break;
-        card.state = "running";
-        const chip = card.queries[qi];
+      case "multi-agent.search.started":
+        if (card) card.state = "running";
         if (chip) chip.state = "running";
         break;
-      }
-      case "multi-agent.search.completed": {
-        const ti = typeof data.topicIndex === "number" ? data.topicIndex : -1;
-        const qi = typeof data.queryIndex === "number" ? data.queryIndex : -1;
-        const card = byIndex.get(ti);
-        if (!card) break;
-        const chip = card.queries[qi];
+      case "multi-agent.search.completed":
         if (chip) chip.state = "ok";
         break;
-      }
-      case "multi-agent.search.failed": {
-        const ti = typeof data.topicIndex === "number" ? data.topicIndex : -1;
-        const qi = typeof data.queryIndex === "number" ? data.queryIndex : -1;
-        const card = byIndex.get(ti);
-        if (!card) break;
-        const chip = card.queries[qi];
+      case "multi-agent.search.failed":
         if (chip) chip.state = "failed";
         break;
-      }
-      case "multi-agent.child.completed": {
-        const ti = typeof data.topicIndex === "number" ? data.topicIndex : -1;
-        const card = byIndex.get(ti);
-        if (!card) break;
-        card.state = data.partial ? "partial" : "done";
+      case "multi-agent.child.completed":
+        if (card) card.state = data.partial ? "partial" : "done";
         break;
-      }
-      case "multi-agent.child.failed": {
-        const ti = typeof data.topicIndex === "number" ? data.topicIndex : -1;
-        const card = byIndex.get(ti);
-        if (!card) break;
-        card.state = "failed";
+      case "multi-agent.child.failed":
+        if (card) card.state = "failed";
         break;
-      }
     }
   }
 
   return [...byIndex.values()].sort((a, b) => a.index - b.index);
 });
-
-// Cards reuse the neutral slate border of the Stats panel at every state;
-// the tag label and per-query chips carry the running/done/partial/failed
-// signal on their own.
-const CARD_CLS = "border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/60";
-
-const TAG_LABEL: Record<CardState, string> = {
-  idle: "idle",
-  running: "running",
-  done: "done",
-  partial: "partial",
-  failed: "failed",
-};
 
 const CHIP_CLS: Record<ChipState, string> = {
   idle: "border-slate-200 bg-white text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300",
@@ -152,12 +120,14 @@ const CHIP_CLS: Record<ChipState, string> = {
       Reserve enough vertical space at the small breakpoint to fit two
       rows of wrapped pills, so the card height stays stable when the
       queries arrive. At lg+ flex-1 takes over and min-h is cleared.
+      Cards reuse the neutral slate border of the Stats panel at every state;
+      the state tag and per-query chips carry the running/done/partial/failed
+      signal on their own.
     -->
     <div
       v-for="topic in topics"
       :key="topic.index"
-      class="min-h-20 rounded-md border px-3 py-2 lg:min-h-0 lg:flex-1"
-      :class="CARD_CLS"
+      class="min-h-20 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 lg:min-h-0 lg:flex-1 dark:border-slate-700 dark:bg-slate-800/60"
     >
       <div class="flex items-center justify-between gap-2">
         <span class="text-xs font-medium text-slate-800 dark:text-slate-100">
@@ -166,7 +136,7 @@ const CHIP_CLS: Record<ChipState, string> = {
         <span
           class="rounded border border-slate-200 bg-white px-1.5 py-0.5 font-mono text-[10px] text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
         >
-          {{ TAG_LABEL[topic.state] }}
+          {{ topic.state }}
         </span>
       </div>
       <TransitionGroup

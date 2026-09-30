@@ -1,6 +1,5 @@
+import { BATCH_TOTAL } from "~~/shared/constants";
 import type { BatchStartRequest, BatchStartResponse } from "~~/shared/types";
-
-const TOTAL = 48;
 
 export default defineEventHandler(async (event): Promise<BatchStartResponse> => {
   const body = await readBody<BatchStartRequest>(event);
@@ -15,7 +14,7 @@ export default defineEventHandler(async (event): Promise<BatchStartResponse> => 
     args: [
       {
         batchId: body.batchId,
-        total: TOTAL,
+        total: BATCH_TOTAL,
         failureRate,
       },
     ],

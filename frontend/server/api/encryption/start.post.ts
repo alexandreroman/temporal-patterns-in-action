@@ -36,10 +36,9 @@ export default defineEventHandler(async (event): Promise<EncryptionStartResponse
   // Read history through the plain client (no codec) to show what Temporal
   // actually stored on the wire.
   const plain = await getTemporalClient();
-  const description = await handle.describe();
   const history = await plain.workflowService.getWorkflowExecutionHistory({
-    namespace: process.env.TEMPORAL_NAMESPACE ?? "default",
-    execution: { workflowId, runId: description.runId },
+    namespace: plain.options.namespace,
+    execution: { workflowId, runId: handle.firstExecutionRunId },
   });
   const firstPayload =
     history.history?.events?.[0]?.workflowExecutionStartedEventAttributes?.input?.payloads?.[0];

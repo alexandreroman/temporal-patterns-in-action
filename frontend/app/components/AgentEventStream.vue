@@ -11,6 +11,7 @@ function eventLabel(env: EventEnvelope): string {
   const step = typeof data.step === "string" ? data.step : "";
   const name = typeof data.name === "string" ? data.name : "";
   const error = typeof data.error === "string" ? data.error : "";
+  const attempt = typeof data.attempt === "number" ? data.attempt : null;
   const loop = typeof data.loop === "number" ? data.loop : null;
   const approved = Boolean(data.approved);
 
@@ -20,7 +21,7 @@ function eventLabel(env: EventEnvelope): string {
     case "progress.workflow.failed":
       return `Workflow failed: ${error}`;
     case "progress.step.started":
-      return `${step} started (attempt ${data.attempt})`;
+      return `${step} started (attempt ${attempt ?? 1})`;
     case "progress.step.completed":
       return `${step} completed`;
     case "progress.step.failed":
@@ -50,12 +51,9 @@ function dotColor(env: EventEnvelope): DotColor {
     const data = env.data as Record<string, unknown>;
     return data.approved ? "green" : "red";
   }
-  if (t === "agent.user.prompt" || t === "agent.llm.responded") return "blue";
-  if (t === "agent.tool.started") return "blue";
-  if (t === "agent.tool.completed" || t === "agent.plan.ready") return "green";
+  if (t === "agent.plan.ready") return "green";
   if (t.includes("failed")) return "red";
   if (t.includes("completed")) return "green";
-  if (t.includes("started")) return "blue";
   return "blue";
 }
 </script>

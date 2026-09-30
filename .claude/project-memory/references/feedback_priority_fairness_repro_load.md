@@ -1,5 +1,5 @@
 ---
-name: "Don't abort priority-fairness runs mid-flight when reproducing bugs"
+name: "Don't abort priority-fairness runs mid-flight"
 description: "Each priority-fairness scenario spawns ~120 top-level workflows; aborting reproductions before they drain piles workflows up on the dev Temporal server and may force a restart."
 type: feedback
 ---
@@ -15,7 +15,8 @@ hammer "Run scenario" in rapid succession just to
 amplify the race.
 
 **Why:** the dev Temporal server runs in a 512 MB
-container ([[event-architecture]] / `compose.yaml`).
+container (`compose.yaml`,
+`deploy.resources.limits.memory`).
 Each scenario adds 1 helpdesk workflow + 120 ticket
 workflows + dozens of long-poll waiters to the
 namespace. Aborting the SSE only stops the UI; the

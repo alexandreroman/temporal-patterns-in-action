@@ -1,33 +1,36 @@
 .DEFAULT_GOAL := app-up
 
-# Per-worktree dev-mode port isolation. When Casper assigns this workspace a
+# Per-worktree port isolation. When Casper assigns this workspace a
 # CASPER_PORT, the `compose-override` target (a dep of bootstrap, infra-up and
-# app-up) remaps the container host ports via compose.override.yaml, so even
-# `make dev` alone brings infra up on the CASPER_PORT-matched ports. We mirror
-# that here for the host-run dev processes so several worktrees can `make dev`
-# at once. The frontend listens on CASPER_PORT and both frontend and workers
-# reach the remapped infra (temporal +1, nats +3). Unset CASPER_PORT keeps the
-# default ports. compose.yaml hardcodes the in-container addresses, so
-# exporting these never affects the containers.
+# app-up) remaps the container host ports via compose.override.yaml: frontend
+# on CASPER_PORT, Temporal gRPC +1, Temporal Web UI +2, NATS +3 and Codec
+# Server +4. So even `make dev` alone brings infra up on the matching ports.
+#
+# The exports mirror that for the host-run dev processes, so several worktrees
+# can `make dev` at once: the frontend listens on CASPER_PORT and both frontend
+# and workers reach the remapped infra. compose.yaml hardcodes the in-container
+# addresses, so exporting these never affects the containers.
+#
+# The *_PORT variables are the host ports advertised by `make endpoints` and by
+# the workspace info panel that mirrors it. Unset CASPER_PORT keeps the
+# compose.yaml defaults.
+
+# cmux worktrees reuse the Casper port scheme.
+CASPER_PORT ?= $(CMUX_PORT)
+
 ifneq ($(CASPER_PORT),)
+# Exported so the compose-override recipe sees a CMUX_PORT fallback too.
+export CASPER_PORT
 export PORT             := $(CASPER_PORT)
 export TEMPORAL_ADDRESS := localhost:$(shell expr $(CASPER_PORT) + 1)
 export NATS_URL         := nats://localhost:$(shell expr $(CASPER_PORT) + 3)
-endif
-
-# Host ports advertised by `make endpoints`, and by the workspace info panel
-# that mirrors it. With CASPER_PORT set, compose.override.yaml remaps the
-# frontend to CASPER_PORT, the Temporal Web UI to CASPER_PORT+2 and the Codec
-# Server to CASPER_PORT+4 (see the compose-override target); otherwise the
-# compose.yaml defaults apply.
-ifneq ($(CASPER_PORT),)
-FRONTEND_PORT     := $(CASPER_PORT)
-TEMPORAL_UI_PORT  := $(shell expr $(CASPER_PORT) + 2)
-CODEC_SERVER_PORT := $(shell expr $(CASPER_PORT) + 4)
+FRONTEND_PORT           := $(CASPER_PORT)
+TEMPORAL_UI_PORT        := $(shell expr $(CASPER_PORT) + 2)
+CODEC_SERVER_PORT       := $(shell expr $(CASPER_PORT) + 4)
 else
-FRONTEND_PORT     := 3000
-TEMPORAL_UI_PORT  := 8233
-CODEC_SERVER_PORT := 8888
+FRONTEND_PORT           := 3000
+TEMPORAL_UI_PORT        := 8233
+CODEC_SERVER_PORT       := 8888
 endif
 
 ##@ Infra
@@ -89,7 +92,7 @@ endef
 app-up: compose-override ## Build and run the full stack (infra, frontend, workers) in containers
 	@$(MAKE) -s endpoints
 	@$(publish-endpoints)
-	docker-compose up
+	docker-compose up --build
 
 .PHONY: app-down
 app-down: ## Stop the full stack and remove containers
@@ -124,6 +127,7 @@ dev: infra-up ## Start infra, then run the frontend and all workers in parallel 
 check: ## Run all checks across modules
 	$(MAKE) -C frontend check
 	$(MAKE) -C workers check
+	cd codec-server && go vet ./... && go build ./...
 
 .PHONY: setup
 setup: ## Install the versioned git hooks (one-time, per clone)
@@ -134,11 +138,16 @@ setup: ## Install the versioned git hooks (one-time, per clone)
 
 .PHONY: bootstrap
 bootstrap: compose-override ## Prepare a fresh worktree: install deps and pin container host ports to $CASPER_PORT
-	cd frontend && corepack enable && pnpm install --frozen-lockfile
+	cd frontend && corepack enable || true
+	cd frontend && pnpm install --frozen-lockfile
 	cd workers && go mod download
 
 .PHONY: compose-override
 compose-override: ## Pin container host ports to $CASPER_PORT (compose.override.yaml); no-op when unset
+	@if [ -z "$${CASPER_PORT:-}" ] && [ -f compose.override.yaml ]; then \
+		echo "warning: CASPER_PORT unset, but compose.override.yaml still remaps the host ports" \
+			"(and 'make endpoints' shows the defaults); delete it to use the default ports" >&2; \
+	fi
 	@base="$${CASPER_PORT:-}"; \
 	case "$$base" in \
 		"" ) echo "CASPER_PORT unset — keeping default host ports"; exit 0 ;; \
@@ -162,14 +171,12 @@ compose-override: ## Pin container host ports to $CASPER_PORT (compose.override.
 	} > compose.override.yaml
 
 .PHONY: teardown
-teardown: ## Stop this worktree's containers
-	docker-compose down
-	@$(clear-endpoints)
+teardown: app-down ## Stop this worktree's containers
 
 ##@ Helpers
 
 .PHONY: help
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*##"; printf "Usage: make \033[36m<target>\033[0m\n"} \
-		/^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } \
+		/^[a-zA-Z_%-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } \
 		/^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) }' $(MAKEFILE_LIST)

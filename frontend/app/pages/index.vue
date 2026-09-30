@@ -10,73 +10,60 @@ import IconPriorityFairness from "~/components/IconPriorityFairness.vue";
 
 useSeoMeta({ title: "Patterns" });
 
-type PatternIcon =
-  "saga" | "batch" | "encryption" | "agent" | "multi-agent" | "entity" | "priority-fairness";
-
-const ICONS: Record<PatternIcon, Component> = {
-  saga: IconSaga,
-  batch: IconBatch,
-  encryption: IconEncryption,
-  "multi-agent": IconMultiAgent,
-  entity: IconEntity,
-  agent: IconAgent,
-  "priority-fairness": IconPriorityFairness,
-};
-
 const patterns: {
   slug: string;
   title: string;
   description: string;
-  icon: PatternIcon;
+  icon: Component;
 }[] = [
   {
     slug: "saga",
     title: "Saga",
     description:
       "Order processing saga — check fraud, prepare shipment, charge customer, notify. Roll back on failure.",
-    icon: "saga",
+    icon: IconSaga,
   },
   {
     slug: "batch",
     title: "Long-Running Batch",
     description:
       "Sliding-window fan-out over a large image batch — per-stage retries and a bounded in-flight window.",
-    icon: "batch",
+    icon: IconBatch,
   },
   {
     slug: "entity",
     title: "Entity Workflow",
     description:
       "Shopping cart as a long-lived signal-driven workflow — add/update/remove items and query state in real time.",
-    icon: "entity",
+    icon: IconEntity,
   },
   {
     slug: "encryption",
     title: "Payload Encryption",
     description:
       "Symmetric PayloadCodec — AES-256-GCM encryption so Temporal stores only ciphertext end-to-end.",
-    icon: "encryption",
+    icon: IconEncryption,
   },
   {
     slug: "agent",
     title: "Durable AI Agent",
     description:
       "Travel-planner agent loop — LLM reasoning, MCP tool calls, and a signal-gated human approval.",
-    icon: "agent",
+    icon: IconAgent,
   },
   {
     slug: "multi-agent",
     title: "Multi-Agent",
     description:
       "Deep-research orchestrator fanning out to 3 research agents — parent workflow, child workflows, partial-failure tolerance on fan-in.",
-    icon: "multi-agent",
+    icon: IconMultiAgent,
   },
   {
     slug: "priority-fairness",
     title: "Priority and Fairness",
     description:
       "Multi-tenant helpdesk showing how priority and weighted fairness arbitrate a shared worker pool.",
-    icon: "priority-fairness",
+    icon: IconPriorityFairness,
   },
 ];
 </script>
@@ -102,7 +89,7 @@ const patterns: {
             <span
               class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-800 bg-slate-950 text-slate-300"
             >
-              <component :is="ICONS[pattern.icon]" class="h-5 w-5" />
+              <component :is="pattern.icon" class="h-5 w-5" />
             </span>
             <h2 class="text-lg font-medium text-slate-100">{{ pattern.title }}</h2>
           </div>

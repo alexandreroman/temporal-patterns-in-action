@@ -21,7 +21,12 @@
 // workflow id and returns when it closes, at which point the waiter pushes
 // the ticket id onto an in-workflow channel the drain loop reads. The
 // per-ticket workflow itself stays signal-free — its history is
-// Started → ResolveTicket → Completed, nothing else.
+// Started → ResolveTicket → Completed, nothing else. The pending
+// WaitTicketDone waiters hold the helpdesk workflow task open: the SDK only
+// heartbeats it (completing the task and forcing a new one) at 80% of the
+// workflow task timeout, and a signal such as inject-p0-incident is only
+// seen at that boundary. The frontend start route therefore sets a short
+// workflowTaskTimeout (2s) so signals are handled within ~1.6s.
 //
 // Volume narrative: every tier carries the same seed count and the same
 // priority distribution — the only thing that differs is the FairnessKey
@@ -82,6 +87,7 @@ func HelpdeskRunWorkflow(ctx workflow.Context, input HelpdeskInput) error {
 		StartToCloseTimeout: 10 * time.Minute,
 	})
 
+	logger := workflow.GetLogger(ctx)
 	info := workflow.GetInfo(ctx)
 	parentID := info.WorkflowExecution.ID
 	parentRunID := info.WorkflowExecution.RunID
@@ -106,7 +112,7 @@ func HelpdeskRunWorkflow(ctx workflow.Context, input HelpdeskInput) error {
 	}
 
 	seedTickets := map[Tenant][]Ticket{}
-	for _, tenant := range []Tenant{TenantMissionCritical, TenantEnterprise, TenantBusiness} {
+	for _, tenant := range allTenants {
 		for _, p := range seedPriorities[tenant] {
 			seedTickets[tenant] = append(seedTickets[tenant], Ticket{
 				ID: nextID(), Tenant: tenant, Priority: p,
@@ -142,7 +148,7 @@ func HelpdeskRunWorkflow(ctx workflow.Context, input HelpdeskInput) error {
 	//    workflows, not children of the helpdesk run.
 	dispatch := func(t Ticket) {
 		workflowID := fmt.Sprintf("%s-ticket-%s", parentID, t.ID)
-		_ = workflow.ExecuteLocalActivity(lctx, a.StartResolveTicket, StartResolveTicketInput{
+		err := workflow.ExecuteLocalActivity(lctx, a.StartResolveTicket, StartResolveTicketInput{
 			WorkflowID:       workflowID,
 			Ticket:           t,
 			ParentWorkflowID: parentID,
@@ -150,11 +156,17 @@ func HelpdeskRunWorkflow(ctx workflow.Context, input HelpdeskInput) error {
 			PriorityKey:      t.Priority,
 			FairnessOn:       input.FairnessOn,
 		}).Get(ctx, nil)
+		if err != nil {
+			// No ticket workflow to wait on: count the ticket as done right
+			// away so the drain loop still terminates.
+			logger.Warn("start-resolve-ticket failed", "ticketId", t.ID, "error", err)
+			workflow.Go(ctx, func(gctx workflow.Context) { doneCh.Send(gctx, t.ID) })
+			return
+		}
 
-		ticketID := t.ID
 		workflow.Go(ctx, func(gctx workflow.Context) {
 			_ = workflow.ExecuteLocalActivity(waitCtx, a.WaitTicketDone, workflowID).Get(gctx, nil)
-			doneCh.Send(gctx, ticketID)
+			doneCh.Send(gctx, t.ID)
 		})
 	}
 
@@ -169,7 +181,7 @@ func HelpdeskRunWorkflow(ctx workflow.Context, input HelpdeskInput) error {
 	//    drain. Iterate tenants in a fixed slice order so replay is
 	//    deterministic.
 	expected := 0
-	for _, tenant := range []Tenant{TenantMissionCritical, TenantEnterprise, TenantBusiness} {
+	for _, tenant := range allTenants {
 		for _, t := range seedTickets[tenant] {
 			dispatch(t)
 			expected++
@@ -186,8 +198,7 @@ func HelpdeskRunWorkflow(ctx workflow.Context, input HelpdeskInput) error {
 	for completed < expected {
 		sel := workflow.NewSelector(ctx)
 		sel.AddReceive(doneCh, func(c workflow.ReceiveChannel, _ bool) {
-			var ticketID string
-			c.Receive(ctx, &ticketID)
+			c.Receive(ctx, nil)
 			completed++
 		})
 		sel.AddReceive(incidentCh, func(c workflow.ReceiveChannel, _ bool) {
@@ -221,7 +232,7 @@ func ResolveTicketWorkflow(ctx workflow.Context, in ResolveTicketWorkflowInput) 
 	})
 
 	var a *Activities
-	return workflow.ExecuteActivity(actx, a.ResolveTicket, ResolveTicketActivityInput(in)).Get(ctx, nil)
+	return workflow.ExecuteActivity(actx, a.ResolveTicket, in).Get(ctx, nil)
 }
 
 // generateSeed returns a fresh per-tenant priority distribution. Every
@@ -244,8 +255,7 @@ func generateSeed() map[Tenant][]PriorityKey {
 // generateRandomTenant picks one of the three tenants uniformly. Called only
 // from inside workflow.SideEffect.
 func generateRandomTenant() Tenant {
-	tenants := []Tenant{TenantMissionCritical, TenantEnterprise, TenantBusiness}
-	return tenants[rand.IntN(len(tenants))]
+	return allTenants[rand.IntN(len(allTenants))]
 }
 
 // pickFromMix samples count priorities using a 4-bucket weighted distribution.

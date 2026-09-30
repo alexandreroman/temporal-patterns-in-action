@@ -11,7 +11,8 @@ Split reusable UI into two layers:
 - **Generic shells** under
   `frontend/app/components/` — e.g.
   `CodeViewer.vue`, `EventStream.vue`,
-  `StatusBar.vue`. Take pattern-agnostic props
+  `StatusBar.vue`, `ArchitectureDiagram.vue`,
+  `PatternHeader.vue`. Take pattern-agnostic props
   (data + callbacks such as `labelFor`) and own
   all presentation.
 - **Pattern wrappers** named
@@ -23,21 +24,22 @@ Split reusable UI into two layers:
   Wrappers must never reimplement presentation.
 
 Do not generalize a component until a **second**
-pattern actually needs the same shape —
-`SagaPipeline` and `SagaArchitecture` stayed
-saga-specific on purpose.
+pattern actually needs the same shape — panels
+such as `SagaPipeline` or `BatchGrid` are
+pattern-specific on purpose.
 
 **Why:** Keeps pattern-specific knowledge out of
 the reusable shells, so scaffolding a new
-pattern becomes "write three thin wrappers" with
+pattern becomes "write thin wrappers" with
 no risk of regressing existing patterns. Waiting
 for a real second consumer avoids premature
 abstraction.
 
 **How to apply:** When adding a new pattern,
 create `<Pattern>CodeViewer.vue`,
-`<Pattern>EventStream.vue`, and
-`<Pattern>StatusBar.vue` that consume the
+`<Pattern>EventStream.vue`,
+`<Pattern>StatusBar.vue`, and
+`<Pattern>Architecture.vue` that consume the
 existing generic components. Only promote a new
 component to the generic layer when two patterns
 share a truly common UI shape. This rule

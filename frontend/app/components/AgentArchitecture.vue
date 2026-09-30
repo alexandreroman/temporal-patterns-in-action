@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { EventEnvelope } from "~~/shared/events";
-import type { ArchState, EdgeKey, NodeKey } from "~/types/architecture";
+import type { EdgeKey, NodeKey } from "~/types/architecture";
 
 /**
  * Agent architecture: UI -> Temporal -> Worker -> (LLM | Flights | Hotels |
@@ -14,22 +14,15 @@ const TOOL_TO_SVC: Record<string, { node: NodeKey; edge: EdgeKey }> = {
   search_flights: { node: "s2", edge: "wk_s2" },
   book_flight: { node: "s2", edge: "wk_s2" },
   search_hotels: { node: "s3", edge: "wk_s3" },
-  book_hotel: { node: "s3", edge: "wk_s3" },
   get_calendar: { node: "s4", edge: "wk_s4" },
-  send_itinerary: { node: "s4", edge: "wk_s4" },
 };
 
 const props = defineProps<{
   events: EventEnvelope[];
 }>();
 
-const arch = computed<ArchState>(() => {
-  const nodes = initialNodes();
-  const edges = initialEdges();
-
-  let running = props.events.length > 0;
-
-  for (const env of props.events) {
+const arch = computed(() =>
+  foldArch(props.events, (env, nodes, edges) => {
     const data = env.data as Record<string, unknown>;
     const step = typeof data.step === "string" ? data.step : "";
     const tool = typeof data.name === "string" ? data.name : "";
@@ -100,25 +93,9 @@ const arch = computed<ArchState>(() => {
         edges.ui_tmp = "active";
         nodes.ui = "active";
         break;
-
-      case "progress.workflow.completed":
-        resetAll(nodes, edges);
-        running = false;
-        nodes.temporal = "ok";
-        nodes.ui = "ok";
-        break;
-
-      case "progress.workflow.failed":
-        applyWorkflowFailed(nodes, edges);
-        running = false;
-        break;
     }
-  }
-
-  if (running) applyRunningBaseline(nodes, edges);
-
-  return { nodes, edges, running };
-});
+  }),
+);
 </script>
 
 <template>

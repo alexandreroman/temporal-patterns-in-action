@@ -1,6 +1,6 @@
 ---
 name: "Realistic animated token counters"
-description: "Demo patterns that show a token counter must emit non-round token counts from the worker per step and animate the UI counter with a useCountTween helper — mirror the agent pattern."
+description: "Demo patterns that show a token counter must emit non-round token counts from the worker per step and animate the UI counter with the useCountTween composable."
 type: feedback
 ---
 
@@ -15,20 +15,19 @@ When a demo pattern surfaces a "Tokens" counter:
   frontend from a flat multiplier like
   `llmCalls * 800 + searches * 100` — that
   produces visibly round, unrealistic numbers.
-- Animate the displayed counter with a
-  `useCountTween`-style helper
-  (requestAnimationFrame, easeOutCubic, honors
+- Animate the displayed counter with the
+  `useCountTween` composable
+  (`frontend/app/composables/useCountTween.ts`:
+  requestAnimationFrame, easeOutCubic, honors
   `prefers-reduced-motion`, snaps on reset).
-  The reference implementation lives in
-  `frontend/app/components/AgentStatePanel.vue`.
 
 **Why:** A static counter fed by flat multipliers
 (`TOKENS_PER_LLM_CALL = 800`,
 `TOKENS_PER_SEARCH = 100`) produces visibly round
 numbers and snaps. Scripted non-round tokens
 (e.g. 742, 918, 1187, 1463, 1724) emitted on
-`agent.llm.responded`, plus an inline
-`useCountTween` that ticks the number up
+`agent.llm.responded`, plus `useCountTween`
+that ticks the number up
 smoothly, make the demo feel like a real
 LLM-driven run. The agent pattern is the
 reference; keeping every pattern consistent keeps
@@ -44,6 +43,5 @@ pattern that tracks tokens:
 2. In the metrics/state panel component,
    accumulate `data.tokens` from each relevant
    event rather than multiplying counters.
-3. Use the same `useCountTween` helper as
-   `AgentStatePanel.vue` (copy-paste or import)
-   to drive the displayed value.
+3. Drive the displayed value with the
+   `useCountTween` composable.

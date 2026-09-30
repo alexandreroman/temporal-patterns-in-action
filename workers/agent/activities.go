@@ -235,10 +235,6 @@ func scriptedToolOutput(name string) string {
 		return "Oct 10-20 free. Oct 5-9 has meetings."
 	case "book_flight":
 		return "Booked ANA NH-107 — confirmation ANA-4821"
-	case "book_hotel":
-		return "Booked Granbell Shinjuku — confirmation GB-7210"
-	case "send_itinerary":
-		return "Itinerary emailed to traveller"
 	}
 	return "ok"
 }

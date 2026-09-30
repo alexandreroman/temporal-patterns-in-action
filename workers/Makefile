@@ -3,6 +3,10 @@
 # Known patterns — each has a dedicated binary under <pattern>/cmd/worker.
 PATTERNS := saga batch encryption agent multi-agent entity priority-fairness
 
+# workflowcheck is versioned on its own module path, independently of
+# go.temporal.io/sdk; pinned so every machine and CI run the same analyzer.
+WORKFLOWCHECK_VERSION := v0.5.0
+
 ##@ Development
 
 .PHONY: run
@@ -19,8 +23,14 @@ dev: ## Show per-pattern dev targets (hot-reload)
 	@for p in $(PATTERNS); do echo "  make dev-$$p"; done
 	@echo "  make dev-all   (run every pattern in parallel)"
 
+# Air runs from workers/ with the shared .air.toml; the flags below scope it to
+# one pattern. Watching events/ too means edits to the shared package reload
+# every worker, and a per-pattern tmp_dir keeps parallel `dev-all` runs apart.
 dev-%: ## Run a pattern worker with hot-reload (requires Air)
-	cd $* && air
+	air --build.cmd "go build -o ./tmp/$*/worker ./$*/cmd/worker" \
+		--build.entrypoint ./tmp/$*/worker \
+		--build.include_dir "$*,events" \
+		--tmp_dir tmp/$*
 
 .PHONY: dev-all
 dev-all: ## Run every pattern worker in parallel with hot-reload (requires Air)
@@ -59,10 +69,10 @@ vet: ## Run static analysis
 
 .PHONY: workflowcheck
 workflowcheck: ## Check for non-deterministic workflow code
-	workflowcheck ./...
+	go run go.temporal.io/sdk/contrib/tools/workflowcheck@$(WORKFLOWCHECK_VERSION) ./...
 
 .PHONY: check
-check: vet lint test ## Run all checks
+check: vet workflowcheck lint test ## Run all checks
 
 ##@ Helpers
 
@@ -74,5 +84,5 @@ tidy: ## Tidy and verify module dependencies
 .PHONY: help
 help: ## Show this help
 	@awk 'BEGIN {FS = ":.*##"; printf "Usage: make \033[36m<target>\033[0m\n"} \
-		/^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } \
+		/^[a-zA-Z_%-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } \
 		/^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) }' $(MAKEFILE_LIST)

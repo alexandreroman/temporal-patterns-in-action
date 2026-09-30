@@ -42,9 +42,7 @@ the static checks don't catch SSR-only failures.
    `curl -o /dev/null -w "%{http_code}\n" http://localhost:3000/<route>`
    in addition to `lint` and `vue-tsc`. It
    costs one tool call and catches SSR
-   crashes that the static checks miss. This
-   complements the existing CLAUDE.md rule
-   to verify UI changes in a browser.
+   crashes that the static checks miss.
 3. When dispatching a frontend edit to
    code-writer, never tell it to remove an
    `onMounted` / `import.meta.client` guard

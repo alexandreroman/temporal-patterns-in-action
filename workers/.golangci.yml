@@ -3,14 +3,6 @@ version: "2"
 run:
   timeout: 3m
 
-linters:
-  enable:
-    - errcheck
-    - govet
-    - ineffassign
-    - staticcheck
-    - unused
-
 formatters:
   enable:
     - gofmt

@@ -88,9 +88,6 @@ const derived = computed<Derived>(() => {
         phase = "LLM";
         break;
       case "progress.workflow.completed":
-        phase = "Done";
-        activeTool = null;
-        break;
       case "progress.workflow.failed":
         phase = "Done";
         activeTool = null;

@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "packageManager": "pnpm@11.17.0+sha512.cca3cea332ad254bb84145f966d19f4879615210346fc92c79a047f23a0d7b3cca3c3792f0076ba1f1831d277efbcf0a9119b31a9a60eca7fb3d6231f331ef72",
+  "packageManager": "pnpm@11.28.2+sha512.755ce2fe3c05bfd7bb412b42aff3c5c55cd38c529c6eca810475497ae36746c571e4b6e1814e6e7e4b97d7ee864b8a0e44673c3b297a50e0ac28771c5ce15d27",
   "engines": {
     "node": ">=22.11.0"
   },
@@ -21,19 +21,19 @@
   },
   "dependencies": {
     "@nats-io/transport-node": "~3.4.0",
-    "@temporalio/client": "~1.21.1",
-    "nuxt": "~4.5.1",
-    "shiki": "~4.3.1",
-    "vue": "~3.5.40",
-    "vue-router": "~5.2.0"
+    "@temporalio/client": "~1.24.0",
+    "nuxt": "~4.5.2",
+    "shiki": "~4.4.3",
+    "vue": "~3.5.43",
+    "vue-router": "~5.3.1"
   },
   "devDependencies": {
-    "@nuxt/eslint": "~1.16.0",
+    "@nuxt/eslint": "~1.17.0",
     "@tailwindcss/vite": "~4.3.3",
-    "eslint": "~10.8.0",
-    "prettier": "~3.9.6",
+    "eslint": "~10.11.0",
+    "prettier": "~3.9.9",
     "tailwindcss": "~4.3.3",
     "typescript": "~6.0.3",
-    "vue-tsc": "~3.3.8"
+    "vue-tsc": "~3.3.11"
   }
 }

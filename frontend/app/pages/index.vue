@@ -40,7 +40,7 @@ const patterns: {
     slug: "batch",
     title: "Long-Running Batch",
     description:
-      "Worker-throttled fan-out over a large image batch — retries, heartbeats, and a bounded backlog.",
+      "Sliding-window fan-out over a large image batch — per-stage retries and a bounded in-flight window.",
     icon: "batch",
   },
   {

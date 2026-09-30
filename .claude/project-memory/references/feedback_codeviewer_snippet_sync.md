@@ -21,8 +21,8 @@ demo-quality regression.
 **Why:** Two failure modes share one root cause —
 editing a snippet without propagating the change.
 
-1. Updating only the Go snippet (e.g. semaphore →
-   worker-options) leaves Java, TypeScript, and
+1. Updating only the Go snippet (e.g. switching the
+   throttling idiom) leaves Java, TypeScript, and
    Python showing the stale form.
 2. Editing a snippet's `lines` without recomputing
    the 0-indexed ranges leaves highlights off by a

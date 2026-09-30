@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { EventEnvelope } from "~~/shared/events";
-import type { ArchState, EdgeKey, NodeKey } from "~/types/architecture";
+import type { EdgeKey, NodeKey } from "~/types/architecture";
 
 /**
  * Entity architecture: UI -> Temporal -> Worker (Cart entity) -> (Catalog |
@@ -9,7 +9,7 @@ import type { ArchState, EdgeKey, NodeKey } from "~/types/architecture";
  *                                                                 Checkout |
  *                                                                 Email)
  * Activities that touch a backing service light the matching slot. Signal-
- * only steps (update-qty, remove-item, record-checkpoint) still pulse the
+ * only steps (update-qty, remove-item) still pulse the
  * worker/temporal pair without engaging any service.
  */
 
@@ -24,13 +24,8 @@ const props = defineProps<{
   events: EventEnvelope[];
 }>();
 
-const arch = computed<ArchState>(() => {
-  const nodes = initialNodes();
-  const edges = initialEdges();
-
-  let running = props.events.length > 0;
-
-  for (const env of props.events) {
+const arch = computed(() =>
+  foldArch(props.events, (env, nodes, edges) => {
     const data = env.data as Record<string, unknown>;
     const step = typeof data.step === "string" ? data.step : "";
 
@@ -65,25 +60,9 @@ const arch = computed<ArchState>(() => {
         }
         break;
       }
-
-      case "progress.workflow.completed":
-        resetAll(nodes, edges);
-        running = false;
-        nodes.temporal = "ok";
-        nodes.ui = "ok";
-        break;
-
-      case "progress.workflow.failed":
-        applyWorkflowFailed(nodes, edges);
-        running = false;
-        break;
     }
-  }
-
-  if (running) applyRunningBaseline(nodes, edges);
-
-  return { nodes, edges, running };
-});
+  }),
+);
 </script>
 
 <template>

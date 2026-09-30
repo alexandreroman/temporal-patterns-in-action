@@ -64,5 +64,33 @@ jobs:
       - name: Vet
         run: make vet
 
+      - name: Workflow determinism check
+        run: make workflowcheck
+
       - name: Test
         run: make test
+
+  codec-server-check:
+    name: Codec server check
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: codec-server
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version: "1.27"
+          # codec-server's go.mod replaces the workers module with ../workers,
+          # so both lockfiles define its dependency set.
+          cache-dependency-path: |
+            codec-server/go.sum
+            workers/go.sum
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Build
+        run: go build ./...

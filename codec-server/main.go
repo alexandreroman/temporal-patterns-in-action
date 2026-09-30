@@ -36,12 +36,9 @@ func main() {
 		log.Fatalf("build payload handler: %v", err)
 	}
 
-	mux := http.NewServeMux()
-	mux.Handle("/", withCORS(uiOrigin, withBodyLimit(h)))
-
 	srv := &http.Server{
 		Addr:              listen,
-		Handler:           mux,
+		Handler:           withCORS(uiOrigin, withBodyLimit(h)),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
 		WriteTimeout:      15 * time.Second,

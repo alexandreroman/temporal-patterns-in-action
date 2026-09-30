@@ -9,7 +9,7 @@ import (
 // Event category constants. Category is derived from Envelope.Type and never
 // stored as a separate field: types prefixed with "progress." map to
 // CategoryProgress; everything else (pattern-prefixed business events like
-// "saga.inventory.reserved") maps to CategoryBusiness.
+// "saga.fraud.checked") maps to CategoryBusiness.
 const (
 	CategoryProgress = "progress"
 	CategoryBusiness = "business"

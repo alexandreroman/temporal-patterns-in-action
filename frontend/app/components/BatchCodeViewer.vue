@@ -4,20 +4,17 @@ import type { EventEnvelope } from "~~/shared/events";
 import type { CodeLang } from "~/composables/useCodeLang";
 import type { CodeSource } from "~/types/code-viewer";
 
-const props = withDefaults(
-  defineProps<{
-    events: EventEnvelope[];
-    total?: number;
-  }>(),
-  { total: 48 },
-);
+const props = defineProps<{
+  events: EventEnvelope[];
+  total: number;
+}>();
 
 const lang = useCodeLang();
 
 type StepKey = "dispatch" | "drain" | "summary";
 
 interface BatchSource extends CodeSource {
-  stepLines: Partial<Record<StepKey, [number, number]>>;
+  stepLines: Record<StepKey, [number, number]>;
 }
 
 const SOURCES: Record<CodeLang, BatchSource> = {
@@ -27,6 +24,9 @@ const SOURCES: Record<CodeLang, BatchSource> = {
       "const windowSize = 4 // max children in flight",
       "",
       "func BatchProcessingWorkflow(ctx workflow.Context, in BatchInput) (BatchResult, error) {",
+      "    ctx = workflow.WithActivityOptions(ctx, workflow.ActivityOptions{",
+      "        StartToCloseTimeout: 10 * time.Second, // summary only; children set their own",
+      "    })",
       "    rootID := workflow.GetInfo(ctx).WorkflowExecution.ID",
       "    result := BatchResult{BatchID: in.BatchID, Total: in.Total}",
       "    selector := workflow.NewSelector(ctx)",
@@ -80,9 +80,9 @@ const SOURCES: Record<CodeLang, BatchSource> = {
       "}",
     ],
     stepLines: {
-      dispatch: [8, 28],
-      drain: [30, 33],
-      summary: [35, 37],
+      dispatch: [11, 31],
+      drain: [33, 36],
+      summary: [38, 40],
     },
   },
   java: {
@@ -90,9 +90,11 @@ const SOURCES: Record<CodeLang, BatchSource> = {
     lines: [
       "// BatchProcessingWorkflowImpl",
       "private static final int WINDOW_SIZE = 4; // max children in flight",
+      "private final Activities activities = Workflow.newActivityStub(Activities.class,",
+      "    ActivityOptions.newBuilder().setStartToCloseTimeout(Duration.ofSeconds(10)).build());",
       "private int inFlight = 0;",
       "",
-      "@WorkflowMethod",
+      "@Override",
       "public BatchResult processBatch(BatchInput in) {",
       "    String rootId = Workflow.getInfo().getWorkflowId();",
       "    var result = new BatchResult(in.batchId(), in.total());",
@@ -135,7 +137,7 @@ const SOURCES: Record<CodeLang, BatchSource> = {
       "            .build())",
       "        .build());",
       "",
-      "@WorkflowMethod",
+      "@Override",
       "public void processImage(ImageInput in) {",
       "    // Stages run sequentially. Each activity is retried per the retry policy;",
       "    // only after retries are exhausted does the error surface and the parent",
@@ -147,9 +149,9 @@ const SOURCES: Record<CodeLang, BatchSource> = {
       "}",
     ],
     stepLines: {
-      dispatch: [9, 27],
-      drain: [29, 30],
-      summary: [32, 32],
+      dispatch: [11, 29],
+      drain: [31, 32],
+      summary: [34, 34],
     },
   },
   typescript: {
@@ -164,17 +166,17 @@ const SOURCES: Record<CodeLang, BatchSource> = {
       '    startToCloseTimeout: "10 seconds",',
       "});",
       "",
-      "export async function batchProcessingWorkflow(in_: BatchInput): Promise<BatchResult> {",
+      "export async function batchProcessingWorkflow(input: BatchInput): Promise<BatchResult> {",
       "    const rootId = workflowInfo().workflowId;",
-      "    const result: BatchResult = { batchId: in_.batchId, total: in_.total, processed: 0, failed: 0 };",
+      "    const result: BatchResult = { batchId: input.batchId, total: input.total, processed: 0, failed: 0 };",
       "    let inFlight = 0;",
       "",
       "    // Sliding window: start a child only when a slot is free.",
-      "    for (let i = 0; i < in_.total; i++) {",
+      "    for (let i = 0; i < input.total; i++) {",
       "        await condition(() => inFlight < WINDOW_SIZE);",
       "        inFlight++;",
       "        void executeChild(processImageWorkflow, {",
-      "            args: [{ batchId: in_.batchId, rootId, index: i, failureRate: in_.failureRate }],",
+      "            args: [{ batchId: input.batchId, rootId, index: i, failureRate: input.failureRate }],",
       '            workflowId: `${rootId}-item-${String(i).padStart(3, "0")}`,',
       "        })",
       "            .then(",
@@ -191,7 +193,7 @@ const SOURCES: Record<CodeLang, BatchSource> = {
       "    return result;",
       "}",
       "",
-      "export async function processImageWorkflow(in_: ImageInput): Promise<void> {",
+      "export async function processImageWorkflow(input: ImageInput): Promise<void> {",
       "    const a = proxyActivities<typeof activities>({",
       '        startToCloseTimeout: "10 seconds",',
       '        retry: { initialInterval: "500ms", backoffCoefficient: 1.5, maximumAttempts: 3 },',
@@ -199,10 +201,10 @@ const SOURCES: Record<CodeLang, BatchSource> = {
       "    // Stages run sequentially. Each activity is retried per the retry policy;",
       "    // only after retries are exhausted does the error surface and the parent",
       "    // counts this image as failed.",
-      "    await a.resizeImage(in_);",
-      "    await a.createThumbnail(in_);",
-      "    await a.uploadToCdn(in_);",
-      "    await a.writeMetadata(in_);",
+      "    await a.resizeImage(input);",
+      "    await a.createThumbnail(input);",
+      "    await a.uploadToCdn(input);",
+      "    await a.writeMetadata(input);",
       "}",
     ],
     stepLines: {
@@ -310,20 +312,21 @@ const currentHighlight = computed<[number, number] | null>(() => {
   const latest = latestRelevant(props.events);
   if (!latest) return null;
 
-  // Terminal: clear the highlight like saga does.
-  if (latest === "progress.workflow.completed" || latest === "progress.workflow.failed") {
-    return null;
-  }
-
-  if (latest === "batch.summary.reported") {
-    return src.stepLines.summary ?? null;
+  // The summary is the workflow's last step, so it stays lit once the
+  // workflow completes or fails.
+  if (
+    latest === "batch.summary.reported" ||
+    latest === "progress.workflow.completed" ||
+    latest === "progress.workflow.failed"
+  ) {
+    return src.stepLines.summary;
   }
   // batch.item.* events: the window loop runs until the last child has been
   // started; after that the workflow is draining the window.
   if (lastChildStarted.value) {
-    return src.stepLines.drain ?? null;
+    return src.stepLines.drain;
   }
-  return src.stepLines.dispatch ?? null;
+  return src.stepLines.dispatch;
 });
 </script>
 

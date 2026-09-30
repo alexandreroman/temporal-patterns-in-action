@@ -2,6 +2,7 @@ package priorityfairness
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -19,20 +20,9 @@ type Activities struct {
 	Publisher events.Publisher
 	Client    client.Client
 
-	once sync.Once
-	pool *slotPool
-}
-
-// slotPoolHandle returns the activity's process-local slot pool. The pool
-// tracks the worker's MaxConcurrentActivities slots so each
-// `helpdesk.ticket.assigned` event carries a stable A1..A4 agent id for the
-// UI cards. The pool is allocated lazily on first call so tests can
-// construct an Activities with just the Publisher field. Kept unexported so
-// Temporal's reflection-based RegisterActivity doesn't try to register it as
-// an activity (its second return must be error).
-func (a *Activities) slotPoolHandle() *slotPool {
-	a.once.Do(func() { a.pool = newSlotPool() })
-	return a.pool
+	// slots gives each `helpdesk.ticket.assigned` event a stable A1..A4 agent
+	// id for the UI cards. Its zero value is ready to use.
+	slots slotPool
 }
 
 // AnnounceRunSeeded publishes one helpdesk.run.seeded business event so the
@@ -92,7 +82,15 @@ func (a *Activities) StartResolveTicket(ctx context.Context, in StartResolveTick
 // workflow has already closed, the long poll returns immediately with the
 // recorded result and the drain loop catches up without manual recovery.
 func (a *Activities) WaitTicketDone(ctx context.Context, workflowID string) error {
-	return a.Client.GetWorkflow(ctx, workflowID, "").Get(ctx, nil)
+	err := a.Client.GetWorkflow(ctx, workflowID, "").Get(ctx, nil)
+	// A ticket workflow that closed with an error (failed, cancelled,
+	// terminated, timed out) is still done: returning nil stops the
+	// local-activity retries so the drain loop counts it.
+	var wee *temporal.WorkflowExecutionError
+	if errors.As(err, &wee) {
+		return nil
+	}
+	return err
 }
 
 // ResolveTicket simulates an agent processing a ticket. It acquires a slot
@@ -104,11 +102,14 @@ func (a *Activities) WaitTicketDone(ctx context.Context, workflowID string) erro
 // per-ticket workflow's — we publish business events with the helpdesk
 // run's id (carried in the input) so they land on the NATS subject the
 // frontend SSE endpoint subscribes to.
-func (a *Activities) ResolveTicket(ctx context.Context, in ResolveTicketActivityInput) error {
+func (a *Activities) ResolveTicket(ctx context.Context, in ResolveTicketWorkflowInput) error {
 	t := in.Ticket
-	pool := a.slotPoolHandle()
-	agent := pool.Acquire()
-	defer pool.Release(agent)
+	slot := a.slots.Acquire()
+	defer a.slots.Release(slot)
+	agent := "A?"
+	if slot >= 0 {
+		agent = fmt.Sprintf("A%d", slot+1)
+	}
 
 	events.PublishBusinessAs(ctx, a.Publisher, Pattern, in.ParentWorkflowID, in.ParentRunID,
 		TypeTicketAssigned, map[string]any{
@@ -154,32 +155,28 @@ type slotPool struct {
 	busy [MaxConcurrentActivities]bool
 }
 
-func newSlotPool() *slotPool { return &slotPool{} }
-
-// Acquire returns the next free slot id ("A1".."AN") or "A?" if the pool is
-// exhausted (shouldn't happen with MaxConcurrentActivityExecutionSize set to
-// MaxConcurrentActivities).
-func (p *slotPool) Acquire() string {
+// Acquire marks the first free slot busy and returns its index, or -1 if the
+// pool is exhausted (shouldn't happen with MaxConcurrentActivityExecutionSize
+// set to MaxConcurrentActivities).
+func (p *slotPool) Acquire() int {
 	p.mu.Lock()
 	defer p.mu.Unlock()
-	for i := 0; i < MaxConcurrentActivities; i++ {
+	for i := range p.busy {
 		if !p.busy[i] {
 			p.busy[i] = true
-			return fmt.Sprintf("A%d", i+1)
+			return i
 		}
 	}
-	return "A?"
+	return -1
 }
 
-// Release frees a previously-acquired slot. Unknown slot ids are ignored.
-func (p *slotPool) Release(slot string) {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-	var i int
-	if _, err := fmt.Sscanf(slot, "A%d", &i); err != nil {
+// Release frees a slot returned by Acquire. A negative index (no slot was
+// acquired) is ignored.
+func (p *slotPool) Release(i int) {
+	if i < 0 {
 		return
 	}
-	if i >= 1 && i <= MaxConcurrentActivities {
-		p.busy[i-1] = false
-	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	p.busy[i] = false
 }

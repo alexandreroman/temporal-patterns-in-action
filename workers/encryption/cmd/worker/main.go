@@ -72,14 +72,11 @@ func main() {
 	log.Printf("encryption worker connected to %s — listening on %s and %s",
 		address, encryption.TaskQueueClear, encryption.TaskQueueEncrypted)
 
-	// Shared interrupt channel so Ctrl-C stops both workers together.
-	interruptCh := worker.InterruptCh()
-	go func() {
-		if err := wClear.Run(interruptCh); err != nil {
-			log.Fatalf("clear worker stopped: %v", err)
-		}
-	}()
-	if err := wEnc.Run(interruptCh); err != nil {
+	if err := wClear.Start(); err != nil {
+		log.Fatalf("clear worker failed to start: %v", err)
+	}
+	defer wClear.Stop()
+	if err := wEnc.Run(worker.InterruptCh()); err != nil {
 		log.Fatalf("encrypted worker stopped: %v", err)
 	}
 }

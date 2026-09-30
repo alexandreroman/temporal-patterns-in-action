@@ -54,7 +54,12 @@ parent → local-activity → `client.ExecuteWorkflow`
 → top-level `ResolveTicketWorkflow` chain
 intact, with completion observed via the
 `WaitTicketDone` long-poll local activity (no
-signal-back). If a refactor seems to simplify
+signal-back). Those pending waiters hold the
+parent's workflow task open, which the SDK only
+heartbeats at 0.8 × the task timeout, so the
+start route sets `workflowTaskTimeout: "2s"` to
+deliver inject-P0 signals within ~1.6 s. If a
+refactor seems to simplify
 by removing the per-ticket workflow or
 turning it into a child, stop and confirm
 with the user first.

@@ -53,8 +53,6 @@ type Subtopic struct {
 
 // ResearchPlan is the output of PlanResearch.
 type ResearchPlan struct {
-	Prompt    string     `json:"prompt"`
-	Scenario  Scenario   `json:"scenario"`
 	Subtopics []Subtopic `json:"subtopics"`
 }
 
@@ -67,8 +65,7 @@ type TopicQueries struct {
 
 // ResearchQueries is the output of GenerateQueries.
 type ResearchQueries struct {
-	Scenario Scenario       `json:"scenario"`
-	Topics   []TopicQueries `json:"topics"`
+	Topics []TopicQueries `json:"topics"`
 }
 
 // ResearchAgentInput is the input to each child ResearchAgentWorkflow.

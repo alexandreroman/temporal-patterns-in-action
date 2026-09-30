@@ -17,28 +17,30 @@ func ProcessSensitiveOrderWorkflow(ctx workflow.Context, in SensitiveOrder) (Ord
 	})
 
 	var a *Activities
-	result := OrderConfirmation{OrderID: in.OrderID, Status: "pending"}
 
 	if err := workflow.ExecuteActivity(ctx, a.ValidateOrder, in).Get(ctx, nil); err != nil {
-		return result, err
+		return OrderConfirmation{}, err
 	}
 
 	var paymentRef string
 	if err := workflow.ExecuteActivity(ctx, a.ChargeCard, in).Get(ctx, &paymentRef); err != nil {
-		return result, err
+		return OrderConfirmation{}, err
 	}
-	result.PaymentRef = paymentRef
 
 	var trackingID string
 	if err := workflow.ExecuteActivity(ctx, a.ShipOrder, in.OrderID).Get(ctx, &trackingID); err != nil {
-		return result, err
+		return OrderConfirmation{}, err
 	}
-	result.TrackingID = trackingID
 
 	if err := workflow.ExecuteActivity(ctx, a.SendReceipt, in, trackingID).Get(ctx, nil); err != nil {
-		return result, err
+		return OrderConfirmation{}, err
 	}
-	result.ReceiptSent = true
-	result.Status = "completed"
-	return result, nil
+
+	return OrderConfirmation{
+		OrderID:     in.OrderID,
+		Status:      "completed",
+		PaymentRef:  paymentRef,
+		TrackingID:  trackingID,
+		ReceiptSent: true,
+	}, nil
 }

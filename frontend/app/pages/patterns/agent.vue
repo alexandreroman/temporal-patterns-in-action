@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from "vue";
+import { computed, reactive, ref, watch } from "vue";
+import { AGENT_PROMPT } from "~~/shared/constants";
 import type {
   AgentApprovalRequest,
   AgentApprovalResponse,
@@ -11,27 +12,12 @@ useSeoMeta({ title: "Durable AI Agent" });
 
 type Scenario = AgentStartRequest["scenario"];
 
-const PROMPT =
-  "Plan a 5-day trip to Tokyo in October. Budget: $3000. I like food, temples, and nightlife.";
-
 const form = reactive({
   scenario: "happy" as Scenario,
 });
 
-const workflowId = ref<string | null>(null);
-const starting = ref(false);
-const finalError = ref<string | null>(null);
+const { workflowId, events, starting, running, error: finalError, run } = usePatternRun("agent");
 const approving = ref(false);
-
-const { events, waitForOpen } = usePatternStream("agent", workflowId);
-
-const TERMINAL_EVENTS = new Set(["progress.workflow.completed", "progress.workflow.failed"]);
-
-const running = computed(() => {
-  if (starting.value) return true;
-  if (!workflowId.value) return false;
-  return !events.value.some((e) => TERMINAL_EVENTS.has(e.type));
-});
 
 const awaitingApproval = computed(() => {
   let pending = false;
@@ -49,25 +35,13 @@ watch(awaitingApproval, (now) => {
 });
 
 async function start() {
-  finalError.value = null;
-  starting.value = true;
   const runId = randomSuffix();
-  // Subscribe BEFORE starting the workflow: core NATS has no replay, and the
-  // user-prompt event fires almost immediately — we would miss it if the SSE
-  // stream opened only after the start() response came back.
-  workflowId.value = `agent-${runId}`;
-  try {
-    await waitForOpen();
-    await $fetch<AgentStartResponse>("/api/agent/start", {
+  await run(`agent-${runId}`, () =>
+    $fetch<AgentStartResponse>("/api/agent/start", {
       method: "POST",
       body: { runId, scenario: form.scenario },
-    });
-  } catch (error) {
-    finalError.value = error instanceof Error ? error.message : String(error);
-    workflowId.value = null;
-  } finally {
-    starting.value = false;
-  }
+    }),
+  );
 }
 
 async function respond(approved: boolean) {
@@ -86,86 +60,28 @@ async function respond(approved: boolean) {
     approving.value = false;
   }
 }
-
-const statePanelRef = ref<{ $el?: HTMLElement } | null>(null);
-const panelHeight = ref<number | null>(null);
-
-const convoHeightStyle = computed(() =>
-  panelHeight.value !== null ? { height: `${panelHeight.value}px` } : {},
-);
-
-let resizeObserver: ResizeObserver | null = null;
-let mediaQuery: MediaQueryList | null = null;
-
-function updatePanelHeight() {
-  const el = statePanelRef.value?.$el as HTMLElement | undefined;
-  if (!el) {
-    panelHeight.value = null;
-    return;
-  }
-  // Only pin height on desktop layout; on mobile the row stacks vertically
-  // and the conversation should keep its own h-72 scroller.
-  if (mediaQuery && !mediaQuery.matches) {
-    panelHeight.value = null;
-    return;
-  }
-  panelHeight.value = el.getBoundingClientRect().height;
-}
-
-onMounted(() => {
-  mediaQuery = window.matchMedia("(min-width: 1024px)");
-  mediaQuery.addEventListener("change", updatePanelHeight);
-
-  const el = statePanelRef.value?.$el as HTMLElement | undefined;
-  if (el) {
-    resizeObserver = new ResizeObserver(() => updatePanelHeight());
-    resizeObserver.observe(el);
-  }
-  updatePanelHeight();
-});
-
-onBeforeUnmount(() => {
-  resizeObserver?.disconnect();
-  mediaQuery?.removeEventListener("change", updatePanelHeight);
-});
 </script>
 
 <template>
   <section>
-    <NuxtLink to="/" class="text-sm text-slate-400 hover:text-slate-100"> &larr; back </NuxtLink>
-
-    <!-- Control bar -->
-    <div class="mt-2 flex flex-wrap items-center justify-between gap-3">
-      <div class="flex items-center gap-3">
-        <span
-          class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-800 bg-slate-950 text-slate-300"
-        >
-          <IconAgent class="h-5 w-5" />
-        </span>
-        <h1 class="text-2xl font-semibold tracking-tight text-slate-100">
-          Durable AI Agent &mdash; Travel Planner
-        </h1>
-      </div>
-      <div class="flex items-center gap-2">
-        <select
-          v-model="form.scenario"
-          :disabled="running"
-          class="rounded-md border border-slate-700 bg-slate-800 px-2 py-1 text-xs text-slate-200 disabled:opacity-50"
-        >
-          <option value="happy">Happy path</option>
-          <option value="retry">LLM timeout + retry</option>
-          <option value="approval">Human-in-the-loop</option>
-        </select>
-        <button
-          type="button"
-          :disabled="running"
-          class="cursor-pointer rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
-          @click="start"
-        >
-          {{ starting ? "Starting…" : running ? "Running…" : "Run agent" }}
-        </button>
-      </div>
-    </div>
+    <PatternHeader
+      title="Durable AI Agent — Travel Planner"
+      label="Run agent"
+      :busy-label="starting ? 'Starting…' : 'Running…'"
+      :disabled="running"
+      @run="start"
+    >
+      <template #icon><IconAgent class="h-5 w-5" /></template>
+      <select
+        v-model="form.scenario"
+        :disabled="running"
+        class="rounded-md border border-slate-700 bg-slate-800 px-2 py-1 text-xs text-slate-200 disabled:opacity-50"
+      >
+        <option value="happy">Happy path</option>
+        <option value="retry">LLM timeout + retry</option>
+        <option value="approval">Human-in-the-loop</option>
+      </select>
+    </PatternHeader>
 
     <!-- Architecture diagram -->
     <div class="mt-2">
@@ -206,11 +122,20 @@ onBeforeUnmount(() => {
     </div>
 
     <!-- Conversation + state panel -->
-    <div class="mt-4 flex flex-col gap-3 lg:flex-row lg:items-start">
-      <div class="min-w-0 flex-1" :style="convoHeightStyle">
-        <AgentConversation :events="events" :pending-prompt="running ? PROMPT : null" />
+    <!--
+      At lg+ the conversation is taken out of the flow and stretched over its
+      column, so the state panel alone sets the row height and the
+      conversation scrolls inside it. On mobile it keeps its own h-72 scroller.
+    -->
+    <div class="mt-4 flex flex-col gap-3 lg:flex-row lg:items-stretch">
+      <div class="min-w-0 flex-1 lg:relative">
+        <AgentConversation
+          class="lg:absolute lg:inset-0"
+          :events="events"
+          :pending-prompt="running ? AGENT_PROMPT : null"
+        />
       </div>
-      <AgentStatePanel ref="statePanelRef" :events="events" />
+      <AgentStatePanel :events="events" />
     </div>
 
     <!-- Status bar -->

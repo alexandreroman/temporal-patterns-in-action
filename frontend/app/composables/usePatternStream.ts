@@ -2,7 +2,7 @@ import type { MaybeRefOrGetter } from "vue";
 import { ref, toValue, watch, onBeforeUnmount } from "vue";
 import { isEventEnvelope, type EventEnvelope } from "~~/shared/events";
 
-export type StreamStatus = "idle" | "connecting" | "open" | "closed" | "error";
+type StreamStatus = "idle" | "connecting" | "open" | "closed" | "error";
 
 export function usePatternStream(
   pattern: MaybeRefOrGetter<string>,
@@ -96,5 +96,5 @@ export function usePatternStream(
     });
   }
 
-  return { events, status, waitForOpen };
+  return { events, waitForOpen };
 }

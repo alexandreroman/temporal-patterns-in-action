@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import type { EventEnvelope } from "~~/shared/events";
+import { isTerminalEvent, type EventEnvelope } from "~~/shared/events";
 import { BATCH_SERVICE_LABEL } from "~/utils/batch-services";
 
 /**
@@ -21,13 +21,10 @@ interface ActiveItem {
   state: SlotState;
 }
 
-const props = withDefaults(
-  defineProps<{
-    events: EventEnvelope[];
-    parallelism?: number;
-  }>(),
-  { parallelism: 4 },
-);
+const props = defineProps<{
+  events: EventEnvelope[];
+  parallelism: number;
+}>();
 
 const activeItems = computed<ActiveItem[]>(() => {
   const byIndex = new Map<number, ActiveItem>();
@@ -36,7 +33,7 @@ const activeItems = computed<ActiveItem[]>(() => {
   for (const env of props.events) {
     const data = env.data as Record<string, unknown>;
 
-    if (env.type === "progress.workflow.completed" || env.type === "progress.workflow.failed") {
+    if (isTerminalEvent(env)) {
       terminated = true;
       continue;
     }
@@ -98,7 +95,7 @@ function chipClass(item: ActiveItem | null): string {
 const slots = computed<(ActiveItem | null)[]>(() => {
   const out: (ActiveItem | null)[] = Array.from({ length: props.parallelism }, () => null);
   activeItems.value.forEach((item, i) => {
-    if (i < out.length) out[i] = item;
+    out[i] = item;
   });
   return out;
 });

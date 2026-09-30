@@ -1,7 +1,12 @@
 <script setup lang="ts">
 import type { EventEnvelope } from "~~/shared/events";
 import type { DotColor } from "~/types/event-stream";
-import { tenantById, type TenantId } from "~/utils/priority-fairness";
+import {
+  priorityLevel,
+  tenantById,
+  type PriorityKey,
+  type TenantId,
+} from "~/utils/priority-fairness";
 
 defineProps<{
   events: EventEnvelope[];
@@ -14,22 +19,14 @@ function tenantName(id: unknown): string {
   return String(id ?? "?");
 }
 
-function priorityLabel(key: unknown): string {
-  const n = typeof key === "number" ? key : Number(key);
-  if (!Number.isFinite(n)) return "P?";
-  return `P${Math.max(0, n - 1)}`;
-}
-
 function eventLabel(env: EventEnvelope): string {
   const data = env.data as Record<string, unknown>;
   const tenant = tenantName(data.tenant);
   const ticketId = data.ticketId ? String(data.ticketId) : "";
   const agent = data.agent ? String(data.agent) : "";
-  const prio = priorityLabel(data.priority);
+  const prio = priorityLevel(data.priority as PriorityKey).label;
 
   switch (env.type) {
-    case "progress.workflow.started":
-      return `Workflow started — fairness ${data.fairnessOn ? "ON" : "OFF"}`;
     case "progress.workflow.completed":
       return "All queues drained";
     case "progress.workflow.failed":
@@ -59,17 +56,12 @@ function eventLabel(env: EventEnvelope): string {
 
 function dotColor(env: EventEnvelope): DotColor {
   switch (env.type) {
-    case "progress.workflow.started":
-    case "helpdesk.ticket.assigned":
-      return "blue";
     case "helpdesk.ticket.resolved":
     case "progress.workflow.completed":
       return "green";
     case "helpdesk.incident.injected":
     case "progress.workflow.failed":
       return "red";
-    case "helpdesk.run.seeded":
-      return "blue";
     default:
       return "blue";
   }

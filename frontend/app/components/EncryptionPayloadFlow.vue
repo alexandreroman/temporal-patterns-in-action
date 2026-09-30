@@ -1,12 +1,16 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import type { EventEnvelope } from "~~/shared/events";
-import type { SensitiveOrder } from "~~/shared/types";
+import { isTerminalEvent, type EventEnvelope } from "~~/shared/events";
+import type {
+  EncryptionStartRequest,
+  EncryptionStartResponse,
+  SensitiveOrder,
+} from "~~/shared/types";
 
 const props = defineProps<{
-  scenario: "clear" | "encrypted";
+  scenario: EncryptionStartRequest["scenario"];
   clientPayload: SensitiveOrder | null;
-  storedPayload: { encoding: string; dataBase64: string } | null;
+  storedPayload: EncryptionStartResponse["storedPayload"] | null;
   events: EventEnvelope[];
 }>();
 
@@ -15,11 +19,7 @@ const workerHasDecoded = computed(() =>
   props.events.some((e) => e.type === "progress.step.started"),
 );
 
-const workflowEnded = computed(() =>
-  props.events.some(
-    (e) => e.type === "progress.workflow.completed" || e.type === "progress.workflow.failed",
-  ),
-);
+const workflowEnded = computed(() => props.events.some(isTerminalEvent));
 
 const clientJson = computed(() =>
   props.clientPayload ? JSON.stringify(props.clientPayload, null, 2) : "",

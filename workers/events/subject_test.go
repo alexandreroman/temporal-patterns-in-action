@@ -32,7 +32,6 @@ func TestCategoryOf(t *testing.T) {
 		{TypeStepFailed, CategoryProgress},
 		{TypeStepCompleted, CategoryProgress},
 		{"saga.car.reserved", CategoryBusiness},
-		{"", ""},
 		{"nodot", CategoryBusiness},
 	}
 	for _, tc := range tests {

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { EventEnvelope } from "~~/shared/events";
-import type { ArchState, EdgeKey, NodeKey } from "~/types/architecture";
+import type { EdgeKey, NodeKey } from "~/types/architecture";
 
 /**
  * Batch architecture: UI -> Temporal -> Worker -> (Resize | Thumbnail | CDN |
@@ -22,17 +22,8 @@ const props = defineProps<{
   events: EventEnvelope[];
 }>();
 
-const arch = computed<ArchState>(() => {
-  const nodes = initialNodes();
-  const edges = initialEdges();
-
-  // Running stays true as long as we've seen at least one event and no
-  // terminal event has closed the run. The worker no longer emits a
-  // workflow.started signal — the Nuxt SSE endpoint synthesises only
-  // the terminal events — so the first observed event anchors the run.
-  let running = props.events.length > 0;
-
-  for (const env of props.events) {
+const arch = computed(() =>
+  foldArch(props.events, (env, nodes, edges) => {
     const data = env.data as Record<string, unknown>;
     const svcKey = typeof data.service === "string" ? data.service : "";
     const svc = SERVICE_TO_NODE[svcKey];
@@ -67,25 +58,9 @@ const arch = computed<ArchState>(() => {
         nodes.s4 = "active";
         edges.wk_s4 = "active";
         break;
-
-      case "progress.workflow.completed":
-        resetAll(nodes, edges);
-        running = false;
-        nodes.temporal = "ok";
-        nodes.ui = "ok";
-        break;
-
-      case "progress.workflow.failed":
-        applyWorkflowFailed(nodes, edges);
-        running = false;
-        break;
     }
-  }
-
-  if (running) applyRunningBaseline(nodes, edges);
-
-  return { nodes, edges, running };
-});
+  }),
+);
 </script>
 
 <template>

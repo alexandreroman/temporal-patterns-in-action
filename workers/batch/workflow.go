@@ -99,10 +99,7 @@ func BatchProcessingWorkflow(ctx workflow.Context, input BatchInput) (BatchResul
 	}
 
 	var a *Activities
-	if err := workflow.ExecuteActivity(ctx, a.ReportBatchSummary, result).Get(ctx, nil); err != nil {
-		return result, err
-	}
-	return result, nil
+	return result, workflow.ExecuteActivity(ctx, a.ReportBatchSummary, result).Get(ctx, nil)
 }
 
 // ProcessImageWorkflow runs the 4 pipeline stages sequentially for a single

@@ -54,11 +54,7 @@ func (a *Activities) PlanResearch(ctx context.Context, req DeepResearchRequest) 
 
 	a.pause(planThinkTime)
 
-	plan := ResearchPlan{
-		Prompt:    req.Prompt,
-		Scenario:  req.Scenario,
-		Subtopics: make([]Subtopic, len(demoSubtopics)),
-	}
+	plan := ResearchPlan{Subtopics: make([]Subtopic, len(demoSubtopics))}
 	for i, name := range demoSubtopics {
 		plan.Subtopics[i] = Subtopic{Index: i, Name: name}
 	}
@@ -77,10 +73,7 @@ func (a *Activities) GenerateQueries(ctx context.Context, plan ResearchPlan) (Re
 
 	a.pause(queriesThinkTime)
 
-	out := ResearchQueries{
-		Scenario: plan.Scenario,
-		Topics:   make([]TopicQueries, len(plan.Subtopics)),
-	}
+	out := ResearchQueries{Topics: make([]TopicQueries, len(plan.Subtopics))}
 	for i, sub := range plan.Subtopics {
 		out.Topics[i] = TopicQueries{
 			TopicIndex: sub.Index,

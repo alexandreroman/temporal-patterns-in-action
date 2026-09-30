@@ -2,8 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import {
   AGENT_SLOTS,
-  HISTORY_LEN,
-  TICK_MS,
+  WINDOW_MS,
   priorityLevel,
   tenantById,
   type AgentSlot,
@@ -17,17 +16,13 @@ import {
  * 20 s; in-flight blocks extend to "now" and advance smoothly via rAF.
  */
 
-const WINDOW_MS = HISTORY_LEN * TICK_MS;
-
 const props = defineProps<{
   spans: TicketSpan[];
   tenants: readonly Tenant[];
   running: boolean;
 }>();
 
-const emit = defineEmits<{
-  (e: "inject-incident"): void;
-}>();
+const emit = defineEmits<{ "inject-incident": [] }>();
 
 interface Block {
   key: string;

@@ -1,7 +1,8 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { EventEnvelope } from "~~/shared/events";
-import type { ArchState, EdgeKey, NodeKey } from "~/types/architecture";
+import type { EncryptionStartRequest } from "~~/shared/types";
+import type { EdgeKey, NodeKey } from "~/types/architecture";
 
 const STEP_TO_SVC: Record<string, { node: NodeKey; edge: EdgeKey }> = {
   "validate-order": { node: "s1", edge: "wk_s1" },
@@ -12,18 +13,11 @@ const STEP_TO_SVC: Record<string, { node: NodeKey; edge: EdgeKey }> = {
 
 const props = defineProps<{
   events: EventEnvelope[];
-  scenario: "clear" | "encrypted";
+  scenario: EncryptionStartRequest["scenario"];
 }>();
 
-const arch = computed<ArchState>(() => {
-  const nodes = initialNodes();
-  const edges = initialEdges();
-
-  // No workflow.started event is emitted, so the first observed event anchors
-  // the run; closes only when a terminal event arrives.
-  let running = props.events.length > 0;
-
-  for (const env of props.events) {
+const arch = computed(() =>
+  foldArch(props.events, (env, nodes, edges) => {
     const data = env.data as Record<string, unknown>;
 
     switch (env.type) {
@@ -59,25 +53,9 @@ const arch = computed<ArchState>(() => {
         }
         break;
       }
-
-      case "progress.workflow.completed":
-        resetAll(nodes, edges);
-        running = false;
-        nodes.temporal = "ok";
-        nodes.ui = "ok";
-        break;
-
-      case "progress.workflow.failed":
-        applyWorkflowFailed(nodes, edges);
-        running = false;
-        break;
     }
-  }
-
-  if (running) applyRunningBaseline(nodes, edges);
-
-  return { nodes, edges, running };
-});
+  }),
+);
 </script>
 
 <template>

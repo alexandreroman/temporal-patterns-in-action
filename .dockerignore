@@ -1,0 +1,43 @@
+# Build context rooted at the repository (only the codec-server image, see
+# compose.yaml): it needs codec-server/ and the workers/ module it replaces.
+# Patterns are anchored at the context root, so nested paths need **/.
+
+# VCS, tooling and workspace metadata
+.git
+.github/
+.githooks/
+.claude/
+.casper.json
+.editorconfig
+
+# Other build contexts
+frontend/
+**/node_modules
+
+# Build and hot-reload artifacts
+**/bin/
+**/tmp/
+**/*.test
+**/*.out
+**/coverage.*
+codec-server/codec-server
+
+# Dev-only and build-only files the image never needs
+**/Dockerfile
+**/.dockerignore
+**/.gitignore
+**/.golangci.yml
+**/.air.toml
+**/*.md
+**/Makefile
+compose*.yaml
+compose*.yml
+patterns.png
+LICENSE
+
+# Secrets and local state
+.env
+.env.*
+
+# OS / editor
+**/.DS_Store

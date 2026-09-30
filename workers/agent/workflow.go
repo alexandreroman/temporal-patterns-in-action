@@ -27,7 +27,7 @@ func TravelAgentWorkflow(ctx workflow.Context, req UserRequest) (Plan, error) {
 	history := []Message{{Role: RoleUser, Content: req.Prompt}}
 
 	// LLM calls use bounded retries so the "retry" scenario can inject one
-	// transient timeout per loop and still reach a successful attempt.
+	// transient timeout (once, at loop 3) and still reach a successful attempt.
 	ctx = workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
 		StartToCloseTimeout: 5 * time.Second,
 		RetryPolicy: &temporal.RetryPolicy{

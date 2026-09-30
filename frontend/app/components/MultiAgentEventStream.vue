@@ -69,8 +69,8 @@ function dotColor(env: EventEnvelope): DotColor {
     const data = env.data as Record<string, unknown>;
     return data.partial ? "amber" : "green";
   }
-  if (t.endsWith(".failed") || t.endsWith("workflow.failed")) return "red";
   if (t === "progress.step.failed") return "amber";
+  if (t.endsWith(".failed")) return "red";
   if (t.endsWith(".completed") || t.endsWith(".ready")) return "green";
   if (t.endsWith(".started") || t === "multi-agent.user.prompt") return "blue";
   return "blue";

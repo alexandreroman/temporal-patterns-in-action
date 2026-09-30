@@ -5,8 +5,8 @@
 
 Runnable demos of the core [Temporal](https://temporal.io) patterns —
 saga, entity workflow, long-running batch, payload encryption,
-durable AI agent, multi-agent deep research — with Go workers and a
-Frontend to trigger and observe them.
+durable AI agent, multi-agent deep research, priority and fairness —
+with Go workers and a Frontend to trigger and observe them.
 
 ![Temporal patterns in action](patterns.png)
 
@@ -44,15 +44,17 @@ Stop everything with `docker-compose down`.
 | ----------------------- | ---------------------------------- | ------- |
 | `BATCH_WORKER_REPLICAS` | Number of `worker-batch` replicas  | `1`     |
 
-The frontend and workers read `TEMPORAL_ADDRESS`, `TEMPORAL_NAMESPACE`,
-and `NATS_URL`. Defaults wired in `compose.yaml` cover the
-containerized stack; override them only when running outside compose.
+The frontend reads `TEMPORAL_ADDRESS`, `TEMPORAL_NAMESPACE`, and
+`NATS_URL`; the workers read `TEMPORAL_ADDRESS` and `NATS_URL`.
+Defaults wired in `compose.yaml` cover the containerized stack;
+override them only when running outside compose.
 
 ## Local development
 
 Prerequisites: Go 1.26+, Node.js 24 LTS, pnpm (via
-`corepack enable`), and [Air](https://github.com/air-verse/air)
-for worker hot-reload.
+`corepack enable`), [Air](https://github.com/air-verse/air)
+for worker hot-reload, and
+[golangci-lint](https://golangci-lint.run/) for `make check`.
 
 Launch the full dev stack — Temporal + NATS in containers, plus
 the frontend and all workers locally with hot-reload — in one
@@ -66,11 +68,11 @@ Or work on a single module at a time:
 
 ```bash
 make frontend     # Nuxt dev server on :3000
-make worker-saga  # also: worker-batch, worker-agent
+make worker-saga  # any pattern: worker-<name>
 ```
 
-Run all checks (lint, build, tests) across modules with
-`make check`. Stop the infra with `make infra-down`.
+Run all checks (typecheck, lint, format, vet, workflowcheck,
+tests) across modules with `make check`. Stop the infra with `make infra-down`.
 
 After cloning, run `make setup` once to enable the versioned
 git hooks in [`.githooks`](.githooks/) — `pre-push` runs `make
@@ -98,9 +100,10 @@ graph LR
 ### How a run flows
 
 1. The user picks a pattern in the UI and triggers a
-   scenario. The Nuxt server route starts a Temporal
-   workflow and immediately opens a Server-Sent Events
-   (SSE) stream back to the browser.
+   scenario. The page opens a Server-Sent Events (SSE)
+   stream for the new workflow id, waits for it to be
+   live, then asks a Nuxt server route to start the
+   Temporal workflow.
 2. The matching Go worker polls its task queue, runs
    the workflow, and executes activities. Temporal owns
    the durable state — retries, timers, history — so a
@@ -109,13 +112,14 @@ graph LR
    (`progress.step.started|completed|failed`) to NATS
    via a shared Temporal interceptor. Activities also
    emit business events (e.g.
-   `saga.inventory.reserved`) where the pattern needs
+   `saga.fraud.checked`) where the pattern needs
    to show domain-level progress.
 4. The Nuxt SSE endpoint subscribes to the relevant
    NATS subjects, forwards envelopes to the browser,
    and synthesises a terminal
-   `progress.workflow.completed|failed` event from
-   `handle.result()` once the workflow ends.
+   `progress.workflow.completed|failed` event once
+   polling the workflow with `describe()` shows it
+   has ended.
 
 ### Why NATS
 
@@ -135,7 +139,9 @@ frontend:
   activity scope (via an interceptor), never from
   workflow code, so the Temporal Web UI stays focused
   on the pattern's real activities with no
-  `LocalActivityMarker` clutter.
+  `LocalActivityMarker` clutter (priority and fairness
+  uses local activities on purpose, to dispatch
+  tickets).
 
 ### Why a frontend
 
@@ -151,19 +157,16 @@ raw event list cannot.
 - **Live timeline** driven by the NATS event stream —
   steps light up in order, compensations highlight in
   a different style, retries are visible.
-- **Pattern-specific panels** — saga compensation
-  bracket, entity cart state, batch progress bar,
-  agent reasoning / tool calls, multi-agent fan-out —
-  render state that would be buried in a generic
-  history view.
+- **Pattern-specific panels** — saga pipeline with
+  compensations, entity cart state, batch progress bar,
+  agent reasoning / tool calls, multi-agent fan-out,
+  per-tenant helpdesk queues — render state that
+  would be buried in a generic history view.
 - **Side-by-side source viewer** pins the exact
   snippet responsible for the step currently running,
-  with a language switcher (Go, Java, Python,
-  TypeScript) so the UI doubles as a guided tour of
+  with a language switcher (Go, Java, TypeScript,
+  Python) so the UI doubles as a guided tour of
   the code in your SDK of choice.
-- **Link back to Temporal Web UI** on every run for
-  when you want to inspect raw history, retries, or
-  the event payloads directly.
 
 ## Patterns
 

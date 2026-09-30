@@ -5,7 +5,8 @@ import { priorityLevel, tenantById, type Agent } from "~/utils/priority-fairness
 /**
  * Four-card worker pool. Each card shows the slot label and either an idle
  * marker or the in-flight ticket: priority chip, ID, tenant name, and a
- * progress bar tinted in the tenant color.
+ * full "busy" bar tinted in the tenant color. The backend reports no
+ * sub-ticket progress, so the bar means "agent occupied", not completion.
  */
 
 const props = defineProps<{
@@ -21,7 +22,6 @@ interface Card {
   priorityLabel: string;
   priorityBg: string;
   priorityFg: string;
-  pct: number;
 }
 
 const cards = computed<Card[]>(() =>
@@ -36,12 +36,10 @@ const cards = computed<Card[]>(() =>
         priorityLabel: "",
         priorityBg: "",
         priorityFg: "",
-        pct: 0,
       };
     }
     const tenant = tenantById(agent.tenant);
     const lvl = priorityLevel(agent.ticket.priority);
-    const pct = agent.duration === 0 ? 0 : Math.min(100, (agent.progress / agent.duration) * 100);
     return {
       slot: agent.slot,
       busy: true,
@@ -51,7 +49,6 @@ const cards = computed<Card[]>(() =>
       priorityLabel: lvl.label,
       priorityBg: lvl.bg,
       priorityFg: lvl.fg,
-      pct,
     };
   }),
 );
@@ -107,8 +104,8 @@ const cards = computed<Card[]>(() =>
         <div class="h-1.5 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800">
           <div
             v-if="card.busy"
-            class="h-full rounded-full transition-all duration-200 ease-linear"
-            :style="{ width: `${card.pct}%`, backgroundColor: card.tenantColor }"
+            class="h-full w-full rounded-full"
+            :style="{ backgroundColor: card.tenantColor }"
           />
         </div>
       </div>

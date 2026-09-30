@@ -1,19 +1,14 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { EventEnvelope } from "~~/shared/events";
-import type { StatusTone } from "~/types/status-bar";
-
-interface Derived {
-  tone: StatusTone;
-  message: string;
-}
+import type { StatusState } from "~/types/status-bar";
 
 const props = defineProps<{
   events: EventEnvelope[];
   total: number;
 }>();
 
-const derived = computed<Derived>(() => {
+const derived = computed<StatusState>(() => {
   if (props.events.length === 0) {
     return { tone: "idle", message: "Ready — pick a scenario and run" };
   }

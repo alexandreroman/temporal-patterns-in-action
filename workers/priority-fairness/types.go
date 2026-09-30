@@ -26,6 +26,10 @@ const (
 	TenantBusiness        Tenant = "business"
 )
 
+// allTenants lists every tenant in a fixed order. Workflow code iterates this
+// slice rather than a map so replay stays deterministic.
+var allTenants = []Tenant{TenantMissionCritical, TenantEnterprise, TenantBusiness}
+
 // PriorityKey is 1..4 — lower = higher priority. P0=1 .. P3=4.
 type PriorityKey int
 
@@ -64,23 +68,13 @@ type AnnounceIncidentInput struct {
 	Ticket   Ticket `json:"ticket"`
 }
 
-// ResolveTicketWorkflowInput is the input to ResolveTicketWorkflow. The
-// per-ticket Priority is set on the workflow's StartWorkflowOptions, not in
-// this struct, but the workflow still needs the parent's id+runID so the
-// ResolveTicket activity can publish business events onto the parent's NATS
-// subject (the only one the frontend SSE endpoint subscribes to).
+// ResolveTicketWorkflowInput is the input to ResolveTicketWorkflow, which
+// hands it unchanged to the ResolveTicket activity. The per-ticket Priority
+// is set on the workflow's StartWorkflowOptions, not in this struct. The
+// parent's id+runID let the activity publish business events onto the
+// parent's NATS subject (the only one the frontend SSE endpoint subscribes
+// to) — the activity's own workflow id is the per-ticket workflow's.
 type ResolveTicketWorkflowInput struct {
-	Ticket           Ticket `json:"ticket"`
-	ParentWorkflowID string `json:"parentWorkflowId"`
-	ParentRunID      string `json:"parentRunId"`
-}
-
-// ResolveTicketActivityInput is the input to the ResolveTicket activity. It
-// carries the parent workflow's id and run id so the activity (running inside
-// the top-level ResolveTicketWorkflow) can publish its business events onto
-// the parent's NATS subject — the activity's own activity-context workflow id
-// is the per-ticket workflow's id, not the helpdesk run's.
-type ResolveTicketActivityInput struct {
 	Ticket           Ticket `json:"ticket"`
 	ParentWorkflowID string `json:"parentWorkflowId"`
 	ParentRunID      string `json:"parentRunId"`

@@ -27,3 +27,8 @@ export function isEventEnvelope(value: unknown): value is EventEnvelope {
     v.data !== null
   );
 }
+
+// The SSE endpoint synthesises one of these once the workflow closes.
+export function isTerminalEvent(event: EventEnvelope): boolean {
+  return event.type === "progress.workflow.completed" || event.type === "progress.workflow.failed";
+}

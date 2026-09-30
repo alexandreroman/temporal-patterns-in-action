@@ -5,6 +5,7 @@
 package entity
 
 import (
+	"slices"
 	"time"
 
 	"go.temporal.io/sdk/temporal"
@@ -37,8 +38,8 @@ func ShoppingCartWorkflow(ctx workflow.Context, state CartState) error {
 	})
 
 	// Queries are side-effect-free observers by Temporal contract, but
-	// QueriesAnswered is explicitly advisory (see types.go) — we only mutate
-	// it for UI counters, never for replay branching.
+	// QueriesAnswered is advisory: it lives only in worker memory (never in
+	// history, so replay resets it) and feeds UI counters, never branching.
 	if err := workflow.SetQueryHandler(ctx, QueryGetCart, func() (Progress, error) {
 		state.QueriesAnswered++
 		return buildProgress(ctx, &state), nil
@@ -190,11 +191,7 @@ func applyQtyUpdate(state *CartState, sig UpdateQtySignal) {
 }
 
 func applyRemove(state *CartState, itemID string) {
-	out := make([]CartItem, 0, len(state.Items))
-	for _, it := range state.Items {
-		if it.ItemID != itemID {
-			out = append(out, it)
-		}
-	}
-	state.Items = out
+	state.Items = slices.DeleteFunc(state.Items, func(it CartItem) bool {
+		return it.ItemID == itemID
+	})
 }

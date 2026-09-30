@@ -46,13 +46,7 @@ function dotColor(env: EventEnvelope): DotColor {
   if (t.includes("started")) return "blue";
   if (t.includes("completed")) return "green";
   if (t.includes("failed")) return "red";
-  if (
-    t.includes("released") ||
-    t.includes("cancelled") ||
-    t.includes("refunded") ||
-    t.includes("compensation")
-  )
-    return "amber";
+  if (t.includes("released") || t.includes("cancelled") || t.includes("refunded")) return "amber";
   return "blue";
 }
 </script>

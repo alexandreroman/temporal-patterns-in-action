@@ -1,39 +1,39 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref, watch } from "vue";
-import { createHighlighter, type ThemedToken } from "shiki";
+import { getSingletonHighlighter, type ThemedToken } from "shiki";
 import type { CodeLang } from "~/composables/useCodeLang";
 import type { CodeSource } from "~/types/code-viewer";
 
 const props = defineProps<{
-  sources: Record<string, CodeSource>;
+  sources: Record<CodeLang, CodeSource>;
   highlight: [number, number] | null;
 }>();
 
 const lang = useCodeLang();
 
-const highlighter = await createHighlighter({
+// One highlighter for the whole app: every CodeViewer instance (and every page
+// visit) reuses it instead of loading the grammars and themes again.
+const highlighter = await getSingletonHighlighter({
   themes: ["github-light", "github-dark"],
   langs: ["go", "java", "python", "typescript"],
 });
 
-const TOKENIZED = computed<Record<string, ThemedToken[][]>>(() => {
-  const out: Record<string, ThemedToken[][]> = {};
-  for (const [key, src] of Object.entries(props.sources)) {
-    out[key] = highlighter.codeToTokens(src.lines.join("\n"), {
-      lang: key as CodeLang,
+// Only the language on screen is tokenized: a tab switch re-runs this, which
+// is cheap for snippets of a few hundred lines.
+const tokenized = computed<ThemedToken[][]>(
+  () =>
+    highlighter.codeToTokens(props.sources[lang.value].lines.join("\n"), {
+      lang: lang.value,
       themes: { light: "github-light", dark: "github-dark" },
       defaultColor: false,
-    }).tokens;
-  }
-  return out;
-});
+    }).tokens,
+);
 
-const currentTokens = computed(() => TOKENIZED.value[lang.value] ?? []);
-
-const gutterWidth = computed(() => `calc(${String(currentTokens.value.length).length}ch + 2.5rem)`);
+const gutterWidth = computed(() => `calc(${String(tokenized.value.length).length}ch + 2.5rem)`);
 
 const scrollerRef = ref<HTMLElement | null>(null);
-const lineRefs = ref<(HTMLElement | null)[]>([]);
+// Plain array: filled by the template's function ref, only read imperatively.
+const lineRefs: (HTMLElement | null)[] = [];
 
 const fullscreen = ref(false);
 
@@ -65,8 +65,8 @@ watch(
     }
 
     const [start, end] = highlight;
-    const startEl = lineRefs.value[start];
-    const endEl = lineRefs.value[end] ?? startEl;
+    const startEl = lineRefs[start];
+    const endEl = lineRefs[end] ?? startEl;
     if (!startEl || !endEl) return;
 
     const scrollerRect = scroller.getBoundingClientRect();
@@ -101,7 +101,7 @@ watch(
             ? 'border-blue-500 text-slate-900 dark:text-slate-100'
             : 'border-transparent text-slate-400 hover:text-slate-600 dark:hover:text-slate-300'
         "
-        @click="lang = key as CodeLang"
+        @click="lang = key"
       >
         {{ src.label }}
       </button>
@@ -142,7 +142,7 @@ watch(
       :class="fullscreen ? 'flex-1 min-h-0 text-[15px]' : 'max-h-80 text-[11px]'"
     >
       <span
-        v-for="(tokens, idx) in currentTokens"
+        v-for="(tokens, idx) in tokenized"
         :key="idx"
         :ref="(el) => (lineRefs[idx] = el as HTMLElement | null)"
         class="flex min-w-max whitespace-pre py-px transition-colors duration-300"

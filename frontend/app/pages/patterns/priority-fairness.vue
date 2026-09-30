@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from "vue";
+import { computed, reactive } from "vue";
 import type {
   PriorityFairnessSignalRequest,
   PriorityFairnessSignalResponse,
@@ -12,45 +12,40 @@ useSeoMeta({ title: "Priority and Fairness" });
 
 type Scenario = "fairness-on" | "fairness-off";
 
-const TERMINAL_TYPES = new Set(["progress.workflow.completed", "progress.workflow.failed"]);
-
 const form = reactive({
   scenario: "fairness-off" as Scenario,
 });
 
-const workflowId = ref<string | null>(null);
-const starting = ref(false);
-const finalError = ref<string | null>(null);
-
-const { events, waitForOpen } = usePatternStream("priority-fairness", workflowId);
+const {
+  workflowId,
+  events,
+  starting,
+  running,
+  error: finalError,
+  run,
+} = usePatternRun("priority-fairness");
 const state = usePriorityFairnessState(events);
 
-const running = computed(() => {
-  if (starting.value) return true;
-  if (!workflowId.value) return false;
-  return !events.value.some((e) => TERMINAL_TYPES.has(e.type));
+// Show the mode the displayed run was started with, read from its seed event:
+// once a run is over, the select may already point at the next scenario.
+const fairnessOn = computed(() => {
+  const seeded = events.value.find((e) => e.type === "helpdesk.run.seeded");
+  const runFairnessOn = (seeded?.data as { fairnessOn?: unknown } | undefined)?.fairnessOn;
+  return typeof runFairnessOn === "boolean" ? runFairnessOn : form.scenario === "fairness-on";
 });
 
-const fairnessOn = computed(() => form.scenario === "fairness-on");
-
 async function start(): Promise<void> {
-  finalError.value = null;
-  starting.value = true;
-  const fairnessOn = form.scenario === "fairness-on";
   const id = `priority-fairness-${randomSuffix()}`;
-  workflowId.value = id;
-  try {
-    await waitForOpen();
-    await $fetch<PriorityFairnessStartResponse>("/api/priority-fairness/start", {
+  const body: PriorityFairnessStartRequest = {
+    workflowId: id,
+    fairnessOn: form.scenario === "fairness-on",
+  };
+  await run(id, () =>
+    $fetch<PriorityFairnessStartResponse>("/api/priority-fairness/start", {
       method: "POST",
-      body: { workflowId: id, fairnessOn } satisfies PriorityFairnessStartRequest,
-    });
-  } catch (error) {
-    finalError.value = error instanceof Error ? error.message : String(error);
-    workflowId.value = null;
-  } finally {
-    starting.value = false;
-  }
+      body,
+    }),
+  );
 }
 
 async function injectIncident(): Promise<void> {
@@ -69,39 +64,23 @@ async function injectIncident(): Promise<void> {
 
 <template>
   <section>
-    <NuxtLink to="/" class="text-sm text-slate-400 hover:text-slate-100"> &larr; back </NuxtLink>
-
-    <!-- Header row -->
-    <div class="mt-2 flex flex-wrap items-center justify-between gap-3">
-      <div class="flex items-center gap-3">
-        <span
-          class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-800 bg-slate-950 text-slate-300"
-        >
-          <IconPriorityFairness class="h-5 w-5" />
-        </span>
-        <h1 class="text-2xl font-semibold tracking-tight text-slate-100">
-          Priority and Fairness &mdash; Multi-Tenant Helpdesk
-        </h1>
-      </div>
-      <div class="flex flex-wrap items-center gap-2">
-        <select
-          v-model="form.scenario"
-          :disabled="running"
-          class="rounded-md border border-slate-700 bg-slate-800 px-2 py-1 text-xs text-slate-200 disabled:opacity-50"
-        >
-          <option value="fairness-off">Fairness OFF</option>
-          <option value="fairness-on">Fairness ON</option>
-        </select>
-        <button
-          type="button"
-          :disabled="running"
-          class="cursor-pointer rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
-          @click="start"
-        >
-          {{ starting ? "Starting…" : running ? "Running…" : "Run scenario" }}
-        </button>
-      </div>
-    </div>
+    <PatternHeader
+      title="Priority and Fairness — Multi-Tenant Helpdesk"
+      label="Run scenario"
+      :busy-label="starting ? 'Starting…' : 'Running…'"
+      :disabled="running"
+      @run="start"
+    >
+      <template #icon><IconPriorityFairness class="h-5 w-5" /></template>
+      <select
+        v-model="form.scenario"
+        :disabled="running"
+        class="rounded-md border border-slate-700 bg-slate-800 px-2 py-1 text-xs text-slate-200 disabled:opacity-50"
+      >
+        <option value="fairness-off">Fairness OFF</option>
+        <option value="fairness-on">Fairness ON</option>
+      </select>
+    </PatternHeader>
 
     <!-- Architecture diagram -->
     <div class="mt-2">

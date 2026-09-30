@@ -22,8 +22,4 @@ export default defineNuxtConfig({
       traceInclude: [createRequire(import.meta.url).resolve("@temporalio/client")],
     },
   },
-  typescript: {
-    strict: true,
-    typeCheck: false,
-  },
 });

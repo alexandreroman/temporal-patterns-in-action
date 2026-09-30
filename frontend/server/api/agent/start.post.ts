@@ -1,7 +1,5 @@
+import { AGENT_PROMPT } from "~~/shared/constants";
 import type { AgentStartRequest, AgentStartResponse } from "~~/shared/types";
-
-const DEFAULT_PROMPT =
-  "Plan a 5-day trip to Tokyo in October. Budget: $3000. I like food, temples, and nightlife.";
 
 export default defineEventHandler(async (event): Promise<AgentStartResponse> => {
   const body = await readBody<AgentStartRequest>(event);
@@ -14,7 +12,7 @@ export default defineEventHandler(async (event): Promise<AgentStartResponse> => 
     workflowId,
     args: [
       {
-        prompt: DEFAULT_PROMPT,
+        prompt: AGENT_PROMPT,
         scenario: body.scenario,
       },
     ],

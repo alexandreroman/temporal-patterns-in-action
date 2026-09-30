@@ -24,14 +24,14 @@ stealing tasks.
 - `temporal task-queue describe --task-queue
   <name>` lists a Poller identity of the form
   `<pid>@<hostname>@` that is *not* one of the
-  running containers (e.g. `34795@donnager@`).
+  running containers.
 
 **Diagnose:**
 
 ```bash
-podman exec temporal-patterns-in-action-temporal-1 \
+docker-compose exec temporal \
   temporal task-queue describe --task-queue patterns-<pattern>
-ps aux | grep -E "(go-build|workers/<pattern>)"
+ps aux | grep -E "(go-build|tmp/<pattern>/worker|<pattern>/cmd/worker)"
 kill <pid>
 ```
 

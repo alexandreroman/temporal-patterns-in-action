@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import type { EventEnvelope } from "~~/shared/events";
+import { isTerminalEvent, type EventEnvelope } from "~~/shared/events";
 
 /**
  * Grid of `total` cells, one per item. Each cell's state is folded from the
@@ -22,13 +22,10 @@ interface Cell {
   progress: number;
 }
 
-const props = withDefaults(
-  defineProps<{
-    events: EventEnvelope[];
-    total?: number;
-  }>(),
-  { total: 48 },
-);
+const props = defineProps<{
+  events: EventEnvelope[];
+  total: number;
+}>();
 
 const cells = computed<Cell[]>(() => {
   const out: Cell[] = Array.from({ length: props.total }, () => ({
@@ -63,11 +60,7 @@ const cells = computed<Cell[]>(() => {
   return out;
 });
 
-const terminated = computed(() =>
-  props.events.some(
-    (e) => e.type === "progress.workflow.completed" || e.type === "progress.workflow.failed",
-  ),
-);
+const terminated = computed(() => props.events.some(isTerminalEvent));
 
 const showProgress = computed(() => props.events.length > 0 && !terminated.value);
 

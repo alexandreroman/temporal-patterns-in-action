@@ -8,40 +8,59 @@
 > before updating. **Do NOT take any action** —
 > no tool calls, no file writes — until confirmed.
 
-- [Event architecture (NATS)](references/event-architecture.md) — subject hierarchy, envelope, progress/business split, determinism rule, kebab-case activity naming gotcha.
-- [Dynamic NuxtLink via <component :is>](references/feedback_nuxtlink_dynamic_component.md) — use `resolveComponent("NuxtLink")`, not the string `'NuxtLink'`, or the element renders inert.
+> **Note wording** — state permanent facts in the
+> present tense. A note read out of context must
+> not reveal what it replaces or what just
+> happened. Ban narration markers: "now", "no
+> longer", "previously / used to", "reverses /
+> replaces", "kept", "changed to", "reintroduce",
+> "the user asked to". Phrase prohibitions
+> positively ("the API is versioned under /v2"),
+> not as the negation of a former state. Test:
+> remove the note from its context — if a sentence
+> only makes sense knowing the prior state,
+> rewrite it.
+
+## Working rules
+
 - [Coding conventions](references/feedback_coding_conventions.md) — line lengths, markdown style, LTS rule.
-- [Agent delegation](references/feedback_agent_delegation.md) — code-writer for code; code-reviewer for reviews; temporal skill for workflow work.
-- [Temporal conventions](references/feedback_temporal_conventions.md) — determinism, `workflowcheck`, and the task-queue/workflow-name contract.
-- [Runbook: new pattern](references/project_adding_new_pattern.md) — 5-step checklist covering workers/, workers/Makefile, and frontend additions.
-- [Demo-first priorities](references/feedback_demo_priorities.md) — bias toward visibility and short inline forms; skip production robustness unless the demo itself showcases it.
-- [Rogue host workers](references/feedback_rogue_host_workers.md) — stale `go run` worker on the host can steal tasks from the container; check `task-queue describe` before blaming Docker caching.
-- [SSE endpoints need an immediate initial push](references/feedback_sse_initial_flush.md) — push one chunk right after `subscribe()` or Node/h3 holds response headers until the 15s heartbeat, blocking `EventSource.onopen`.
-- [NATS subscribe must be flushed before signalling SSE open](references/feedback_nats_subscribe_flush.md) — `nc.subscribe()` only queues SUB; without `await nc.flush()` the first event (e.g. `helpdesk.run.seeded`) is dropped.
-- [waitForOpen sees stale `open` across runs](references/feedback_waitforopen_stale_status.md) — pattern-stream watch needs `flush:"sync"`, else the second run POSTs `/start` before the new SSE subscription is live and `helpdesk.run.seeded` is dropped.
-- [Don't abort priority-fairness runs mid-flight](references/feedback_priority_fairness_repro_load.md) — each scenario spawns 120+ top-level workflows; serialise repro trials and let each drain so the dev Temporal server doesn't congest.
-- [Frontend component conventions](references/feedback_frontend_component_conventions.md) — generic shells in `components/`; pattern logic lives in `<Pattern><Component>.vue` wrappers.
-- [Saga activities: txID first](references/feedback_saga_idempotency_key_first.md) — saga activities take `txID` as the first business arg after `ctx`; keeps the idempotency key visible in logs and UI.
-- [Batch throttling: in-workflow sliding window](references/project_batch_throttling.md) — Selector window caps in-flight children; no worker cap.
-- [Keep CodeViewer snippets in sync](references/feedback_codeviewer_snippet_sync.md) — mirror edits across all four languages AND recompute 0-indexed highlight ranges whenever line numbers shift.
-- [Nuxt server env vars: process.env, not runtimeConfig](references/feedback_nuxt_runtime_env.md) — runtimeConfig defaults bake at build time; plain env vars are ignored unless prefixed `NUXT_*`.
-- [Node healthcheck: use 127.0.0.1, not localhost](references/feedback_node_healthcheck_ipv6.md) — busybox wget resolves `localhost` to `::1` first; Nuxt listens on IPv4 only, so the probe gets connection refused.
-- [Default scenario to happy path](references/feedback_default_scenario_happy_path.md) — every new pattern page's scenario selector must default to the success option, not the failure/partial variant.
-- [Realistic animated token counters](references/feedback_token_counters.md) — emit non-round tokens per step from the worker and animate the UI with `useCountTween`; mirror `AgentStatePanel.vue`.
-- [Stable Vue keys for placeholder items](references/feedback_stable_keys_for_placeholder_messages.md) — optimistic placeholder and event-driven row in a `<TransitionGroup>` must share one `:key`, or `.msg-flash` makes both linger during the swap.
-- [Nuxt SSR browser globals](references/feedback_nuxt_ssr_browser_globals.md) — wrap rAF/window/etc. in onMounted or `import.meta.client`; `watch(immediate:true)` is NOT an SSR guard. Smoke with `curl` after frontend edits.
-- [@temporalio/client is loaded through createRequire](references/project_temporalio_client_116_ssr_regression.md) — 1.16+ emits extension-less ESM imports Node rejects; CommonJS load + `traceInclude`, both required.
-- [Nitro rewrites import.meta.url to a placeholder](references/project_nitro_import_meta_url_placeholder.md) — it is `file:///_entry.js` in built chunks; anchor on `process.argv[1]`, and boot the output to catch it.
-- [Announce activities → ExecuteLocalActivity](references/feedback_announce_use_local_activity.md) — parent has no Priority, so regular announces inherit key 3 and block high-priority dispatch behind the backlog.
-- [Priority pattern: top-level workflow per ticket](references/feedback_priority_top_level_workflow.md) — each ticket runs as its own top-level workflow started via local activity + client.ExecuteWorkflow; never a ChildWorkflow.
-- [priority-fairness dials its own client](references/feedback_pf_local_client_dial.md) — don't widen events.RunWorker; dial the client locally in priority-fairness/cmd/worker/main.go.
-- [Codec Server is opt-in by design](references/project_codec_server_ui_endpoint.md) — never set `--ui-codec-endpoint`; ciphertext-then-toggle is the demo's payoff, users enable the codec endpoint manually.
-- [Go Dockerfiles: cache mounts need an explicit id](references/feedback_codec_server_no_cache_mount.md) — id-less podman `type=cache` breaks `go build` resolution ("no required module provides package"); always set `id=gomod`/`id=gobuild` (matches skillbox go-rules).
-- [Temporal UI Codec Server: glasses icon](references/feedback_temporal_ui_codec_glasses_icon.md) — point users to the glasses icon in the top bar, not the bottom-left user/Settings menu.
-- [cmux compose port isolation](references/project_cmux_compose_port_isolation.md) — post-create.sh writes a gitignored compose.override.yaml using `!override` to remap host ports from CMUX_PORT.
-- [Casper compose/dev port isolation](references/project_casper_compose_port_isolation.md) — `compose-override` target regenerates the gitignored override from CASPER_PORT; infra-up/app-up/bootstrap all depend on it so `make dev` launches infra on matching ports.
-- [Casper info panel mirrors make endpoints](references/feedback_casper_info_panel.md) — `make endpoints` prints the addresses as Markdown; app-up/dev publish the panel, app-down/infra-down/teardown clear it.
-- [Status bar must not gate content on out-in transition](references/feedback_statusbar_no_outin_transition.md) — `<Transition mode="out-in">` wedges on hidden tabs (rAF/timers freeze); use a CSS keyframes animation keyed by the value.
-- [pnpm settings live in pnpm-workspace.yaml](references/project_pnpm_config_in_workspace_yaml.md) — `allowBuilds` gates dependency build scripts; the `pnpm` field in package.json is ignored and the Dockerfile must copy the file.
-- [Verify dynamic config keys with a wrong-type probe](references/project_verify_dynamic_config_keys.md) — start-dev silently ignores unknown keys; feed a bad type at `--log-level debug` plus traffic, with a bogus control.
-- [Browser tests: casper load is a hidden page](references/feedback_casper_browser_hidden_page.md) — transitions/rAF freeze; use `casper browser open` for UI flows.
+- [Agent delegation](references/feedback_agent_delegation.md) — code-writer for code, code-reviewer for reviews, temporal skill.
+- [Demo-first priorities](references/feedback_demo_priorities.md) — favour visibility and short forms; skip production robustness.
+- [Runbook: new pattern](references/project_adding_new_pattern.md) — six steps: workers/, main, Dockerfile+compose, PATTERNS, frontend, README.
+
+## Architecture and Temporal
+
+- [Event architecture (NATS)](references/event-architecture.md) — subjects, envelope, progress/business split, kebab-case steps.
+- [Temporal conventions](references/feedback_temporal_conventions.md) — determinism, `workflowcheck`, task-queue/workflow-name contract.
+- [Saga activities: txID first](references/feedback_saga_idempotency_key_first.md) — idempotency key is the first arg after `ctx`.
+- [Batch throttling: in-workflow sliding window](references/project_batch_throttling.md) — Selector window caps in-flight children.
+- [Announce activities → ExecuteLocalActivity](references/feedback_announce_use_local_activity.md) — regular announces inherit key 3 and queue.
+- [Priority pattern: top-level workflow per ticket](references/feedback_priority_top_level_workflow.md) — local activity + ExecuteWorkflow.
+- [Don't abort priority-fairness runs mid-flight](references/feedback_priority_fairness_repro_load.md) — 120+ workflows per run; serialise.
+- [Codec Server is opt-in by design](references/project_codec_server_ui_endpoint.md) — no --ui-codec-endpoint; glasses icon toggle.
+- [Rogue host workers](references/feedback_rogue_host_workers.md) — a stale host `go run` worker steals tasks; check pollers first.
+- [Verify dynamic config keys](references/project_verify_dynamic_config_keys.md) — start-dev ignores unknown keys; wrong-type probe.
+
+## Frontend
+
+- [Frontend component conventions](references/feedback_frontend_component_conventions.md) — generic shells + `<Pattern>*.vue` wrappers.
+- [Keep CodeViewer snippets in sync](references/feedback_codeviewer_snippet_sync.md) — mirror all four languages; recompute ranges.
+- [CodeViewer snippet idioms](references/feedback_codeviewer_snippet_idioms.md) — per-SDK conventions: options, failures, Java/Python/TS.
+- [SSE start-up handshake](references/feedback_sse_startup_handshake.md) — subscribe → nc.flush() → first push; flush:"sync" watch.
+- [Default scenario to happy path](references/feedback_default_scenario_happy_path.md) — scenario selectors default to success.
+- [Realistic animated token counters](references/feedback_token_counters.md) — non-round tokens from the worker + `useCountTween`.
+- [Stable Vue keys for placeholder items](references/feedback_stable_keys_for_placeholder_messages.md) — placeholder and row share a key.
+- [Status bar: no out-in transition](references/feedback_statusbar_no_outin_transition.md) — wedges on hidden tabs; use CSS keyframes.
+- [Dynamic NuxtLink via <component :is>](references/feedback_nuxtlink_dynamic_component.md) — `resolveComponent("NuxtLink")`.
+- [Nuxt SSR browser globals](references/feedback_nuxt_ssr_browser_globals.md) — guard in onMounted; smoke routes with `curl`.
+- [Nuxt server env vars: process.env](references/feedback_nuxt_runtime_env.md) — runtimeConfig defaults bake at build time.
+- [@temporalio/client via createRequire](references/project_temporalio_client_116_ssr_regression.md) — ESM imports break; CJS + traceInclude.
+- [Nitro import.meta.url placeholder](references/project_nitro_import_meta_url_placeholder.md) — anchor on `process.argv[1]`; boot output.
+- [pnpm settings in pnpm-workspace.yaml](references/project_pnpm_config_in_workspace_yaml.md) — `allowBuilds`; Dockerfile copies it.
+
+## Infra and workspaces
+
+- [Casper compose/dev port isolation](references/project_casper_compose_port_isolation.md) — override from CASPER_PORT; `!override`.
+- [Casper info panel mirrors make endpoints](references/feedback_casper_info_panel.md) — app-up/dev publish, down targets clear.
+- [Browser tests: casper load is a hidden page](references/feedback_casper_browser_hidden_page.md) — use `casper browser open`.
+- [Node healthcheck: use 127.0.0.1](references/feedback_node_healthcheck_ipv6.md) — busybox wget tries `::1`; Nuxt is IPv4.

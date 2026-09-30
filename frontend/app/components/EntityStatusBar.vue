@@ -1,18 +1,13 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { EventEnvelope } from "~~/shared/events";
-import type { StatusTone } from "~/types/status-bar";
-
-interface Derived {
-  tone: StatusTone;
-  message: string;
-}
+import type { StatusState, StatusTone } from "~/types/status-bar";
 
 const props = defineProps<{
   events: EventEnvelope[];
 }>();
 
-const derived = computed<Derived>(() => {
+const derived = computed<StatusState>(() => {
   if (props.events.length === 0) {
     return { tone: "idle", message: "Ready — press Run scenario" };
   }
@@ -29,10 +24,10 @@ const derived = computed<Derived>(() => {
         tone = "running";
         switch (step) {
           case "validate-item":
-            message = `Validating ${String(data.name ?? "item")}`;
+            message = "Validating item";
             break;
           case "price-item":
-            message = `Pricing ${String(data.name ?? "item")}`;
+            message = "Pricing item";
             break;
           case "update-qty":
             message = "Updating qty";
@@ -45,9 +40,6 @@ const derived = computed<Derived>(() => {
             break;
           case "send-confirmation":
             message = "Sending confirmation";
-            break;
-          case "record-checkpoint":
-            message = "Recording checkpoint";
             break;
           default:
             message = `${step}…`;

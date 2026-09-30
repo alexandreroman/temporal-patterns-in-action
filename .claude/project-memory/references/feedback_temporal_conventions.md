@@ -14,9 +14,10 @@ type: feedback
   `select` equivalents. No direct I/O, no
   `time.Now()`, no `uuid.NewString()` inside a
   workflow.
-- **Run `workflowcheck ./...`** before merging
-  workflow changes
-  (`make -C workers workflowcheck`).
+- **`workflowcheck` gates every change** — it
+  runs in `make check`, the pre-push hook and CI
+  (`make -C workers workflowcheck`, pinned via
+  `WORKFLOWCHECK_VERSION`).
 - **Task queue names and workflow type names
   are a contract** between the Go workers and
   the TypeScript frontend. Renaming either one

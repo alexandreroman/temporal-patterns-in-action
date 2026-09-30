@@ -10,13 +10,8 @@ func Subject(pattern, workflowID, category string) string {
 
 // CategoryOf classifies an event type into a subject category. Types prefixed
 // with "progress." are framework lifecycle events (CategoryProgress); anything
-// else is a pattern-specific business event (CategoryBusiness). An empty
-// string maps to "" so callers can distinguish a missing type from a valid
-// one.
+// else is a pattern-specific business event (CategoryBusiness).
 func CategoryOf(eventType string) string {
-	if eventType == "" {
-		return ""
-	}
 	if strings.HasPrefix(eventType, "progress.") {
 		return CategoryProgress
 	}

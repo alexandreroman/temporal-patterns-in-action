@@ -1,12 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { EventEnvelope } from "~~/shared/events";
-import type { StatusTone } from "~/types/status-bar";
-
-interface Derived {
-  tone: StatusTone;
-  message: string;
-}
+import type { StatusState, StatusTone } from "~/types/status-bar";
 
 const props = defineProps<{
   events: EventEnvelope[];
@@ -24,7 +19,7 @@ const STEP_LABELS: Record<string, string> = {
 
 const COMP_STEPS = new Set(["release-fraud-hold", "cancel-shipment", "refund-customer"]);
 
-const derived = computed<Derived>(() => {
+const derived = computed<StatusState>(() => {
   if (props.events.length === 0) {
     return { tone: "idle", message: "Ready — choose a failure point and run" };
   }

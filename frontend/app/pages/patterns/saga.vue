@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from "vue";
+import { reactive } from "vue";
 import type { SagaStartRequest, SagaStartResponse } from "~~/shared/types";
 
 useSeoMeta({ title: "Saga" });
@@ -10,32 +10,12 @@ const form = reactive({
   failAt: "" as FailAt,
 });
 
-const workflowId = ref<string | null>(null);
-const starting = ref(false);
-const finalError = ref<string | null>(null);
-
-const { events, waitForOpen } = usePatternStream("saga", workflowId);
-
-const TERMINAL_EVENTS = new Set(["progress.workflow.completed", "progress.workflow.failed"]);
-
-const running = computed(() => {
-  if (starting.value) return true;
-  if (!workflowId.value) return false;
-  return !events.value.some((e) => TERMINAL_EVENTS.has(e.type));
-});
+const { events, starting, running, error: finalError, run } = usePatternRun("saga");
 
 async function start() {
-  finalError.value = null;
-  starting.value = true;
   const orderId = `order-${randomSuffix()}`;
-  // Subscribe BEFORE starting the workflow: core NATS has no replay, and
-  // the first progress.step.started (check-fraud) fires almost
-  // immediately after start — we would miss it if the SSE stream opened
-  // only after the start() response came back.
-  workflowId.value = `saga-${orderId}`;
-  try {
-    await waitForOpen();
-    await $fetch<SagaStartResponse>("/api/saga/start", {
+  await run(`saga-${orderId}`, () =>
+    $fetch<SagaStartResponse>("/api/saga/start", {
       method: "POST",
       body: {
         customerId: "alice",
@@ -43,54 +23,33 @@ async function start() {
         amount: 1200,
         failAt: form.failAt,
       },
-    });
-  } catch (error) {
-    finalError.value = error instanceof Error ? error.message : String(error);
-    workflowId.value = null;
-  } finally {
-    starting.value = false;
-  }
+    }),
+  );
 }
 </script>
 
 <template>
   <section>
-    <NuxtLink to="/" class="text-sm text-slate-400 hover:text-slate-100"> &larr; back </NuxtLink>
-
-    <!-- Control bar -->
-    <div class="mt-2 flex flex-wrap items-center justify-between gap-3">
-      <div class="flex items-center gap-3">
-        <span
-          class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-slate-800 bg-slate-950 text-slate-300"
-        >
-          <IconSaga class="h-5 w-5" />
-        </span>
-        <h1 class="text-2xl font-semibold tracking-tight text-slate-100">
-          Saga Pattern &mdash; Order Processing
-        </h1>
-      </div>
-      <div class="flex items-center gap-2">
-        <select
-          v-model="form.failAt"
-          :disabled="running"
-          class="rounded-md border border-slate-700 bg-slate-800 px-2 py-1 text-xs text-slate-200 disabled:opacity-50"
-        >
-          <option value="">No failure</option>
-          <option value="fraud">Fail at check fraud</option>
-          <option value="shipment">Fail at prepare shipment</option>
-          <option value="charge">Fail at charge customer</option>
-          <option value="notification">Fail at send confirmation</option>
-        </select>
-        <button
-          type="button"
-          :disabled="running"
-          class="cursor-pointer rounded-md bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
-          @click="start"
-        >
-          {{ starting ? "Starting…" : running ? "Running…" : "Run saga" }}
-        </button>
-      </div>
-    </div>
+    <PatternHeader
+      title="Saga Pattern — Order Processing"
+      label="Run saga"
+      :busy-label="starting ? 'Starting…' : 'Running…'"
+      :disabled="running"
+      @run="start"
+    >
+      <template #icon><IconSaga class="h-5 w-5" /></template>
+      <select
+        v-model="form.failAt"
+        :disabled="running"
+        class="rounded-md border border-slate-700 bg-slate-800 px-2 py-1 text-xs text-slate-200 disabled:opacity-50"
+      >
+        <option value="">No failure</option>
+        <option value="fraud">Fail at check fraud</option>
+        <option value="shipment">Fail at prepare shipment</option>
+        <option value="charge">Fail at charge customer</option>
+        <option value="notification">Fail at send confirmation</option>
+      </select>
+    </PatternHeader>
 
     <!-- Architecture diagram -->
     <div class="mt-2">

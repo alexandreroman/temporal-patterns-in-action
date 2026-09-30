@@ -1,4 +1,5 @@
 import { randomUUID } from "node:crypto";
+import type { WorkflowHandle } from "@temporalio/client";
 import { subscribe } from "~~/server/utils/nats";
 // Re-exported by the util rather than imported from "@temporalio/client":
 // see the CommonJS loading note in server/utils/temporal.ts.
@@ -9,18 +10,18 @@ const HEARTBEAT_INTERVAL_MS = 15_000;
 const DESCRIBE_POLL_INTERVAL_MS = 250;
 const DESCRIBE_POLL_DEADLINE_MS = 30_000;
 const TERMINAL_POLL_INTERVAL_MS = 500;
+// Both values end up in the NATS subject, so they must stay a single token.
+const SUBJECT_TOKEN = /^[\w-]+$/;
 
 export default defineEventHandler(async (event) => {
   const pattern = getRouterParam(event, "pattern");
   const id = getRouterParam(event, "id");
 
-  if (!pattern || !id) {
-    throw createError({ statusCode: 400, statusMessage: "pattern and workflow id are required" });
+  if (!pattern || !id || !SUBJECT_TOKEN.test(pattern) || !SUBJECT_TOKEN.test(id)) {
+    throw createError({ statusCode: 400, statusMessage: "invalid pattern or workflow id" });
   }
 
   const stream = createEventStream(event);
-  setResponseHeader(event, "Cache-Control", "no-cache, no-transform");
-  setResponseHeader(event, "Connection", "keep-alive");
 
   let unsubscribe: (() => void) | null = null;
   try {
@@ -49,9 +50,8 @@ export default defineEventHandler(async (event) => {
     unsubscribe?.();
   });
 
-  // Synthesise terminal workflow events from Temporal: the worker no longer
-  // emits progress.workflow.{completed,failed}, so the SSE endpoint watches
-  // the handle and pushes a matching envelope when the workflow terminates.
+  // Workers never emit terminal workflow events: the SSE endpoint watches the
+  // handle and synthesises them.
   void watchTerminalState(pattern, id, () => closed, stream.push.bind(stream));
 
   return stream.send();
@@ -74,31 +74,21 @@ async function watchTerminalState(
 
     const { runId, status } = description;
 
-    if (status.name === "RUNNING") {
-      // Poll describe() rather than awaiting handle.result(): the result
-      // payload may be encrypted (e.g. the encryption pattern), and the plain
-      // Temporal client has no PayloadCodec. describe() reports status without
-      // decoding the payload, keeping this endpoint pattern-agnostic.
-      const terminal = await waitForTerminal(handle, isClosed);
-      if (!terminal || isClosed()) return;
-      if (terminal === "COMPLETED") {
-        await pushSynthetic(push, pattern, workflowId, runId, "progress.workflow.completed", {});
-      } else {
-        await pushSynthetic(push, pattern, workflowId, runId, "progress.workflow.failed", {
-          error: `workflow ${terminal.toLowerCase()}`,
-        });
-      }
-      return;
-    }
+    // Poll describe() rather than awaiting handle.result(): the result payload
+    // may be encrypted (e.g. the encryption pattern), and the plain Temporal
+    // client has no PayloadCodec. describe() reports status without decoding
+    // the payload, keeping this endpoint pattern-agnostic.
+    const terminal =
+      status.name === "RUNNING" ? await waitForTerminal(handle, isClosed) : status.name;
+    if (!terminal || isClosed()) return;
 
-    if (isClosed()) return;
-    if (status.name === "COMPLETED") {
+    if (terminal === "COMPLETED") {
       await pushSynthetic(push, pattern, workflowId, runId, "progress.workflow.completed", {});
     } else {
       // FAILED / CANCELLED / TERMINATED / TIMED_OUT — surface as failure with
       // the status name so the UI reflects the outcome.
       await pushSynthetic(push, pattern, workflowId, runId, "progress.workflow.failed", {
-        error: `workflow ${status.name.toLowerCase()}`,
+        error: `workflow ${terminal.toLowerCase()}`,
       });
     }
   } catch (err) {
@@ -107,7 +97,7 @@ async function watchTerminalState(
 }
 
 async function waitForTerminal(
-  handle: { describe: () => Promise<{ status: { name: string } }> },
+  handle: WorkflowHandle,
   isClosed: () => boolean,
 ): Promise<string | null> {
   while (!isClosed()) {
@@ -122,10 +112,7 @@ async function waitForTerminal(
   return null;
 }
 
-async function waitForDescription(
-  handle: { describe: () => Promise<{ runId: string; status: { name: string } }> },
-  isClosed: () => boolean,
-) {
+async function waitForDescription(handle: WorkflowHandle, isClosed: () => boolean) {
   const deadline = Date.now() + DESCRIBE_POLL_DEADLINE_MS;
   while (!isClosed() && Date.now() < deadline) {
     try {

@@ -1,18 +1,13 @@
 <script setup lang="ts">
 import { computed } from "vue";
 import type { EventEnvelope } from "~~/shared/events";
-import type { StatusTone } from "~/types/status-bar";
-
-interface Derived {
-  tone: StatusTone;
-  message: string;
-}
+import type { StatusState } from "~/types/status-bar";
 
 const props = defineProps<{
   events: EventEnvelope[];
 }>();
 
-const derived = computed<Derived>(() => {
+const derived = computed<StatusState>(() => {
   if (props.events.length === 0) {
     return { tone: "idle", message: "Ready — pick a scenario and run" };
   }
@@ -40,8 +35,8 @@ const derived = computed<Derived>(() => {
   if (completed) {
     return { tone: "success", message: `Drained — ${resolved} total resolutions` };
   }
-  // Omit the live resolved count: StatusBar's <Transition> is keyed on the
-  // message, and the 4 Hz tick rate would thrash the leave/enter cycle.
+  // Omit the live resolved count: StatusBar replays its entry animation on
+  // every message change, so a count ticking per resolution would keep it flashing.
   return { tone: "running", message: `Running with fairness ${onOff}` };
 });
 </script>

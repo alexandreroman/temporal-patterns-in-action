@@ -16,7 +16,7 @@ then threads it through every `workflow.ExecuteActivity(...)` call
 on the downstream service. Keeping it at position 1 makes it visible
 in logs, in the Temporal UI's activity-input pane, and in the
 pedagogical code snippets rendered by
-`frontend/app/components/SagaCodeViewer.vue` (Go/Java/Python all
+`frontend/app/components/SagaCodeViewer.vue` (all four languages
 follow the same convention). Burying it inside an `input` struct
 hides the pattern from viewers of the demo.
 

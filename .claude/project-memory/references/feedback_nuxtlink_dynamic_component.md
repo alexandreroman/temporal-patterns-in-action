@@ -31,10 +31,7 @@ that string name. Passing the string `'NuxtLink'`
 to `<component :is>` makes Vue treat it as an
 unknown component and fall back to an inert
 element — the card renders but is not a real
-hyperlink. Observed on
-`frontend/app/pages/index.vue` where the Saga
-card lost its link behavior until switched to
-`resolveComponent`.
+hyperlink.
 
 **How to apply:** Any time a Vue template in
 this project uses `<component :is>` to pick
